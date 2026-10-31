@@ -1090,16 +1090,16 @@ let musicFound = [];
 const OV = 'https://api.openverse.org/v1/';
 const ovCache = new Map(); let ovLast = 0;
 const licName = r => (r.license === 'cc0' ? 'CC0' : r.license === 'pdm' ? 'Domeniu public' : 'CC ' + String(r.license || '').toUpperCase() + (r.license_version ? ' ' + r.license_version : ''));
-async function ovSearch(kind, q, n, page = 1){
-  const key = kind + '|' + q + '|' + n + '|' + page; if (ovCache.has(key)) return ovCache.get(key);
+async function ovSearch(kind, q, n, page = 1, wide = true){
+  const key = kind + '|' + q + '|' + n + '|' + page + '|' + wide; if (ovCache.has(key)) return ovCache.get(key);
   const wait = 3200 - (Date.now() - ovLast); if (wait > 0) await new Promise(r => setTimeout(r, wait)); ovLast = Date.now();
-  const r = await fetch(`${OV}${kind}/?q=${encodeURIComponent(q)}&license_type=commercial&page_size=${n}&page=${page}&mature=false` + (kind === 'images' ? '&aspect_ratio=wide&size=large' : ''));
+  const r = await fetch(`${OV}${kind}/?q=${encodeURIComponent(q)}&license_type=commercial&page_size=${n}&page=${page}&mature=false` + (kind === 'images' && wide ? '&aspect_ratio=wide' : ''));
   if (r.status === 429) throw new Error('limita');
   if (!r.ok) throw new Error('HTTP ' + r.status);
-  const res = ((await r.json()).results || []); ovCache.set(key, res); return res;
+  let res = ((await r.json()).results || []); if (!res.length && kind === 'images' && wide && page === 1) return ovSearch(kind, q, n, 1, false); ovCache.set(key, res); return res;
 }
 async function ovBlob(r, kind){
-  const tries = kind === 'images' ? [r.url, `${OV}images/${r.id}/thumb/?full_size=true`, `${OV}images/${r.id}/thumb/`] : [r.url];
+  const tries = kind === 'images' ? [`${OV}images/${r.id}/thumb/?full_size=true`, r.url, `${OV}images/${r.id}/thumb/`] : [r.url];
   for (const u of tries){ try { const x = await fetch(u); if (!x.ok) continue; const b = await x.blob(); if (b.size > 2000 && /^(image|audio)\//.test(b.type || (kind === 'images' ? 'image/jpeg' : 'audio/mpeg'))) return b; } catch(e){} }
   return null;
 }
@@ -1147,24 +1147,28 @@ $('#btnToEditor').onclick = async () => {
   const mm = media(S.audio.muzica); if (mm && mm.credit) credits.push(mm.credit);
   if (credits.length){ $('#creditsOut').value = credits.join('\n'); $('#creditsBox').hidden = false;
     S.clips.push(newCard({ dur:Math.min(10, 4 + credits.length * 0.3), text:'Imagini și muzică: Openverse (Wikimedia, Flickr și alții). Lista completă a autorilor e în descriere.', style:'sub', pos:'mijloc', bg:W8.bg, anim:false })); }
-  if (imgs) note.textContent = `Gata: ${imgs.filter(Boolean).length} din ${scenes.length} scene au imagine. Copiază sursele în descrierea video-ului.`;
+  if (imgs){ const k = imgs.filter(Boolean).length; note.textContent = k ? `Gata: ${k} din ${scenes.length} scene au imagine. Copiază sursele în descrierea video-ului.` : `Nu am pus nicio poză: ${lastWhy || 'căutarea nu a dat rezultate'}. Încearcă alt subiect, în engleză (ex: „pelican”, „river delta”).`; if (!k) toast(note.textContent); }
   toast(`Video generat: ${S.clips.length} scene.`); S.sel = null; T = 0.8; renderMedia(); renderTimeline(); renderInspector(); refreshPickers(); location.hash = 'montaj';
 };
+let lastWhy = '';
 async function autoImages(list, topic, progress, credits){
   const groups = new Map(); list.forEach((s, i) => { const q = (s.kw || topic).toLowerCase(); if (!groups.has(q)) groups.set(q, []); groups.get(q).push(i); });
   let queries = [...groups.keys()];
   if (queries.length > 30){ const keep = new Set(queries.slice(0, 29)); for (const [q, idx] of [...groups]){ if (!keep.has(q) && q !== topic.toLowerCase()){ groups.delete(q); if (!groups.has(topic.toLowerCase())) groups.set(topic.toLowerCase(), []); groups.get(topic.toLowerCase()).push(...idx); } } queries = [...groups.keys()]; }
-  const out = new Array(list.length).fill(null); let done = 0; const used = new Set(); let anyOk = false;
+  lastWhy = ''; const out = new Array(list.length).fill(null); let done = 0; const used = new Set(); let anyOk = false;
   for (const q of queries){
     const idx = groups.get(q); let res;
     try { res = await ovSearch('images', q, Math.min(20, idx.length + 4)); anyOk = true;
       for (let pg = 2; pg <= 5 && res.length < idx.length + 4 && res.length >= (pg - 1) * 20; pg++){ try { res = res.concat(await ovSearch('images', q, 20, pg)); } catch(e){ break; } } }
     catch(e){ if (e.message === 'limita' && anyOk) break; if (!anyOk) throw e; continue; }
-    res = res.filter(r => !used.has(r.id)); if (!res.length){ done += idx.length; continue; }
+    res = res.filter(r => !used.has(r.id));
+    if (!res.length && q !== topic.toLowerCase()){ try { res = (await ovSearch('images', topic, Math.min(20, idx.length + 4))).filter(r => !used.has(r.id)); } catch(e){} }
+    if (!res.length){ lastWhy = `nu am găsit poze pentru „${q}”`; done += idx.length; continue; }
     const loaded = [];
     for (let k = 0; k < idx.length; k++){
       progress(++done, list.length);
-      if (k < res.length){ const r = res[k]; const blob = await ovBlob(r, 'images'); if (blob){ used.add(r.id); const m = makeMedia(blob, 'image', (r.title || q).slice(0, 60) + '.jpg'); m.credit = `„${r.title || 'fără titlu'}” de ${r.creator || 'autor necunoscut'}, ${licName(r)}${r.foreign_landing_url ? ' (' + r.foreign_landing_url + ')' : ''}`; credits.push(m.credit); loaded.push(m); out[idx[k]] = m; continue; } }
+      if (k < res.length){ const r = res[k]; const blob = await ovBlob(r, 'images'); if (!blob) lastWhy = 'sursele pozelor nu au permis descărcarea';
+        if (blob){ used.add(r.id); const m = makeMedia(blob, 'image', (r.title || q).slice(0, 60) + '.jpg'); m.credit = `„${r.title || 'fără titlu'}” de ${r.creator || 'autor necunoscut'}, ${licName(r)}${r.foreign_landing_url ? ' (' + r.foreign_landing_url + ')' : ''}`; credits.push(m.credit); loaded.push(m); out[idx[k]] = m; continue; } }
       if (loaded.length) out[idx[k]] = loaded[k % loaded.length];
     }
   }
