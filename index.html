@@ -1357,7 +1357,7 @@ $('#mSave').onclick = async () => { if (!blob) return; if (await saveBlob(blob, 
 const YT = { token:null, exp:0, tc:null, xhr:null, stop:false, file:null };
 const lsGet = k => { try { return localStorage.getItem(k) || ''; } catch(e){ return ''; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch(e){} };
-$('#ytClient').value = lsGet('cadru.ytClient');
+$('#ytClient').value = lsGet('cadru.ytClient') || '705034235693-22hv3lcf2mt0nv33bh3ummp191mtua2q.apps.googleusercontent.com';
 $('#ytClient').onchange = e => { lsSet('cadru.ytClient', e.target.value.trim()); YT.tc = null; YT.token = null; ytState(); };
 function ytState(msg){ $('#ytState').textContent = msg || (YT.token && Date.now() < YT.exp ? 'Conectat la YouTube.' : $('#ytClient').value.trim() ? 'Neconectat. Apasă „Conectează YouTube”.' : 'Neconectat. Fă întâi configurarea din dreapta.'); }
 function loadGis(){ return new Promise((res, rej) => { if (window.google?.accounts?.oauth2) return res(); const sc = document.createElement('script'); sc.src = 'https://accounts.google.com/gsi/client'; sc.onload = res; sc.onerror = () => rej(new Error('gis')); document.head.appendChild(sc); }); }
