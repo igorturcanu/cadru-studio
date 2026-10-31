@@ -568,6 +568,7 @@ td.w{color:var(--muted);white-space:nowrap}
           <tr><td class="b">Imagini automate</td><td class="w">Creează, pasul 4</td><td>La „Generează video”, caută singur poze gratuite (licență permisă pentru canale monetizate) după subiect sau după cuvintele fiecărei scene și le pune pe timeline, cu zoom lent. Merge pe site-ul de pe GitHub.</td></tr>
           <tr><td class="b">Cuvinte pentru imagine</td><td class="w">Creează, pasul 1, la fiecare scenă</td><td>Ce poză vrei pe acea scenă, în engleză (ex: „old castle”). Gol = subiectul general.</td></tr>
           <tr><td class="b">Muzică de fundal, genuri</td><td class="w">Creează, pasul 4</td><td>Alegi o melodie din Materiale sau cauți muzică gratuită după gen. „Adaugă ca muzică” o descarcă direct în proiect (pe site-ul de pe GitHub).</td></tr>
+          <tr><td class="b">Export lung (peste 25 de minute)</td><td class="w">Butonul „Exportă video”</td><td>Pe calculator, în Chrome sau Edge, pe site-ul de pe GitHub: alegi unde se salvează fișierul și video-ul se scrie direct pe disc, oricât de lung (și 3 ore). Altfel îl salvează în părți de câte 20 de minute. Exportul durează cât video-ul: ține tab-ul vizibil și calculatorul la priză. Dacă ascunzi tab-ul, exportul pune pauză și continuă când revii.</td></tr>
           <tr><td class="b">Surse, pentru descrierea YouTube</td><td class="w">Creează, după generare</td><td>Lista autorilor și licențelor pentru imaginile și muzica folosite. Apasă „Copiază” și lipește-o în descrierea video-ului.</td></tr>
           <tr><td class="b">Generează video</td><td class="w">Creează, Rezumat</td><td>Construiește tot timeline-ul în Montaj din scenariu și alegerile tale. Înlocuiește ce era acolo.</td></tr>
           <tr><td class="b">✦ Scrie scenariul</td><td class="w">Scenarii</td><td>Claude scrie narațiunea după subiect, stil, limbă și lungime. O vezi cum se scrie și o poți edita.</td></tr>
@@ -828,13 +829,13 @@ function play(){ if (!S.clips.length) return; ensureAudio(); if (T >= total() - 
 function stop(){ playing = false; $('#btnPlay').textContent = '▶ Redă'; }
 function loop(ts){
   const dt = last ? (ts - last) / 1000 : 0; last = ts;
-  if (playing){ T += Math.min(dt, 0.1); const tot = total(); if (T >= tot){ T = tot; stop(); if (rec) finishRec(); } }
+  if (playing){ T += Math.min(dt, 0.1); const tot = total(); if (T >= tot){ T = tot; stop(); if (rec) finishRec(); } else partBoundary(); }
   sync(T); draw(T); updateClock(); requestAnimationFrame(loop);
 }
 function updateClock(){
   $('#tc').innerHTML = `<b>${fmt(T)}</b> / ${fmt(total())}`;
   $('#phead').style.left = (62 + T * S.pps) + 'px';
-  if (rec){ const tot = total() || 1; $('#mBar').style.width = Math.min(100, T / tot * 100) + '%'; $('#mText').textContent = `Se înregistrează: ${fmt(T)} din ${fmt(tot)}. Lasă tab-ul deschis.`; }
+  if (rec){ const tot = total() || 1; $('#mBar').style.width = Math.min(100, T / tot * 100) + '%'; $('#mText').textContent = rec.paused ? 'Pe pauză: tab-ul a fost ascuns. Revino aici și exportul continuă singur.' : `Se înregistrează${rec.mode === 'parts' ? ` partea ${rec.part + 1} din ${rec.nParts}` : ''}: ${fmt(T)} din ${fmt(tot)}. Ține tab-ul deschis și vizibil, cu calculatorul la priză.`; }
 }
 $('#btnPlay').onclick = () => playing ? stop() : play();
 $('#btnStart').onclick = () => { T = 0; };
@@ -1233,30 +1234,63 @@ $('#pSave').onclick = saveProject; $('#btnSave').onclick = saveProject;
 
 /* ---------- export ---------- */
 let blob = null, ext = 'webm';
-$('#btnExport').onclick = () => {
+const LONG = 25 * 60, PART = 20 * 60;
+const inFrame = (() => { try { return window.top !== window; } catch(e){ return true; } })();
+let wake = null;
+async function wakeOn(){ try { wake = await navigator.wakeLock?.request('screen'); } catch(e){ wake = null; } }
+function wakeOff(){ try { wake && wake.release(); } catch(e){} wake = null; }
+$('#btnExport').onclick = async () => {
   if (!S.clips.length){ toast('Adaugă întâi clipuri pe timeline.'); return; }
   if (!window.MediaRecorder || !cv.captureStream){ toast('Browserul tău nu poate exporta. Încearcă Chrome sau Edge.'); return; }
-  location.hash = 'montaj'; ensureAudio();
+  const tot = total(); const long = tot > LONG;
+  const types = ['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm','video/mp4;codecs=avc1,mp4a','video/mp4'];
+  const typesShort = ['video/mp4;codecs=avc1,mp4a','video/mp4', ...types.slice(0, 3)];
+  const mime = (long ? types : typesShort).find(t => MediaRecorder.isTypeSupported(t)) || ''; ext = mime.includes('mp4') ? 'mp4' : 'webm';
+  let mode = 'mem', writable = null, fname = `cadru-video.${ext}`;
+  if (long && window.showSaveFilePicker && !inFrame){
+    try { const h = await window.showSaveFilePicker({ suggestedName: fname, types:[{ description:'Video', accept:{ [ext === 'mp4' ? 'video/mp4' : 'video/webm']:['.' + ext] } }] });
+      writable = await h.createWritable(); fname = h.name; mode = 'disk'; }
+    catch(e){ if (e?.name === 'AbortError'){ toast('Exportul a fost anulat.'); return; } }
+  }
+  if (long && mode === 'mem') mode = 'parts';
+  location.hash = 'montaj'; ensureAudio(); await wakeOn();
   const vs = cv.captureStream(30); const tracks = [...vs.getVideoTracks()]; if (recDest) tracks.push(...recDest.stream.getAudioTracks());
   const stream = new MediaStream(tracks);
-  const types = ['video/mp4;codecs=avc1,mp4a','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
-  const mime = types.find(t => MediaRecorder.isTypeSupported(t)) || ''; ext = mime.includes('mp4') ? 'mp4' : 'webm';
-  const chunks = []; let mr; try { mr = new MediaRecorder(stream, mime ? {mimeType:mime, videoBitsPerSecond:6e6} : undefined); } catch(e){ toast('Exportul nu a putut porni în acest browser.'); return; }
-  mr.ondataavailable = e => e.data.size && chunks.push(e.data);
-  mr.onstop = () => { if (!rec || rec.cancel){ rec = null; return; } blob = new Blob(chunks, {type: mime || 'video/webm'}); const v = $('#mVideo'); v.src = URL.createObjectURL(blob); v.hidden = false;
-    $('#mTitle').textContent = 'Video gata'; $('#mText').textContent = `Fișier ${ext.toUpperCase()}, ${(blob.size / 1048576).toFixed(1)} MB. Verifică-l mai jos, apoi salvează-l.`; $('#mBar').style.width = '100%';
-    $('#mSave').hidden = false; $('#mCancel').textContent = 'Închide'; rec = null; };
-  rec = {mr, cancel:false}; blob = null;
-  $('#modal').hidden = false; $('#mVideo').hidden = true; $('#mSave').hidden = true; $('#mTitle').textContent = 'Export video'; $('#mCancel').textContent = 'Anulează';
-  T = 0; stop(); setTimeout(() => { mr.start(250); play(); }, 300);
+  const nParts = mode === 'parts' ? Math.ceil(tot / PART) : 1;
+  rec = { cancel:false, mode, part:0, nParts, partEnd: mode === 'parts' ? PART : Infinity, mr:null, writeQ:Promise.resolve(), written:0 };
+  const startPart = () => {
+    const chunks = []; let mr;
+    try { mr = new MediaRecorder(stream, mime ? {mimeType:mime, videoBitsPerSecond: long ? 3e6 : 6e6} : undefined); } catch(e){ toast('Exportul nu a putut porni în acest browser.'); rec = null; wakeOff(); $('#modal').hidden = true; return; }
+    mr.ondataavailable = e => { if (!e.data.size) return; if (rec?.mode === 'disk'){ const d = e.data; rec.written += d.size; rec.writeQ = rec.writeQ.then(() => writable.write(d)); } else chunks.push(e.data); };
+    mr.onstop = async () => {
+      if (!rec || rec.cancel){ if (writable) try { await writable.abort(); } catch(e){} rec = null; wakeOff(); return; }
+      if (rec.mode === 'disk'){ await rec.writeQ; await writable.close(); doneUI(`Video salvat direct în fișierul „${fname}”, ${rec.written > 1073741824 ? (rec.written / 1073741824).toFixed(2) + ' GB' : (rec.written / 1048576).toFixed(0) + ' MB'}. Îl poți urca pe YouTube.`); return; }
+      const part = new Blob(chunks, {type: mime || 'video/webm'});
+      if (rec.mode === 'parts'){
+        const name = `cadru-video-partea-${String(rec.part + 1).padStart(2, '0')}.${ext}`; await saveBlob(part, name);
+        rec.part++; if (rec.part < rec.nParts && T < total() - 0.05){ rec.partEnd = (rec.part + 1) * PART; startPart(); return; }
+        doneUI(`Gata: ${rec.part} părți salvate (cadru-video-partea-01, 02…), fiecare de până la ${PART / 60} minute.`); return;
+      }
+      blob = part; const v = $('#mVideo'); v.src = URL.createObjectURL(blob); v.hidden = false;
+      $('#mSave').hidden = false; doneUI(`Fișier ${ext.toUpperCase()}, ${(blob.size / 1048576).toFixed(1)} MB. Verifică-l mai jos, apoi salvează-l.`);
+    };
+    rec.mr = mr; setTimeout(() => { if (!rec || rec.cancel) return; mr.start(1000); play(); }, 300);
+  };
+  blob = null;
+  $('#modal').hidden = false; $('#mVideo').hidden = true; $('#mSave').hidden = true; $('#mTitle').textContent = mode === 'disk' ? 'Export lung, direct pe disc' : mode === 'parts' ? `Export lung, în ${nParts} părți` : 'Export video'; $('#mCancel').textContent = 'Anulează';
+  T = 0; stop(); startPart();
 };
-function finishRec(){ if (rec && rec.mr.state !== 'inactive') setTimeout(() => rec && rec.mr.stop(), 300); }
-$('#mCancel').onclick = () => { if (rec){ rec.cancel = true; stop(); try { rec.mr.stop(); } catch(e){} } $('#modal').hidden = true; };
-$('#mSave').onclick = async () => {
-  if (!blob) return; let dl = null; try { dl = window.claude?.use ? await window.claude.use('downloads') : null; } catch(e){}
-  if (dl){ try { await dl.save({filename:`cadru-video.${ext}`, data:blob}); toast('Video salvat.'); } catch(e){ toast(e?.code === 'declined' ? 'Salvarea a fost anulată.' : 'Salvarea nu a mers aici. Clic dreapta pe video → Salvează videoclipul ca.'); } }
-  else if (plainDownload(blob, `cadru-video.${ext}`)) toast('Video salvat.'); else toast('Clic dreapta pe video → „Salvează videoclipul ca…”.');
-};
+function doneUI(msg){ $('#mTitle').textContent = 'Video gata'; $('#mText').textContent = msg; $('#mBar').style.width = '100%'; $('#mCancel').textContent = 'Închide'; rec = null; wakeOff(); }
+async function saveBlob(b, name){ let dl = null; try { dl = window.claude?.use ? await window.claude.use('downloads') : null; } catch(e){}
+  if (dl){ try { await dl.save({filename:name, data:b}); return true; } catch(e){ toast('O parte nu s-a salvat: ' + name); return false; } }
+  return plainDownload(b, name); }
+function finishRec(){ if (rec && rec.mr && rec.mr.state !== 'inactive'){ const r = rec; setTimeout(() => r.mr.state !== 'inactive' && r.mr.stop(), 300); } }
+function partBoundary(){ if (rec && rec.mode === 'parts' && T >= rec.partEnd && rec.mr?.state === 'recording'){ T = rec.partEnd; stop(); finishRec(); } }
+document.addEventListener('visibilitychange', () => { if (!rec || !rec.mr) return;
+  if (document.hidden){ if (rec.mr.state === 'recording'){ stop(); rec.mr.pause(); rec.paused = true; } }
+  else if (rec.paused){ rec.paused = false; ensureAudio(); setTimeout(() => { if (rec && rec.mr.state === 'paused'){ rec.mr.resume(); play(); } }, 300); } });
+$('#mCancel').onclick = () => { if (rec){ rec.cancel = true; stop(); try { rec.mr && rec.mr.stop(); } catch(e){} } wakeOff(); $('#modal').hidden = true; };
+$('#mSave').onclick = async () => { if (!blob) return; if (await saveBlob(blob, `cadru-video.${ext}`)) toast('Video salvat.'); else toast('Clic dreapta pe video → „Salvează videoclipul ca…”.'); };
 
 /* ---------- AI Personal ---------- */
 const AIS = 'AI Personal'; let mcp = null; let jobs = [];
