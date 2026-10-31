@@ -1,0 +1,1264 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Cadru: studio video în română. Scenariu, montaj, subtitrări, miniaturi și export, direct în browser.">
+</head>
+<body>
+<title>Cadru Studio</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: editor de montaj, dark-first: materiale | previzualizare | proprietăți, cu timeline pe toată lățimea dedesubt */
+:root{
+  --bg:#13151b; --panel:#1b1e26; --panel2:#232733; --line:#2e3340; --fg:#e9e7e2; --muted:#9a9da8;
+  --accent:#f0a830; --accent-ink:#1d1405; --rec:#e5484d; --ok:#4cb782; --clip:#2f3a52; --clip-card:#4a3a5c; --clip-img:#2f4a44;
+  --f-display:"Unbounded","Arial Black",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){
+  --bg:#eceef2; --panel:#ffffff; --panel2:#f4f5f8; --line:#d6d9e1; --fg:#1b1d24; --muted:#5b5f6d;
+  --accent:#b8720a; --accent-ink:#ffffff; --rec:#c8323a; --ok:#23845a; --clip:#c9d3ea; --clip-card:#ddd0ea; --clip-img:#c6e0d8; color-scheme:light}}
+:root[data-theme="light"]{
+  --bg:#eceef2; --panel:#ffffff; --panel2:#f4f5f8; --line:#d6d9e1; --fg:#1b1d24; --muted:#5b5f6d;
+  --accent:#b8720a; --accent-ink:#ffffff; --rec:#c8323a; --ok:#23845a; --clip:#c9d3ea; --clip-card:#ddd0ea; --clip-img:#c6e0d8; color-scheme:light}
+*{box-sizing:border-box}
+input[type=range],input[type=checkbox]{accent-color:var(--accent)}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:14px;line-height:1.45;margin:0}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--panel)}
+.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--panel);border-bottom:1px solid var(--line)}
+header.top .wrap{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding-block:10px}
+.logo{font-family:var(--f-display);font-weight:700;font-size:18px;letter-spacing:.01em;display:flex;align-items:center;gap:8px}
+.logo i{display:inline-block;width:12px;height:12px;border-radius:50%;background:var(--rec);box-shadow:0 0 0 3px color-mix(in srgb,var(--rec) 30%,transparent)}
+.logo small{font-family:var(--f-body);font-weight:500;font-size:12px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+nav.tabs{display:flex;gap:4px;overflow-x:auto;max-width:100%;scrollbar-width:none;background:var(--panel2);padding:3px;border-radius:9px;border:1px solid var(--line)}
+nav.tabs a{color:var(--muted);text-decoration:none;padding:6px 11px;border-radius:6px;font-weight:500;white-space:nowrap}
+nav.tabs a[aria-current="page"]{background:var(--accent);color:var(--accent-ink)}
+.spacer{flex:1}
+button,.btn{font:inherit;font-weight:500;color:var(--fg);background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:7px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none;line-height:1.2}
+button:hover,.btn:hover{border-color:var(--muted)}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button.rec{background:var(--rec);color:#fff;border-color:var(--rec)}
+button.ghost{background:transparent}
+button.danger{color:var(--rec)}
+button:disabled{opacity:.45;cursor:not-allowed}
+select,input[type=number],input[type=text],textarea{font:inherit;color:var(--fg);background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:6px 8px;width:100%}
+textarea{resize:vertical;min-height:70px}
+label.f{display:grid;gap:4px;font-size:12px;color:var(--muted);font-weight:500}
+.lbl{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:600}
+h2{font-family:var(--f-display);font-weight:500;font-size:15px;margin:0;text-wrap:balance}
+[hidden]{display:none!important}
+
+/* Montaj */
+.editor{display:grid;grid-template-columns:250px minmax(0,1fr) 290px;gap:12px;padding-block:12px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.drop{border:1.5px dashed var(--line);border-radius:9px;padding:14px;text-align:center;color:var(--muted);font-size:13px;display:grid;gap:8px;justify-items:center}
+.drop.over{border-color:var(--accent);color:var(--fg)}
+.mlist{display:grid;gap:6px;max-height:360px;overflow:auto}
+.mitem{display:grid;grid-template-columns:44px minmax(0,1fr);gap:8px;align-items:center;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px}
+.mthumb{width:44px;height:32px;border-radius:4px;background:var(--line);display:grid;place-items:center;font-size:10px;color:var(--muted);overflow:hidden;font-family:var(--f-mono)}
+.mthumb img,.mthumb video{width:100%;height:100%;object-fit:cover}
+.mname{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mact{grid-column:1/-1;display:flex;gap:4px;flex-wrap:wrap}
+.mact button{padding:4px 8px;font-size:12px}
+.empty{color:var(--muted);font-size:12px}
+
+.stage{display:grid;gap:10px;align-content:start}
+.screen{background:#000;border-radius:10px;display:grid;place-items:center;overflow:hidden;border:1px solid var(--line);max-height:58vh}
+.screen canvas{max-width:100%;max-height:58vh;width:auto;height:auto;display:block}
+.transport{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tc{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:13px;background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:6px 10px}
+.tc b{color:var(--accent);font-weight:500}
+
+.insp .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.insp .checks{display:flex;gap:14px;flex-wrap:wrap;font-size:13px}
+.insp .checks label{display:flex;gap:6px;align-items:center}
+.insp .acts{display:flex;gap:6px;flex-wrap:wrap}
+.insp .acts button{font-size:12px;padding:5px 9px}
+.kind{display:inline-block;font-size:11px;font-family:var(--f-mono);padding:2px 7px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);color:var(--muted)}
+
+.tl{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px 12px;display:grid;gap:8px;margin-bottom:16px}
+.tlbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.tlscroll{overflow-x:auto;position:relative}
+.tlinner{position:relative;min-width:100%}
+.ruler{height:22px;position:relative;border-bottom:1px solid var(--line);cursor:pointer;font-family:var(--f-mono);font-size:10px;color:var(--muted)}
+.ruler span{position:absolute;top:3px;transform:translateX(2px)}
+.ruler span::before{content:"";position:absolute;left:-2px;top:-3px;width:1px;height:8px;background:var(--line)}
+.track{display:grid;grid-template-columns:62px auto;align-items:stretch;gap:0;margin-top:6px}
+.tname{font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.06em;text-transform:uppercase;display:flex;align-items:center;position:sticky;left:0;background:var(--panel);z-index:2}
+.lane{position:relative;height:54px;display:flex;cursor:pointer}
+.lane.short{height:30px}
+.blk{height:100%;border-radius:6px;margin-right:2px;padding:5px 7px;font-size:11px;overflow:hidden;background:var(--clip);border:1px solid transparent;flex:none;cursor:grab;display:flex;flex-direction:column;justify-content:space-between;color:var(--fg)}
+.blk.card{background:var(--clip-card)}.blk.image{background:var(--clip-img)}
+.blk.sel{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.blk .t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500}
+.blk .d{font-family:var(--f-mono);color:var(--muted);font-size:10px}
+.ablk{height:100%;border-radius:6px;background:color-mix(in srgb,var(--ok) 35%,var(--panel2));font-size:11px;padding:6px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ablk.voce{background:color-mix(in srgb,var(--accent) 30%,var(--panel2))}
+.phead{position:absolute;top:0;bottom:0;width:2px;background:var(--rec);pointer-events:none;z-index:3}
+.phead::before{content:"";position:absolute;top:0;left:-5px;border:6px solid transparent;border-top-color:var(--rec)}
+
+/* Scenariu */
+.scen{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:12px;padding-block:12px}
+.stats{display:flex;gap:16px;flex-wrap:wrap;font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:12px;color:var(--muted)}
+.stats b{color:var(--fg);font-weight:500}
+.scenes{display:grid;gap:8px}
+.scene{display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:10px}
+.scene .n{font-family:var(--f-mono);color:var(--accent);font-size:13px}
+.scene .meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--muted);margin-top:6px}
+.scene .meta a{color:var(--accent)}
+.note{font-size:12px;color:var(--muted)}
+
+/* Creează */
+.wiz{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:14px;padding-block:12px;align-items:start}
+.wsteps{display:grid;gap:12px;min-width:0}
+.stephead{display:flex;align-items:center;gap:10px}
+.stephead .num{width:28px;height:28px;border-radius:7px;display:grid;place-items:center;background:color-mix(in srgb,var(--accent) 18%,var(--panel2));color:var(--accent);font-family:var(--f-mono);font-weight:500}
+.sum{position:sticky;top:calc(env(safe-area-inset-top,0px) + 76px)}
+.sum dl{display:grid;grid-template-columns:auto 1fr;gap:0;margin:0}
+.sum dt,.sum dd{padding:8px 0;border-bottom:1px solid var(--line);margin:0;font-size:13px}
+.sum dt{color:var(--muted)}.sum dd{text-align:right;font-weight:500;font-variant-numeric:tabular-nums}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.tile{background:var(--panel2);border:1.5px solid var(--line);border-radius:10px;padding:6px;display:grid;gap:6px;cursor:pointer;text-align:left;color:var(--fg);font:inherit}
+.tile canvas{width:100%;aspect-ratio:16/9;border-radius:6px;display:block;background:#000}
+.tile[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.tile span{font-weight:500;font-size:13px;padding:0 2px 2px}
+.optrow{display:flex;align-items:center;gap:12px;justify-content:space-between;background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:10px 12px}
+.optrow b{display:block;font-weight:600}.optrow small{color:var(--muted)}
+.sw{position:relative;width:44px;height:26px;flex:none}
+.sw input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer;z-index:1}
+.sw i{position:absolute;inset:0;border-radius:99px;background:var(--line);transition:background .15s}
+.sw i::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .15s}
+.sw input:checked+i{background:var(--accent)}.sw input:checked+i::after{transform:translateX(18px)}
+.sw input:focus-visible+i{outline:2px solid var(--accent);outline-offset:2px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border-radius:999px;padding:5px 12px;font-size:13px}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.vlist{display:grid;gap:6px;max-height:260px;overflow:auto}
+.vitem{display:flex;align-items:center;gap:10px;background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:7px 10px}
+.vitem .av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:600;font-size:13px;color:#fff;flex:none}
+.vitem .nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vitem small{color:var(--muted);font-family:var(--f-mono);font-size:11px}
+details.sc summary{cursor:pointer;color:var(--muted);font-size:13px;font-weight:500}
+details.sc[open] summary{margin-bottom:8px}
+/* Miniaturi, Scenarii, Proiecte */
+.two{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:12px;padding-block:12px;align-items:start}
+.thumbwrap canvas{width:100%;aspect-ratio:16/9;border-radius:10px;display:block;background:#000;border:1px solid var(--line)}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;padding-block:12px}
+.pcard{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;display:grid}
+.pcard .th{aspect-ratio:16/9;background:#000;display:grid;place-items:center;color:#777;font-size:12px}
+.pcard .th img{width:100%;height:100%;object-fit:cover}
+.pcard .bd{padding:10px;display:grid;gap:6px}
+.pcard .bd b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pnew{border:1.5px dashed var(--line);border-radius:10px;display:grid;place-items:center;min-height:180px;color:var(--muted);background:transparent;font-size:14px}
+.out{white-space:pre-wrap;min-height:220px}
+@media (max-width:900px){.wiz,.two{grid-template-columns:minmax(0,1fr)}.sum{position:static}}
+
+/* AI Personal */
+.aigrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding-block:12px}
+.aigrid .wide{grid-column:1/-1}
+.res{display:grid;gap:8px}
+.ritem{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:10px;display:grid;gap:4px;min-width:0}
+.ritem .t{font-weight:500;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.ritem .links{display:flex;gap:12px;flex-wrap:wrap;font-size:13px}
+.ritem a{color:var(--accent);word-break:break-all}
+.src{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.cost{display:inline-block;font-size:11px;padding:1px 7px;border-radius:999px;color:var(--rec);border:1px solid color-mix(in srgb,var(--rec) 50%,var(--line))}
+.free{display:inline-block;font-size:11px;padding:1px 7px;border-radius:999px;color:var(--ok);border:1px solid color-mix(in srgb,var(--ok) 50%,var(--line))}
+.confirm{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:color-mix(in srgb,var(--rec) 10%,var(--panel2));border:1px solid color-mix(in srgb,var(--rec) 40%,var(--line));border-radius:8px;padding:8px 10px;font-size:13px}
+.howto{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;font-size:13px}
+.howto div{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:10px}
+.howto b{color:var(--accent);font-family:var(--f-mono);font-weight:500;margin-right:4px}
+@media (max-width:720px){.aigrid,.howto{grid-template-columns:minmax(0,1fr)}}
+
+/* Ghid */
+.guide{max-width:980px;padding-block:18px 40px;display:grid;gap:22px}
+.guide h1{font-family:var(--f-display);font-weight:700;font-size:clamp(22px,4vw,32px);margin:0;text-wrap:balance}
+.guide p{max-width:68ch;margin:0}
+.guide h3{font-family:var(--f-display);font-weight:500;font-size:16px;margin:0 0 8px}
+.steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.step{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;display:grid;gap:6px}
+.step .k{font-family:var(--f-mono);font-size:12px;color:var(--accent)}
+.tablebox{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:13px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;background:var(--panel2)}
+tr:last-child td{border-bottom:none}
+td.b{white-space:nowrap;font-weight:600}
+td.w{color:var(--muted);white-space:nowrap}
+.cmp td:first-child{font-weight:500}
+.tag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:999px;border:1px solid var(--line)}
+.tag.da{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 50%,var(--line))}
+.tag.nu{color:var(--muted)}
+
+/* Export modal */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:grid;place-items:center;z-index:20;padding:16px}
+.modal .box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;width:min(560px,100%);display:grid;gap:12px}
+.bar{height:8px;background:var(--panel2);border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--rec)}
+.modal video{width:100%;border-radius:8px;background:#000;max-height:50vh}
+.toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:13px;z-index:30}
+
+@media (max-width:1050px){.editor{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.stage{grid-column:1/-1;order:-1}}
+@media (max-width:720px){.editor,.scen{grid-template-columns:minmax(0,1fr)}.steps{grid-template-columns:minmax(0,1fr)}.logo small{display:none}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <div class="logo"><i></i>Cadru <small>studio video</small></div>
+    <nav class="tabs" aria-label="Secțiuni">
+      <a href="#creeaza" data-view="creeaza">Creează</a>
+      <a href="#montaj" data-view="montaj">Montaj</a>
+      <a href="#scenarii" data-view="scenarii">Scenarii</a>
+      <a href="#miniaturi" data-view="miniaturi">Miniaturi</a>
+      <a href="#proiecte" data-view="proiecte">Proiecte</a>
+      <a href="#ai" data-view="ai">AI Personal</a>
+      <a href="#ghid" data-view="ghid">Ghid</a>
+    </nav>
+    <div class="spacer"></div>
+    <label class="f" style="grid-auto-flow:column;align-items:center;gap:6px">Format
+      <select id="format" style="width:auto">
+        <option value="16:9">16:9 YouTube</option>
+        <option value="9:16">9:16 Shorts / TikTok</option>
+        <option value="1:1">1:1 Instagram</option>
+      </select>
+    </label>
+    <button id="btnSave" title="Salvează proiectul în acest browser">Salvează</button>
+    <button class="rec" id="btnExport">● Exportă video</button>
+  </div>
+</header>
+
+<!-- MONTAJ -->
+<main class="view wrap" id="v-montaj">
+  <div class="editor">
+    <section class="panel" aria-label="Materiale">
+      <h2>Materiale</h2>
+      <div class="drop" id="drop">
+        <span>Trage aici filme, poze sau fișiere audio, sau lipește o poză copiată (Ctrl+V / ține apăsat → Lipește)</span>
+        <button class="primary" id="btnUpload">＋ Încarcă fișiere</button>
+        <input type="file" id="file" multiple accept="video/*,image/*,audio/*" hidden>
+      </div>
+      <div class="mlist" id="mlist"></div>
+      <div style="display:flex;gap:6px"><input type="text" id="linkUrl" placeholder="Link direct către un fișier .mp4, .jpg, .mp3" aria-label="Link către fișier"><button id="linkGo">Importă</button></div>
+      <p class="note" id="linkNote" style="margin:0">Merge cu linkuri directe către fișierele tale sau cele gratuite, dacă site-ul permite.</p>
+      <button id="btnCard">＋ Card cu text</button>
+    </section>
+
+    <section class="stage" aria-label="Previzualizare">
+      <div class="screen"><canvas id="cv" width="1280" height="720"></canvas></div>
+      <div class="transport">
+        <button id="btnStart" title="La început">⏮</button>
+        <button class="primary" id="btnPlay">▶ Redă</button>
+        <button id="btnEnd" title="La sfârșit">⏭</button>
+        <span class="tc" id="tc"><b>00:00.0</b> / 00:00.0</span>
+        <div class="spacer"></div>
+        <button id="btnSplit" title="Taie clipul selectat în punctul roșu">✂ Taie aici</button>
+      </div>
+    </section>
+
+    <section class="panel insp" id="insp" aria-label="Proprietăți clip"></section>
+  </div>
+
+  <section class="tl" aria-label="Timeline">
+    <div class="tlbar">
+      <span class="lbl">Timeline</span>
+      <div class="spacer"></div>
+      <button id="zoomOut" title="Micșorează">−</button>
+      <button id="zoomIn" title="Mărește">＋</button>
+    </div>
+    <div class="tlscroll" id="tlscroll">
+      <div class="tlinner" id="tlinner">
+        <div class="track"><div class="tname"></div><div class="ruler" id="ruler"></div></div>
+        <div class="track"><div class="tname">Video</div><div class="lane" id="laneV"></div></div>
+        <div class="track"><div class="tname">Voce</div><div class="lane short" id="laneVoce"></div></div>
+        <div class="track"><div class="tname">Muzică</div><div class="lane short" id="laneMuzica"></div></div>
+        <div class="phead" id="phead"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- CREEAZĂ -->
+<main class="view wrap" id="v-creeaza" hidden>
+  <div class="wiz">
+    <div class="wsteps">
+      <section class="panel">
+        <div class="stephead"><span class="num">1</span><h2>Scenariu</h2></div>
+        <label class="f">Titlul video-ului (apare la început, opțional)<input type="text" id="vTitle" value="Delta care se mișcă"></label>
+        <textarea id="script" style="min-height:220px" aria-label="Scenariu"></textarea>
+        <div class="stats" id="sstats"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end">
+          <label class="f" style="width:170px">Viteza de citire (cuvinte/min)<input type="number" id="wpm" value="150" min="80" max="240" step="5"></label>
+          <button id="btnSplitLocal">Împarte în scene</button>
+          <button id="btnSplitAI" hidden>✦ Împarte cu AI</button>
+          <a class="btn" href="#scenarii">✎ Scrie un scenariu cu AI</a>
+        </div>
+        <details class="sc" id="scDetails"><summary id="scSummary">Scenele (apasă ca să le vezi și să le editezi)</summary>
+          <div class="scenes" id="scenes"><p class="empty">Apasă „Împarte în scene” ca să vezi scenele aici.</p></div>
+        </details>
+      </section>
+
+      <section class="panel">
+        <div class="stephead"><span class="num">2</span><h2>Voce</h2></div>
+        <div class="chips" id="voiceMode" role="group" aria-label="Voce">
+          <button class="chip" data-v="none" aria-pressed="true">Fără voce</button>
+          <button class="chip" data-v="mine" aria-pressed="false">Înregistrarea mea</button>
+        </div>
+        <label class="f" id="voiceFileWrap" hidden>Fișierul cu vocea ta<select id="voiceFile"></select></label>
+        <p class="note" id="voiceNote" style="margin:0">Înregistrează-te citind scenariul (pe telefon merge perfect), apoi încarcă fișierul în Montaj → Materiale.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <span class="lbl">Vocile browserului</span>
+          <select id="vLang" style="width:auto"><option value="ro">Română</option><option value="en">English</option><option value="ru">Русский</option><option value="">Toate</option></select>
+          <button id="btnSpeak">🔊 Ascultă scenariul</button>
+        </div>
+        <div class="vlist" id="vlist"></div>
+        <p class="note" style="margin:0">Vocile browserului sunt doar pentru ascultare: te ajută să verifici ritmul. Nu pot fi înregistrate în video.</p>
+      </section>
+
+      <section class="panel">
+        <div class="stephead"><span class="num">3</span><h2>Fundal</h2></div>
+        <div class="tiles" id="bgTiles"></div>
+      </section>
+
+      <section class="panel">
+        <div class="stephead"><span class="num">4</span><h2>Opțiuni</h2></div>
+        <div class="optrow"><div><b>Subtitrări</b><small>Textul scenei apare pe ecran</small></div>
+          <select id="sstyle" style="width:auto;margin-left:auto"><option value="karaoke">Karaoke</option><option value="sub">Simple</option><option value="titlu">Titlu mare</option></select>
+          <label class="sw"><input type="checkbox" id="optSubs" checked aria-label="Subtitrări"><i></i></label></div>
+        <div class="optrow"><div><b>Grafică animată</b><small>Titluri care apar cuvânt cu cuvânt, numere care cresc pe ecran</small></div>
+          <label class="sw"><input type="checkbox" id="optAnim" checked aria-label="Grafică animată"><i></i></label></div>
+        <div class="optrow"><div><b>Muzică de fundal</b><small>Se aude încet sub voce</small></div>
+          <label class="sw"><input type="checkbox" id="optMusic" aria-label="Muzică de fundal"><i></i></label></div>
+        <div id="musicBox" hidden style="display:grid;gap:8px">
+          <label class="f">Melodia din Materiale<select id="musicFile"></select></label>
+          <span class="lbl">Sau caută muzică gratuită după gen (AI Personal)</span>
+          <div class="chips" id="genres"></div>
+          <div class="res" id="genreRes"></div>
+        </div>
+      </section>
+    </div>
+
+    <aside class="panel sum" aria-label="Rezumat">
+      <h2>Rezumat</h2>
+      <dl id="sumList"></dl>
+      <button class="primary" id="btnToEditor" style="justify-content:center;padding:11px">Generează video</button>
+      <p class="note" style="margin:0;text-align:center" id="sumNote">Construiește timeline-ul în Montaj, scenă cu scenă. Înlocuiește ce e acum acolo.</p>
+    </aside>
+  </div>
+</main>
+
+<!-- SCENARII -->
+<main class="view wrap" id="v-scenarii" hidden>
+  <div class="two">
+    <section class="panel">
+      <h2>Scrie un scenariu cu Claude</h2>
+      <label class="f">Despre ce e video-ul<input type="text" id="wTopic" value="Cum s-a format Delta Dunării"></label>
+      <div class="row2" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <label class="f">Stil<select id="wStyle">
+          <option>Documentar istoric</option><option>Mister și true crime</option><option>Top 10 / listă</option><option>Poveste pentru adormit</option><option>Explicație științifică</option><option>Motivațional</option></select></label>
+        <label class="f">Limba<select id="wLang"><option>română</option><option>engleză</option><option>rusă</option></select></label>
+      </div>
+      <label class="f">Lungime: <b id="wMinLbl">3 minute</b><input type="range" id="wMin" min="1" max="20" value="3"></label>
+      <label class="f">Cum vorbește canalul tău (opțional)<textarea id="wVoice" placeholder="De exemplu: ton calm, propoziții scurte, începe cu o întrebare, fără glume"></textarea></label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="primary" id="wGo">✦ Scrie scenariul</button>
+        <button id="wTitles">✦ 5 idei de titlu</button>
+      </div>
+      <p class="note" id="wNote" style="margin:0"></p>
+    </section>
+    <section class="panel">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><h2>Rezultat</h2><div class="spacer"></div><button id="wUse" disabled>Folosește în Creează →</button></div>
+      <textarea id="wOut" class="out" placeholder="Scenariul apare aici. Îl poți edita înainte să-l folosești."></textarea>
+      <div class="res" id="wTitleRes"></div>
+    </section>
+  </div>
+</main>
+
+<!-- MINIATURI -->
+<main class="view wrap" id="v-miniaturi" hidden>
+  <div class="two">
+    <section class="panel thumbwrap">
+      <h2>Miniatură YouTube</h2>
+      <canvas id="tcv" width="1280" height="720"></canvas>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="primary" id="tSave">Salvează PNG</button>
+        <button id="tFrame">Folosește cadrul din Montaj</button>
+        <button id="tUpload">＋ Poză de fundal</button>
+        <input type="file" id="tFile" accept="image/*" hidden>
+      </div>
+      <p class="note" style="margin:0">Poți și lipi o poză copiată (de exemplu din Gemini) cât ești pe această pagină.</p>
+    </section>
+    <section class="panel">
+      <span class="lbl">Stil</span>
+      <div class="chips" id="tPresets">
+        <button class="chip" data-p="doc" aria-pressed="true">Documentar</button>
+        <button class="chip" data-p="mister" aria-pressed="false">Mister</button>
+        <button class="chip" data-p="top" aria-pressed="false">Top / listă</button>
+        <button class="chip" data-p="vs" aria-pressed="false">Înainte / după</button>
+      </div>
+      <label class="f">Fundal<select id="tBg"></select></label>
+      <label class="f">Text mare (2-4 cuvinte)<input type="text" id="tText" value="DELTA SE MIȘCĂ"></label>
+      <label class="f">Etichetă<input type="text" id="tLabel" value="ADEVĂRUL"></label>
+      <div class="row2" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <label class="f">Culoare text<input type="color" id="tColor" value="#ffffff" style="width:100%;height:34px"></label>
+        <label class="f">Culoare etichetă<input type="color" id="tLabelColor" value="#d7261e" style="width:100%;height:34px"></label>
+      </div>
+      <label class="f">Întunecare fundal<input type="range" id="tDark" min="0" max="0.8" step="0.05" value="0.35"></label>
+      <div class="checks" style="display:flex;gap:14px;font-size:13px"><label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="tArrow" checked> Săgeată</label><label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="tGlow" checked> Contur gros</label></div>
+    </section>
+  </div>
+</main>
+
+<!-- PROIECTE -->
+<main class="view wrap" id="v-proiecte" hidden>
+  <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;padding-top:14px">
+    <div style="display:grid;gap:2px"><h2 style="font-size:20px">Proiecte</h2><span class="note">Salvate în acest browser, cu tot cu filme și poze. Pe alt dispozitiv nu apar.</span></div>
+    <div class="spacer"></div>
+    <label class="f" style="width:min(260px,100%)">Numele proiectului curent<input type="text" id="pName" value="Delta care se mișcă"></label>
+    <button class="primary" id="pSave">Salvează proiectul</button>
+  </div>
+  <div class="pgrid" id="pgrid"></div>
+</main>
+
+<!-- AI PERSONAL -->
+<main class="view wrap" id="v-ai" hidden>
+  <div class="aigrid">
+    <section class="panel wide">
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><h2>AI Personal în Cadru</h2><span class="kind" id="aiState">Se conectează…</span></div>
+      <p class="note" style="margin:0">Aici folosești conectorul tău AI Personal: cauți poze și muzică gratuite, generezi imagini și melodii. Rezultatele vin ca linkuri.</p>
+      <div class="howto">
+        <div><b>1</b>Cauți sau generezi mai jos.</div>
+        <div><b>2</b>Deschizi linkul fișierului și îl salvezi pe dispozitiv.</div>
+        <div><b>3</b>Îl încarci aici, apoi îl pui pe timeline din Montaj. <button class="primary" id="aiUpload" style="margin-top:6px">＋ Încarcă în Materiale</button></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div style="display:flex;gap:8px;align-items:center"><h2>Caută media gratuită</h2><span class="free">gratuit</span></div>
+      <div class="row2" style="display:grid;grid-template-columns:2fr 1fr;gap:8px">
+        <label class="f">Ce cauți (merge mai bine în engleză)<input type="text" id="qText" value="danube delta pelicans"></label>
+        <label class="f">Tip<select id="qTip"><option value="imagine">Poze</option><option value="muzica">Muzică și sunete</option></select></label>
+      </div>
+      <label class="checks" style="display:flex;gap:6px;align-items:center;font-size:13px"><input type="checkbox" id="qCom"> Doar cu licență pentru uz comercial (pentru canal monetizat)</label>
+      <button class="primary" id="qGo" style="align-self:flex-start">Caută</button>
+      <div class="res" id="qRes"><p class="empty">Rezultatele apar aici, cu autorul și licența fiecărui fișier.</p></div>
+    </section>
+
+    <section class="panel">
+      <div style="display:flex;gap:8px;align-items:center"><h2>Generează imagine</h2></div>
+      <label class="f">Descrierea imaginii (în engleză)<textarea id="iDesc">pelicans flying over the Danube Delta at sunrise, documentary photo</textarea></label>
+      <div class="row2" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <label class="f">Format<select id="iFmt"><option value="16:9">16:9</option><option value="9:16">9:16</option><option value="1:1">1:1</option></select></label>
+        <label class="f" style="align-content:end"><span style="display:flex;gap:6px;align-items:center;color:var(--fg)"><input type="checkbox" id="iNat" checked> Aspect de fotografie</span></label>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button id="iFree">Rapid <span class="free">gratuit</span></button>
+        <button id="iPaid">Calitate maximă 8K <span class="cost">costă bani</span></button>
+      </div>
+      <div id="iConfirm"></div>
+      <div class="res" id="iRes"></div>
+
+      <div style="display:flex;gap:8px;align-items:center;margin-top:8px"><h2>Generează melodie</h2><span class="cost">costă bani</span></div>
+      <label class="f">Stil și atmosferă (în engleză)<input type="text" id="sDesc" value="calm cinematic documentary score, strings and soft piano"></label>
+      <div class="row2" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <label class="f">Durată (secunde)<input type="number" id="sDur" min="3" max="600" value="60"></label>
+        <label class="f" style="align-content:end"><span style="display:flex;gap:6px;align-items:center;color:var(--fg)"><input type="checkbox" id="sInstr" checked> Doar instrumental</span></label>
+      </div>
+      <label class="f" id="sLyrWrap" hidden>Versuri (gol = generate automat)<textarea id="sLyr"></textarea></label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button id="sUseLen">Durata proiectului</button><button id="sGo">Generează melodia</button></div>
+      <div id="sConfirm"></div>
+    </section>
+
+    <section class="panel wide">
+      <h2>Generări în lucru</h2>
+      <p class="note" style="margin:0">Generările cu plată durează câteva minute. Apasă „Verifică” ca să vezi dacă fișierul e gata.</p>
+      <div class="res" id="jobs"><p class="empty">Nicio generare pornită.</p></div>
+    </section>
+  </div>
+</main>
+
+<!-- GHID -->
+<main class="view wrap" id="v-ghid" hidden>
+  <div class="guide">
+    <div style="display:grid;gap:8px">
+      <h1>Cum funcționează Cadru, buton cu buton</h1>
+      <p>Cadru e un studio video care merge direct în browser. Încarci filmele și pozele tale, le pui pe timeline, adaugi text, voce și muzică, apoi exporți un video gata de urcat pe YouTube. Fișierele tale nu pleacă nicăieri: totul se procesează pe calculatorul tău.</p>
+    </div>
+
+    <div>
+      <h3>Ce face site-ul de referință și cum îl acoperim</h3>
+      <p style="margin-bottom:10px">GoMotion transformă un scenariu într-un video pentru canale fără prezentator, în trei pași. Cadru urmează aceiași trei pași, cu materialele tale.</p>
+      <div class="steps">
+        <div class="step"><span class="k">Pasul 1 · Scenariu</span><b>Scrii textul</b><span class="note">În pagina Creează lipești scenariul (sau îl scrii cu Claude în Scenarii), alegi vocea, fundalul și opțiunile.</span></div>
+        <div class="step"><span class="k">Pasul 2 · Montaj</span><b>Pui imaginile</b><span class="note">„Generează video” pune fiecare scenă pe timeline. În Montaj înlocuiești fundalurile cu filmele și pozele tale.</span></div>
+        <div class="step"><span class="k">Pasul 3 · Export</span><b>Scoți video-ul</b><span class="note">Apeși Exportă video. Cadru redă proiectul și îl salvează ca fișier video pe dispozitiv.</span></div>
+      </div>
+    </div>
+
+    <div>
+      <h3>Toate butoanele</h3>
+      <div class="tablebox"><table>
+        <thead><tr><th>Buton</th><th>Unde e</th><th>Ce face</th></tr></thead>
+        <tbody>
+          <tr><td class="b">Montaj / Scenariu / Ghid butoane</td><td class="w">Sus</td><td>Schimbă pagina: editorul, scrierea scenariului sau acest ghid.</td></tr>
+          <tr><td class="b">Format</td><td class="w">Sus</td><td>Alege forma video-ului: 16:9 pentru YouTube, 9:16 pentru Shorts și TikTok, 1:1 pentru Instagram.</td></tr>
+          <tr><td class="b">● Exportă video</td><td class="w">Sus</td><td>Redă tot proiectul de la început și îl înregistrează într-un fișier video. Durează cât video-ul. La final apeși „Salvează pe dispozitiv”.</td></tr>
+          <tr><td class="b">＋ Încarcă fișiere</td><td class="w">Materiale</td><td>Deschide fereastra de alegere a fișierelor. Poți alege mai multe filme, poze și fișiere audio deodată. Le poți și trage cu mouse-ul în chenar.</td></tr>
+          <tr><td class="b">Lipește (Ctrl+V)</td><td class="w">Oriunde în Cadru</td><td>Dacă ai copiat o poză din altă aplicație (de exemplu Gemini), o lipești direct și apare în Materiale. Pe tabletă: ții apăsat pe pagină și alegi Lipește.</td></tr>
+          <tr><td class="b">＋ Pe timeline</td><td class="w">Materiale, la fiecare film sau poză</td><td>Pune materialul la capătul timeline-ului.</td></tr>
+          <tr><td class="b">Voce / Muzică</td><td class="w">Materiale, la fiecare fișier audio</td><td>Pune fișierul audio pe pista Voce (citirea ta) sau pe pista Muzică (fundal, se repetă dacă e mai scurtă).</td></tr>
+          <tr><td class="b">✕</td><td class="w">Materiale</td><td>Scoate materialul din proiect, împreună cu clipurile lui de pe timeline.</td></tr>
+          <tr><td class="b">＋ Card cu text</td><td class="w">Materiale</td><td>Adaugă un ecran colorat cu text, bun pentru titluri, introduceri și finaluri.</td></tr>
+          <tr><td class="b">⏮ ▶ ⏭</td><td class="w">Sub previzualizare</td><td>Mergi la început, pornești sau oprești redarea, mergi la sfârșit. Tasta Spațiu face tot Redă/Pauză.</td></tr>
+          <tr><td class="b">✂ Taie aici</td><td class="w">Sub previzualizare</td><td>Taie clipul selectat în două, exact unde e linia roșie. Așa scoți bucăți nedorite din mijloc.</td></tr>
+          <tr><td class="b">Riglă cu secunde</td><td class="w">Timeline</td><td>Apasă oriunde pe riglă ca să muți linia roșie (punctul de redare) acolo.</td></tr>
+          <tr><td class="b">Clip pe timeline</td><td class="w">Timeline</td><td>Un clic îl selectează și îi arată proprietățile în dreapta. Îl poți trage peste alt clip ca să schimbi ordinea.</td></tr>
+          <tr><td class="b">− / ＋</td><td class="w">Timeline</td><td>Micșorează sau mărește timeline-ul, ca să vezi tot proiectul sau detaliile.</td></tr>
+          <tr><td class="b">Început / Sfârșit</td><td class="w">Proprietăți (film)</td><td>Taie filmul: alegi din ce secundă începe și la ce secundă se oprește.</td></tr>
+          <tr><td class="b">Durată</td><td class="w">Proprietăți (poză, card)</td><td>Câte secunde stă poza sau cardul pe ecran.</td></tr>
+          <tr><td class="b">Fundal</td><td class="w">Proprietăți (card)</td><td>Culoarea cardului, sau un film ori o poză din Materiale în locul culorii.</td></tr>
+          <tr><td class="b">Text pe ecran</td><td class="w">Proprietăți</td><td>Textul care apare peste imagine.</td></tr>
+          <tr><td class="b">Stil text</td><td class="w">Proprietăți</td><td>Subtitrare jos, Titlu mare în centru, sau Karaoke, unde cuvintele se colorează pe rând.</td></tr>
+          <tr><td class="b">Poziție</td><td class="w">Proprietăți</td><td>Textul sus, la mijloc sau jos.</td></tr>
+          <tr><td class="b">Filtru</td><td class="w">Proprietăți</td><td>Culoare normală, alb-negru, sepia (aspect vechi) sau contrast puternic.</td></tr>
+          <tr><td class="b">Apariție lină</td><td class="w">Proprietăți</td><td>Clipul apare și dispare treptat din negru.</td></tr>
+          <tr><td class="b">Zoom lent</td><td class="w">Proprietăți</td><td>Imaginea se apropie încet, ca în documentare. Merge bine pe poze.</td></tr>
+          <tr><td class="b">Volum clip</td><td class="w">Proprietăți (film)</td><td>Cât de tare se aude sunetul original al filmului. 0 îl oprește.</td></tr>
+          <tr><td class="b">← Mută / Mută →</td><td class="w">Proprietăți</td><td>Mută clipul cu o poziție mai devreme sau mai târziu.</td></tr>
+          <tr><td class="b">Dublează</td><td class="w">Proprietăți</td><td>Face o copie a clipului imediat după el.</td></tr>
+          <tr><td class="b">Șterge</td><td class="w">Proprietăți</td><td>Scoate clipul de pe timeline. Materialul rămâne în listă.</td></tr>
+          <tr><td class="b">Volum voce / muzică</td><td class="w">Proprietăți (fără clip selectat)</td><td>Echilibrează vocea și muzica de fundal.</td></tr>
+          <tr><td class="b">Împarte în scene</td><td class="w">Creează</td><td>Taie scenariul în scene după propoziții și calculează cât durează fiecare la viteza de citire aleasă.</td></tr>
+          <tr><td class="b">✦ Împarte cu AI</td><td class="w">Creează</td><td>Claude împarte scenariul în scene și propune cuvinte de căutare pentru imagini. Apare doar când e disponibil.</td></tr>
+          <tr><td class="b">🔊 Ascultă scenariul</td><td class="w">Creează</td><td>Citește textul cu vocea browserului, ca să verifici ritmul.</td></tr>
+          <tr><td class="b">Caută imagini</td><td class="w">Creează, la fiecare scenă</td><td>Deschide Pexels, cu filme gratuite pentru acea scenă. Le descarci și le încarci în Materiale.</td></tr>
+          <tr><td class="b">Caută cu AI Personal</td><td class="w">Creează, la fiecare scenă</td><td>Deschide pagina AI Personal cu căutarea pentru acea scenă deja scrisă.</td></tr>
+          <tr><td class="b">Caută (media gratuită)</td><td class="w">AI Personal</td><td>Caută poze sau muzică gratuite pe Pixabay, Unsplash, Wikimedia, Jamendo, Freesound și altele. Arată autorul și licența fiecărui fișier.</td></tr>
+          <tr><td class="b">Doar uz comercial</td><td class="w">AI Personal</td><td>Păstrează doar fișierele pe care ai voie să le folosești pe un canal care câștigă bani.</td></tr>
+          <tr><td class="b">Rapid (gratuit)</td><td class="w">AI Personal</td><td>Generează o imagine AI gratuită, de calitate medie. Se creează când deschizi linkul.</td></tr>
+          <tr><td class="b">Calitate maximă 8K</td><td class="w">AI Personal</td><td>Generează o imagine de calitate maximă. Costă bani, așa că îți cere confirmare înainte.</td></tr>
+          <tr><td class="b">Generează melodia</td><td class="w">AI Personal</td><td>Creează o melodie cu stilul și durata alese, instrumentală sau cu versuri. Costă bani și îți cere confirmare.</td></tr>
+          <tr><td class="b">Durata proiectului</td><td class="w">AI Personal</td><td>Pune ca durată a melodiei exact lungimea video-ului tău.</td></tr>
+          <tr><td class="b">Verifică</td><td class="w">AI Personal, Generări în lucru</td><td>Întreabă dacă imaginea sau melodia e gata și îți dă linkul fișierului.</td></tr>
+          <tr><td class="b">＋ Încarcă în Materiale</td><td class="w">AI Personal</td><td>Încarcă fișierele salvate din linkuri, ca să le folosești în montaj.</td></tr>
+          <tr><td class="b">Titlul video-ului</td><td class="w">Creează, pasul 1</td><td>Apare ca prim ecran, cu titlu mare. Lasă gol dacă nu vrei.</td></tr>
+          <tr><td class="b">Fără voce / Înregistrarea mea</td><td class="w">Creează, pasul 2</td><td>Alegi dacă video-ul are voce. „Înregistrarea mea” folosește un fișier audio încărcat în Materiale.</td></tr>
+          <tr><td class="b">Vocile browserului, ▶ Ascultă</td><td class="w">Creează, pasul 2</td><td>Asculți vocile din tabletă sau calculator, ca să verifici ritmul. Nu intră în video.</td></tr>
+          <tr><td class="b">Plăcile de fundal</td><td class="w">Creează, pasul 3</td><td>Aleg aspectul scenelor: Albastru noapte, Cinematic, Hârtie veche, Luminos sau Grilă. Toate sunt animate.</td></tr>
+          <tr><td class="b">Subtitrări</td><td class="w">Creează, pasul 4</td><td>Pornește sau oprește textul pe ecran și alege stilul: Karaoke, Simple sau Titlu mare.</td></tr>
+          <tr><td class="b">Grafică animată</td><td class="w">Creează, pasul 4</td><td>Titlurile apar cuvânt cu cuvânt, iar numerele din text (de exemplu 300 sau 1949) cresc pe ecran.</td></tr>
+          <tr><td class="b">Muzică de fundal, genuri</td><td class="w">Creează, pasul 4</td><td>Alegi o melodie din Materiale sau cauți muzică gratuită după gen (Epic, Documentar, Tensiune…) prin AI Personal.</td></tr>
+          <tr><td class="b">Generează video</td><td class="w">Creează, Rezumat</td><td>Construiește tot timeline-ul în Montaj din scenariu și alegerile tale. Înlocuiește ce era acolo.</td></tr>
+          <tr><td class="b">✦ Scrie scenariul</td><td class="w">Scenarii</td><td>Claude scrie narațiunea după subiect, stil, limbă și lungime. O vezi cum se scrie și o poți edita.</td></tr>
+          <tr><td class="b">✦ 5 idei de titlu</td><td class="w">Scenarii</td><td>Propune titluri. „Folosește” pune titlul în Creează și pe miniatură.</td></tr>
+          <tr><td class="b">Folosește în Creează →</td><td class="w">Scenarii</td><td>Mută scenariul scris în pagina Creează.</td></tr>
+          <tr><td class="b">Stil miniatură</td><td class="w">Miniaturi</td><td>Documentar, Mister, Top / listă (cu număr uriaș) sau Înainte / după (ecran împărțit cu VS).</td></tr>
+          <tr><td class="b">Folosește cadrul din Montaj</td><td class="w">Miniaturi</td><td>Pune ca fundal imaginea care e acum în previzualizarea din Montaj.</td></tr>
+          <tr><td class="b">Salvează PNG</td><td class="w">Miniaturi</td><td>Salvează miniatura 1280×720, gata de urcat pe YouTube.</td></tr>
+          <tr><td class="b">Salvează</td><td class="w">Sus</td><td>Salvează proiectul în acest browser, cu tot cu filme și poze.</td></tr>
+          <tr><td class="b">Deschide / Șterge / ＋ Video nou</td><td class="w">Proiecte</td><td>Redeschizi un proiect salvat, îl ștergi (cu confirmare) sau începi unul nou.</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+
+    <div>
+      <h3>Ce are GoMotion și ce are Cadru acum</h3>
+      <div class="tablebox"><table class="cmp">
+        <thead><tr><th>Funcție</th><th>Cadru acum</th><th>Ce trebuie pentru varianta completă</th></tr></thead>
+        <tbody>
+          <tr><td>Scenariu împărțit în scene</td><td><span class="tag da">Da</span></td><td>Gata.</td></tr>
+          <tr><td>Montaj cu filmele și pozele tale</td><td><span class="tag da">Da</span></td><td>Gata.</td></tr>
+          <tr><td>Subtitrări karaoke, titluri, filtre, zoom</td><td><span class="tag da">Da</span></td><td>Gata.</td></tr>
+          <tr><td>Voce și muzică pe piste separate</td><td><span class="tag da">Da</span>, din fișierele tale</td><td>Gata.</td></tr>
+          <tr><td>Export video</td><td><span class="tag da">Da</span>, WebM sau MP4, în timp real</td><td>Server de randare pentru export rapid MP4 1080p.</td></tr>
+          <tr><td>Poze și muzică generate cu AI</td><td><span class="tag da">Da</span>, prin AI Personal</td><td>Le salvezi din link și le încarci. Pentru încărcare directă e nevoie de site-ul pe GitHub.</td></tr>
+          <tr><td>Pași de creare cu rezumat (voce, fundal, opțiuni)</td><td><span class="tag da">Da</span></td><td>Gata.</td></tr>
+          <tr><td>Fundaluri și grafică animată (titluri, numere)</td><td><span class="tag da">Da</span></td><td>Hărți și grafice animate: în varianta completă.</td></tr>
+          <tr><td>Scenarii și titluri scrise de AI</td><td><span class="tag da">Da</span>, cu Claude</td><td>Gata. Fără copierea stilului altui canal.</td></tr>
+          <tr><td>Miniaturi</td><td><span class="tag da">Da</span>, editor propriu</td><td>Gata. Fără copierea miniaturilor altui canal.</td></tr>
+          <tr><td>Proiecte salvate</td><td><span class="tag da">Da</span>, în browser</td><td>Pentru sincronizare între dispozitive: conturi pe server.</td></tr>
+          <tr><td>API, afiliere, cupoane, credite</td><td><span class="tag nu">Nu</span></td><td>Server, plăți Stripe și conturi.</td></tr>
+          <tr><td>Voce AI generată automat</td><td><span class="tag nu">Nu încă</span></td><td>Cont ElevenLabs sau OpenAI și un server mic.</td></tr>
+          <tr><td>Imagini de stoc puse automat pe scene</td><td><span class="tag nu">Nu încă</span>, ai butonul Caută imagini</td><td>Cheie API Pexels (gratuită) și un server mic.</td></tr>
+          <tr><td>Conturi, bibliotecă, plăți cu credite</td><td><span class="tag nu">Nu încă</span></td><td>Supabase pentru conturi și Stripe pentru plăți.</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+</main>
+
+<div class="modal" id="modal" hidden>
+  <div class="box">
+    <h2 id="mTitle">Export video</h2>
+    <p class="note" id="mText">Cadru redă proiectul de la început și îl înregistrează. Lasă tab-ul deschis până la final.</p>
+    <div class="bar"><i id="mBar"></i></div>
+    <video id="mVideo" controls playsinline hidden></video>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+      <button id="mCancel">Anulează</button>
+      <button class="primary" id="mSave" hidden>Salvează pe dispozitiv</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+const $ = s => document.querySelector(s);
+const uid = () => Math.random().toString(36).slice(2, 9);
+const FORMATS = {'16:9':[1280,720],'9:16':[720,1280],'1:1':[1080,1080]};
+const S = { format:'16:9', media:[], clips:[], sel:null, audio:{voce:null, muzica:null}, vol:{voce:1, muzica:0.35}, pps:40 };
+const cv = $('#cv'), g = cv.getContext('2d');
+let T = 0, playing = false, last = 0, rec = null;
+
+const fmt = s => { s = Math.max(0, s||0); const m = Math.floor(s/60), r = s - m*60; return String(m).padStart(2,'0') + ':' + r.toFixed(1).padStart(4,'0'); };
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const toast = msg => { const d = document.createElement('div'); d.className = 'toast'; d.textContent = msg; document.body.appendChild(d); setTimeout(() => d.remove(), 2600); };
+const media = id => S.media.find(m => m.id === id);
+const dur = c => c.kind === 'video' ? Math.max(0.1, c.out - c.in) : Math.max(0.5, +c.dur || 3);
+const total = () => S.clips.reduce((a, c) => a + dur(c), 0);
+function clipAt(t){ let s = 0; for (const c of S.clips){ const d = dur(c); if (t < s + d || c === S.clips[S.clips.length-1]) return {c, start:s}; s += d; } return null; }
+function startOf(c){ let s = 0; for (const x of S.clips){ if (x === c) return s; s += dur(x); } return 0; }
+
+/* ---------- audio ---------- */
+let AC = null, master = null, recDest = null; const gains = new Map();
+function ensureAudio(){
+  if (AC) { if (AC.state === 'suspended') AC.resume(); return; }
+  try { AC = new (window.AudioContext || window.webkitAudioContext)(); master = AC.createGain(); master.connect(AC.destination); recDest = AC.createMediaStreamDestination(); master.connect(recDest); } catch(e){ AC = null; }
+}
+function setVol(el, v){
+  if (AC){ let gn = gains.get(el); if (!gn){ try { const src = AC.createMediaElementSource(el); gn = AC.createGain(); src.connect(gn); gn.connect(master); gains.set(el, gn); } catch(e){} }
+    if (gn){ gn.gain.value = v; return; } }
+  el.volume = Math.min(1, Math.max(0, v));
+}
+
+/* ---------- media ---------- */
+function makeMedia(blob, kind, name, id){
+  const m = { id:id || uid(), name, kind, url:URL.createObjectURL(blob), duration:0, el:null, file:blob };
+  if (kind === 'image'){ m.el = new Image(); m.el.onload = () => { renderMedia(); refreshPickers(); }; m.el.src = m.url; }
+  else { m.el = document.createElement(kind === 'video' ? 'video' : 'audio'); m.el.preload = 'auto'; m.el.playsInline = true; m.el.src = m.url;
+    m.el.addEventListener('loadedmetadata', () => { m.duration = m.el.duration || 0; S.clips.forEach(c => { if (c.mediaId === m.id && c.kind === 'video' && !c.out) c.out = m.duration; }); renderMedia(); renderTimeline(); refreshPickers(); }); }
+  S.media.push(m); return m;
+}
+function addFiles(files){
+  for (const f of files){
+    const kind = f.type.startsWith('video') ? 'video' : f.type.startsWith('image') ? 'image' : f.type.startsWith('audio') ? 'audio' : null;
+    if (!kind){ toast('„' + f.name + '” nu e film, poză sau audio.'); continue; }
+    const m = makeMedia(f, kind, f.name || ('lipit-' + Date.now()));
+    if (kind === 'audio' && !S.audio.muzica && !S.audio.voce) S.audio.muzica = m.id;
+  }
+  renderMedia(); renderTimeline(); renderInspector(); refreshPickers();
+}
+function addToTimeline(m){
+  const c = { id:uid(), kind:m.kind, mediaId:m.id, in:0, out:m.duration || 0, dur:4, text:'', style:'sub', pos:'jos', filter:'none', fade:true, zoom:m.kind === 'image', vol:1, color:'#1f3b57' };
+  S.clips.push(c); S.sel = c.id; renderTimeline(); renderInspector();
+}
+function renderMedia(){
+  const el = $('#mlist');
+  if (!S.media.length){ el.innerHTML = '<p class="empty">Niciun material încă. Încarcă filmele, pozele și sunetele tale.</p>'; return; }
+  el.innerHTML = S.media.map(m => {
+    const th = m.kind === 'image' ? `<img src="${m.url}" alt="">` : m.kind === 'video' ? `<video src="${m.url}" muted preload="metadata"></video>` : '♪';
+    const info = m.kind === 'image' ? 'poză' : (m.kind === 'video' ? 'film' : 'audio') + (m.duration ? ' · ' + fmt(m.duration) : '');
+    const acts = m.kind === 'audio'
+      ? `<button data-a="voce" data-id="${m.id}" ${S.audio.voce===m.id?'class="primary"':''}>Voce</button><button data-a="muzica" data-id="${m.id}" ${S.audio.muzica===m.id?'class="primary"':''}>Muzică</button>`
+      : `<button data-a="add" data-id="${m.id}">＋ Pe timeline</button>`;
+    return `<div class="mitem"><div class="mthumb">${th}</div><div style="min-width:0"><div class="mname" title="${esc(m.name)}">${esc(m.name)}</div><div class="empty">${info}</div></div><div class="mact">${acts}<button class="ghost danger" data-a="del" data-id="${m.id}" title="Scoate materialul">✕</button></div></div>`;
+  }).join('');
+}
+$('#mlist').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return; const m = media(b.dataset.id); if (!m) return;
+  const a = b.dataset.a;
+  if (a === 'add') addToTimeline(m);
+  if (a === 'voce' || a === 'muzica'){ S.audio[a] = S.audio[a] === m.id ? null : m.id; const other = a === 'voce' ? 'muzica' : 'voce'; if (S.audio[other] === m.id) S.audio[other] = null; }
+  if (a === 'del'){ S.clips = S.clips.filter(c => c.mediaId !== m.id || c.kind === 'card'); S.clips.forEach(c => { if (c.mediaId === m.id){ c.mediaId = null; c.kind = 'card'; } });
+    for (const k of ['voce','muzica']) if (S.audio[k] === m.id) S.audio[k] = null; m.el && m.el.pause && m.el.pause(); S.media = S.media.filter(x => x !== m); }
+  renderMedia(); renderTimeline(); renderInspector(); refreshPickers();
+});
+$('#btnUpload').onclick = () => $('#file').click();
+$('#file').onchange = e => { addFiles(e.target.files); e.target.value = ''; };
+const drop = $('#drop');
+['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, e => { if (e.dataTransfer?.types?.includes('Files')){ e.preventDefault(); drop.classList.add('over'); } }));
+['dragleave','drop'].forEach(ev => drop.addEventListener(ev, () => drop.classList.remove('over')));
+drop.addEventListener('drop', e => { e.preventDefault(); addFiles(e.dataTransfer.files); });
+document.addEventListener('paste', e => { const fs = [...(e.clipboardData?.files || [])].filter(f => /^(image|video|audio)\//.test(f.type));
+  if (!fs.length) return; e.preventDefault(); addFiles(fs);
+  if (!$('#v-miniaturi').hidden && fs[0].type.startsWith('image/')) setTimeout(() => { const m = [...S.media].reverse().find(x => x.kind === 'image'); if (m){ renderTBgOptions(); $('#tBg').value = 'm:' + m.id; drawThumb(); } }, 300); toast(fs.length === 1 ? 'Fișier lipit în Materiale.' : fs.length + ' fișiere lipite în Materiale.'); });
+function plainDownload(blob, name){ try { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000); return true; } catch(e){ return false; } }
+const BLOCKED = /(^|\.)(youtube\.com|youtu\.be|tiktok\.com|instagram\.com|facebook\.com|fb\.watch|netflix\.com|vimeo\.com|x\.com|twitter\.com)$/i;
+$('#linkGo').onclick = async () => {
+  let u; try { u = new URL($('#linkUrl').value.trim()); } catch(e){ toast('Lipește un link întreg, care începe cu https://'); return; }
+  if (BLOCKED.test(u.hostname)){ $('#linkNote').textContent = 'Video-urile de pe acest site aparțin altor oameni și nu se pot importa. Folosește filmele tale sau cele gratuite din AI Personal.'; return; }
+  const b = $('#linkGo'); b.disabled = true; b.textContent = 'Se descarcă…';
+  try { const r = await fetch(u.href); if (!r.ok) throw new Error('HTTP ' + r.status); const blob = await r.blob();
+    let type = blob.type || ''; const ext = (u.pathname.split('.').pop() || '').toLowerCase();
+    if (!/^(video|image|audio)\//.test(type)) type = /^(mp4|webm|mov|m4v)$/.test(ext) ? 'video/' + ext : /^(jpe?g|png|webp|gif)$/.test(ext) ? 'image/' + ext.replace('jpg', 'jpeg') : /^(mp3|wav|ogg|m4a|aac)$/.test(ext) ? 'audio/' + ext : '';
+    if (!type){ throw new Error('tip'); }
+    const name = decodeURIComponent(u.pathname.split('/').pop() || 'fisier') || 'fisier';
+    addFiles([new File([blob], name, {type})]); $('#linkUrl').value = ''; $('#linkNote').textContent = '„' + name + '” a intrat în Materiale.';
+  } catch(e){ $('#linkNote').textContent = e.message === 'tip' ? 'Linkul nu duce la un film, o poză sau un fișier audio. Folosește linkul direct al fișierului.' : 'Site-ul nu permite descărcarea directă de aici. Deschide linkul, salvează fișierul și încarcă-l cu „Încarcă fișiere”.'; }
+  b.disabled = false; b.textContent = 'Importă';
+};
+$('#btnCard').onclick = () => { const c = newCard({ text:'Text nou', style:'titlu', pos:'mijloc', bg:'noapte', anim:true }); S.clips.push(c); S.sel = c.id; renderTimeline(); renderInspector(); };
+
+/* ---------- drawing ---------- */
+function shade(hex, k){ const n = parseInt(hex.slice(1), 16); const f = v => Math.max(0, Math.min(255, Math.round(v * k))); return `rgb(${f(n>>16)},${f((n>>8)&255)},${f(n&255)})`; }
+function wrap(text, maxW){ const words = text.split(/\s+/).filter(Boolean); const lines = []; let line = [];
+  for (const w of words){ const test = [...line, w].join(' '); if (g.measureText(test).width > maxW && line.length){ lines.push(line); line = [w]; } else line.push(w); }
+  if (line.length) lines.push(line); return lines; }
+function drawSource(src, sw, sh, W, H, scale){
+  const r = Math.max(W / sw, H / sh) * scale; const w = sw * r, h = sh * r; g.drawImage(src, (W - w) / 2, (H - h) / 2, w, h);
+}
+const BGS = [['noapte','Albastru noapte'],['cinematic','Cinematic'],['vintage','Hârtie veche'],['luminos','Luminos'],['grila','Grilă'],['culoare','Culoarea mea']];
+const LIGHT_BG = new Set(['vintage','luminos']);
+function rnd(seed){ let x = Math.sin(seed) * 10000; return x - Math.floor(x); }
+function drawBg(ctx, style, color, local, W, H, scale){
+  scale = scale || 1; const cx = W / 2, cy = H / 2, R = Math.hypot(W, H) / 2 * scale;
+  const rad = (a, b) => { const gr = ctx.createRadialGradient(cx, cy * 0.9, 0, cx, cy, R); gr.addColorStop(0, a); gr.addColorStop(1, b); ctx.fillStyle = gr; ctx.fillRect(0, 0, W, H); };
+  if (style === 'noapte'){ rad('#203457', '#060a14');
+    ctx.globalAlpha = 0.07; ctx.fillStyle = '#9fc0ff'; const sx = ((local * 0.06) % 1.4 - 0.2) * W; ctx.beginPath(); ctx.ellipse(sx, cy, W * 0.35, H * 0.9, -0.5, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
+    for (let i = 0; i < 40; i++){ const x = rnd(i) * W, y = (rnd(i + 99) * H - local * 8 * (0.5 + rnd(i + 7))) % H; ctx.fillStyle = `rgba(190,215,255,${0.15 + rnd(i + 3) * 0.25})`; ctx.fillRect(x, (y + H) % H, 2, 2); } }
+  else if (style === 'cinematic'){ rad('#7a6449', '#140f0a');
+    const f = Math.floor(local * 12); for (let i = 0; i < 260; i++){ ctx.fillStyle = `rgba(255,240,210,${rnd(i + f * 300) * 0.09})`; ctx.fillRect(rnd(i * 3 + f) * W, rnd(i * 7 + f) * H, 2, 2); }
+    if (rnd(f) > 0.85){ ctx.fillStyle = 'rgba(255,240,210,.08)'; ctx.fillRect(rnd(f + 1) * W, 0, 1.5, H); } }
+  else if (style === 'vintage'){ rad('#e3d6ba', '#a99674');
+    ctx.globalAlpha = 0.06; ctx.strokeStyle = '#5a4630'; for (let i = 0; i < 18; i++){ ctx.beginPath(); ctx.arc(rnd(i) * W, rnd(i + 5) * H, 20 + rnd(i + 9) * W * 0.12, 0, Math.PI * 2); ctx.stroke(); } ctx.globalAlpha = 1; }
+  else if (style === 'luminos'){ rad('#ffffff', '#cfcfcf');
+    const v = ctx.createRadialGradient(cx, cy, Math.min(W, H) * 0.42, cx, cy, R); v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,.85)'); ctx.fillStyle = v; ctx.fillRect(0, 0, W, H); }
+  else if (style === 'grila'){ ctx.fillStyle = '#050505'; ctx.fillRect(0, 0, W, H); const step = Math.round(Math.min(W, H) / 9); const off = (local * 10) % step;
+    ctx.strokeStyle = 'rgba(255,255,255,.13)'; ctx.lineWidth = 1; for (let x = -step + off; x < W; x += step){ ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); } for (let y = -step + off; y < H; y += step){ ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+    const v = ctx.createRadialGradient(cx, cy, 0, cx, cy, R); v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,.7)'); ctx.fillStyle = v; ctx.fillRect(0, 0, W, H); }
+  else { const col = color || '#1f3b57'; const gr = ctx.createLinearGradient(0, 0, W * scale, H); gr.addColorStop(0, col); gr.addColorStop(1, shade(col, 0.35)); ctx.fillStyle = gr; ctx.fillRect(0, 0, W, H);
+    ctx.globalAlpha = 0.08; ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; const step = Math.round(W / 16); const off = (local * 6) % step;
+    for (let x = -step + off; x < W; x += step){ ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); } ctx.globalAlpha = 1; }
+}
+function drawCounter(c, local, d, W, H){
+  const m = (c.text || '').match(/\d[\d.\s]*\d|\d/); if (!m) return;
+  const n = parseInt(m[0].replace(/[.\s]/g, ''), 10); if (!isFinite(n) || n < 2) return;
+  const year = n >= 1000 && n <= 2100; const from = year ? n - 120 : 0;
+  const k = Math.min(1, local / Math.max(0.8, d * 0.45)); const e = 1 - Math.pow(1 - k, 3);
+  const val = Math.round(from + (n - from) * e); const txt = year ? String(val) : val.toLocaleString('ro-RO');
+  const base = Math.min(W, H); const fs = Math.round(base * 0.16);
+  const light = c.kind === 'card' && LIGHT_BG.has(c.bg);
+  g.save(); g.font = `700 ${fs}px "Unbounded", "Arial Black", sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+  const y = c.pos === 'sus' ? H * 0.62 : c.pos === 'mijloc' ? H * 0.24 : H * 0.4;
+  g.globalAlpha = Math.min(1, local / 0.35); g.shadowColor = 'rgba(0,0,0,.5)'; g.shadowBlur = light ? 0 : fs * 0.2;
+  g.fillStyle = light ? '#8a2f0c' : '#f5b53a'; g.fillText(txt, W / 2, y);
+  const bw = g.measureText(txt).width * e; g.shadowBlur = 0; g.fillRect(W / 2 - bw / 2, y + fs * 0.62, bw, Math.max(3, fs * 0.05)); g.restore();
+}
+function draw(t){
+  const [W, H] = FORMATS[S.format];
+  if (cv.width !== W || cv.height !== H){ cv.width = W; cv.height = H; }
+  g.save(); g.fillStyle = '#000'; g.fillRect(0, 0, W, H);
+  const hit = clipAt(t);
+  if (!hit){ g.fillStyle = '#8a8d96'; g.font = `500 ${Math.round(W*0.03)}px "IBM Plex Sans", sans-serif`; g.textAlign = 'center'; g.fillText('Timeline-ul e gol. Adaugă un material sau un card.', W/2, H/2); g.restore(); return; }
+  const {c, start} = hit; const d = dur(c); const local = Math.min(d, Math.max(0, t - start)); const p = local / d;
+  const scale = c.zoom ? 1 + 0.08 * p : 1;
+  g.filter = c.filter === 'bw' ? 'grayscale(1)' : c.filter === 'sepia' ? 'sepia(.85) contrast(1.05)' : c.filter === 'contrast' ? 'contrast(1.35) saturate(1.25)' : 'none';
+  const m = media(c.mediaId);
+  if (c.kind === 'video' && m && m.el.readyState >= 2) drawSource(m.el, m.el.videoWidth, m.el.videoHeight, W, H, scale);
+  else if (c.kind === 'image' && m && m.el.complete && m.el.naturalWidth) drawSource(m.el, m.el.naturalWidth, m.el.naturalHeight, W, H, scale);
+  else drawBg(g, c.bg || 'culoare', c.color, local, W, H, scale);
+  g.filter = 'none';
+  if (c.anim) drawCounter(c, local, d, W, H);
+  if (c.text && c.text.trim()) drawText(c, p, W, H, local);
+  if (c.fade){ const f = 0.45; const a = local < f ? 1 - local / f : (d - local) < f ? 1 - (d - local) / f : 0; if (a > 0){ g.fillStyle = `rgba(0,0,0,${Math.min(1,a)})`; g.fillRect(0, 0, W, H); } }
+  g.restore();
+}
+function drawText(c, p, W, H, local){
+  const big = c.style === 'titlu'; const base = Math.min(W, H); const light = c.kind === 'card' && LIGHT_BG.has(c.bg);
+  const fs = Math.round(base * (big ? 0.085 : 0.05));
+  g.font = big ? `700 ${fs}px "Unbounded", "Arial Black", sans-serif` : `600 ${fs}px "IBM Plex Sans", sans-serif`;
+  g.textAlign = 'left'; g.textBaseline = 'alphabetic';
+  const lines = wrap(c.text.trim(), W * 0.84); const lh = fs * 1.28; const blockH = lines.length * lh;
+  const y0 = c.pos === 'sus' ? H * 0.1 + fs : c.pos === 'mijloc' ? H / 2 - blockH / 2 + fs * 0.95 : H * 0.9 - blockH + fs * 0.95;
+  const allWords = lines.flat().length; const lit = Math.floor(p * allWords * 1.08 + 0.5); let wi = 0;
+  lines.forEach((ln, i) => {
+    const txt = ln.join(' '); const w = g.measureText(txt).width; let x = (W - w) / 2; const y = y0 + i * lh;
+    if (!big){ g.fillStyle = 'rgba(0,0,0,.55)'; const pad = fs * 0.28; g.fillRect(x - pad, y - fs * 0.95, w + pad * 2, fs * 1.25); }
+    else if (!light){ g.shadowColor = 'rgba(0,0,0,.6)'; g.shadowBlur = fs * 0.4; }
+    for (const word of ln){
+      const base = big && light ? '#17120c' : '#ffffff';
+      g.fillStyle = c.style === 'karaoke' ? (wi < lit ? '#f5b53a' : '#ffffff') : base;
+      let a = 1, dy = 0; if (c.anim && big){ const t0 = wi * 0.12 + 0.15; a = Math.max(0, Math.min(1, ((local || 0) - t0) / 0.3)); dy = (1 - a) * fs * 0.45; }
+      g.globalAlpha = a; g.fillText(word, x, y + dy); g.globalAlpha = 1; x += g.measureText(word + ' ').width; wi++;
+    }
+    g.shadowBlur = 0;
+  });
+}
+
+/* ---------- playback ---------- */
+function sync(t){
+  const hit = clipAt(t);
+  const active = hit && hit.c.kind === 'video' ? media(hit.c.mediaId) : null;
+  for (const m of S.media) if (m.kind === 'video' && m !== active && !m.el.paused) m.el.pause();
+  if (active){ const want = hit.c.in + (t - hit.start); if (playing) setVol(active.el, hit.c.vol);
+    if (playing){ if (Math.abs(active.el.currentTime - want) > 0.35) active.el.currentTime = want; if (active.el.paused) active.el.play().catch(()=>{}); }
+    else { if (!active.el.paused) active.el.pause(); if (Math.abs(active.el.currentTime - want) > 0.04 && !active.el.seeking) active.el.currentTime = want; } }
+  for (const k of ['voce','muzica']){
+    const m = media(S.audio[k]); if (!m) continue; const el = m.el;
+    if (!playing){ if (!el.paused) el.pause(); continue; }
+    setVol(el, S.vol[k]);
+    const D = m.duration || el.duration || 0; if (!D) continue;
+    if (k === 'voce' && t >= D){ if (!el.paused) el.pause(); continue; }
+    const want = k === 'muzica' ? t % D : t;
+    if (Math.abs(el.currentTime - want) > 0.35) el.currentTime = want;
+    if (el.paused) el.play().catch(()=>{});
+  }
+}
+function play(){ if (!S.clips.length) return; ensureAudio(); if (T >= total() - 0.05) T = 0; playing = true; $('#btnPlay').textContent = '❚❚ Pauză'; }
+function stop(){ playing = false; $('#btnPlay').textContent = '▶ Redă'; }
+function loop(ts){
+  const dt = last ? (ts - last) / 1000 : 0; last = ts;
+  if (playing){ T += Math.min(dt, 0.1); const tot = total(); if (T >= tot){ T = tot; stop(); if (rec) finishRec(); } }
+  sync(T); draw(T); updateClock(); requestAnimationFrame(loop);
+}
+function updateClock(){
+  $('#tc').innerHTML = `<b>${fmt(T)}</b> / ${fmt(total())}`;
+  $('#phead').style.left = (62 + T * S.pps) + 'px';
+  if (rec){ const tot = total() || 1; $('#mBar').style.width = Math.min(100, T / tot * 100) + '%'; $('#mText').textContent = `Se înregistrează: ${fmt(T)} din ${fmt(tot)}. Lasă tab-ul deschis.`; }
+}
+$('#btnPlay').onclick = () => playing ? stop() : play();
+$('#btnStart').onclick = () => { T = 0; };
+$('#btnEnd').onclick = () => { stop(); T = total(); };
+document.addEventListener('keydown', e => { if (e.code === 'Space' && !/INPUT|TEXTAREA|SELECT|BUTTON/.test(document.activeElement.tagName) && !$('#v-montaj').hidden){ e.preventDefault(); playing ? stop() : play(); } });
+$('#btnSplit').onclick = () => {
+  const c = S.clips.find(x => x.id === S.sel); if (!c){ toast('Selectează întâi un clip de pe timeline.'); return; }
+  const local = T - startOf(c); const d = dur(c);
+  if (local < 0.2 || local > d - 0.2){ toast('Mută linia roșie în interiorul clipului selectat.'); return; }
+  const n = {...c, id:uid()};
+  if (c.kind === 'video'){ n.in = c.in + local; c.out = c.in + local; } else { n.dur = d - local; c.dur = local; }
+  S.clips.splice(S.clips.indexOf(c) + 1, 0, n); renderTimeline(); renderInspector(); toast('Clipul a fost tăiat în două.');
+};
+
+/* ---------- timeline ---------- */
+function renderTimeline(){
+  const tot = total(); const span = Math.max(tot + 4, 20); const w = 62 + span * S.pps;
+  $('#tlinner').style.width = w + 'px';
+  const step = S.pps >= 60 ? 1 : S.pps >= 25 ? 2 : 5;
+  let r = ''; for (let s = 0; s <= span; s += step) r += `<span style="left:${s * S.pps}px">${s}s</span>`; $('#ruler').innerHTML = r;
+  $('#laneV').innerHTML = S.clips.map(c => {
+    const m = media(c.mediaId); const name = c.text?.trim() || (m ? m.name : 'Card');
+    const label = c.kind === 'video' ? 'film' : c.kind === 'image' ? 'poză' : 'card';
+    return `<div class="blk ${c.kind}${c.id === S.sel ? ' sel' : ''}" draggable="true" data-id="${c.id}" style="width:${Math.max(18, dur(c) * S.pps - 2)}px" title="${esc(name)}"><span class="t">${esc(name)}</span><span class="d">${label} · ${dur(c).toFixed(1)}s</span></div>`;
+  }).join('');
+  for (const k of ['voce','muzica']){
+    const m = media(S.audio[k]); const lane = $(k === 'voce' ? '#laneVoce' : '#laneMuzica');
+    if (!m){ lane.innerHTML = `<span class="empty" style="align-self:center;padding-left:6px">${k === 'voce' ? 'Încarcă un fișier audio și apasă „Voce”.' : 'Încarcă un fișier audio și apasă „Muzică”.'}</span>`; continue; }
+    const D = k === 'muzica' ? Math.max(tot, 1) : Math.min(m.duration || tot, Math.max(tot, m.duration || 0));
+    lane.innerHTML = `<div class="ablk ${k}" style="width:${Math.max(40, D * S.pps)}px">♪ ${esc(m.name)}</div>`;
+  }
+}
+$('#laneV').addEventListener('click', e => { const b = e.target.closest('.blk'); if (!b) return; S.sel = b.dataset.id; const c = S.clips.find(x => x.id === S.sel); const s = startOf(c);
+  const rect = b.getBoundingClientRect(); T = s + Math.max(0, Math.min(dur(c) - 0.01, (e.clientX - rect.left) / S.pps)); renderTimeline(); renderInspector(); });
+let dragId = null;
+$('#laneV').addEventListener('dragstart', e => { const b = e.target.closest('.blk'); if (!b) return; dragId = b.dataset.id; e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', dragId); } catch(_){} });
+$('#laneV').addEventListener('dragover', e => { if (dragId) e.preventDefault(); });
+$('#laneV').addEventListener('drop', e => { e.preventDefault(); const b = e.target.closest('.blk'); if (!dragId) return;
+  const from = S.clips.findIndex(c => c.id === dragId); const [c] = S.clips.splice(from, 1);
+  let to = b ? S.clips.findIndex(x => x.id === b.dataset.id) : S.clips.length; if (to < 0) to = S.clips.length;
+  if (b && from <= to && b.dataset.id !== dragId){ const r = b.getBoundingClientRect(); if (e.clientX > r.left + r.width / 2) to++; } else if (b){ const r = b.getBoundingClientRect(); if (e.clientX > r.left + r.width / 2) to++; }
+  S.clips.splice(to, 0, c); dragId = null; renderTimeline(); });
+$('#ruler').addEventListener('click', e => { const r = e.currentTarget.getBoundingClientRect(); T = Math.max(0, Math.min(total(), (e.clientX - r.left) / S.pps)); });
+$('#zoomIn').onclick = () => { S.pps = Math.min(160, S.pps * 1.4); renderTimeline(); };
+$('#zoomOut').onclick = () => { S.pps = Math.max(8, S.pps / 1.4); renderTimeline(); };
+
+/* ---------- inspector ---------- */
+function renderInspector(){
+  const el = $('#insp'); const c = S.clips.find(x => x.id === S.sel);
+  if (!c){
+    el.innerHTML = `<h2>Proiect</h2><p class="empty">Apasă pe un clip din timeline ca să-i schimbi textul, durata și efectele.</p>
+      <label class="f">Volum voce <input type="range" id="iVoce" min="0" max="1.5" step="0.05" value="${S.vol.voce}"></label>
+      <label class="f">Volum muzică <input type="range" id="iMuz" min="0" max="1" step="0.05" value="${S.vol.muzica}"></label>
+      <p class="note">Durată totală: <b>${fmt(total())}</b> · ${S.clips.length} clipuri</p>`;
+    $('#iVoce').oninput = e => S.vol.voce = +e.target.value; $('#iMuz').oninput = e => S.vol.muzica = +e.target.value; return;
+  }
+  const m = media(c.mediaId); const kindName = {video:'Film', image:'Poză', card:'Card cu text'}[c.kind];
+  const visual = S.media.filter(x => x.kind !== 'audio');
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;justify-content:space-between"><h2>Proprietăți clip</h2><span class="kind">${kindName}</span></div>
+    ${m ? `<div class="mname empty" title="${esc(m.name)}">${esc(m.name)}</div>` : ''}
+    ${c.kind === 'video' ? `<div class="row2">
+        <label class="f">Început (s)<input type="number" id="iIn" min="0" step="0.1" value="${c.in.toFixed(1)}"></label>
+        <label class="f">Sfârșit (s)<input type="number" id="iOut" min="0" step="0.1" value="${c.out.toFixed(1)}"></label></div>
+        <span class="note">Filmul are ${fmt(m?.duration || 0)}.</span>`
+      : `<label class="f">Durată (secunde)<input type="number" id="iDur" min="0.5" step="0.5" value="${(+c.dur).toFixed(1)}"></label>`}
+    ${c.kind !== 'video' ? `<label class="f">Fundal<select id="iBg"><option value="">Culoare</option>${visual.map(v => `<option value="${v.id}" ${v.id === c.mediaId ? 'selected' : ''}>${esc(v.name)}</option>`).join('')}</select></label>
+      ${c.kind === 'card' ? `<label class="f">Stil fundal<select id="iBgStyle">${BGS.map(([v, l]) => `<option value="${v}" ${v === (c.bg || 'culoare') ? 'selected' : ''}>${l}</option>`).join('')}</select></label>` : ''}
+      ${c.kind === 'card' && (c.bg || 'culoare') === 'culoare' ? `<label class="f">Culoare<input type="color" id="iColor" value="${c.color}" style="width:100%;height:34px;border-radius:7px;border:1px solid var(--line);background:var(--panel2)"></label>` : ''}` : ''}
+    <label class="f">Text pe ecran<textarea id="iText" placeholder="Scrie textul care apare peste imagine">${esc(c.text)}</textarea></label>
+    <div class="row2">
+      <label class="f">Stil text<select id="iStyle">
+        <option value="sub">Subtitrare</option><option value="titlu">Titlu mare</option><option value="karaoke">Karaoke</option></select></label>
+      <label class="f">Poziție<select id="iPos"><option value="sus">Sus</option><option value="mijloc">Mijloc</option><option value="jos">Jos</option></select></label>
+    </div>
+    <label class="f">Filtru<select id="iFilter"><option value="none">Normal</option><option value="bw">Alb-negru</option><option value="sepia">Sepia</option><option value="contrast">Contrast puternic</option></select></label>
+    <div class="checks"><label><input type="checkbox" id="iFade" ${c.fade ? 'checked' : ''}> Apariție lină</label><label><input type="checkbox" id="iZoom" ${c.zoom ? 'checked' : ''}> Zoom lent</label><label><input type="checkbox" id="iAnim" ${c.anim ? 'checked' : ''}> Grafică animată</label></div>
+    ${c.kind === 'video' ? `<label class="f">Volum clip <input type="range" id="iVol" min="0" max="1.5" step="0.05" value="${c.vol}"></label>` : ''}
+    <div class="acts"><button id="aL">← Mută</button><button id="aR">Mută →</button><button id="aDup">Dublează</button><button class="danger" id="aDel">Șterge</button></div>
+    <button class="ghost" id="aNone" style="align-self:flex-start;font-size:12px">Deselectează</button>`;
+  $('#iStyle').value = c.style; $('#iPos').value = c.pos; $('#iFilter').value = c.filter;
+  const upd = () => { renderTimeline(); };
+  if (c.kind === 'video'){
+    $('#iIn').oninput = e => { const v = Math.max(0, +e.target.value || 0); c.in = Math.min(v, c.out - 0.1); upd(); };
+    $('#iOut').oninput = e => { const D = m?.duration || 1e9; const v = Math.min(D, +e.target.value || 0); c.out = Math.max(v, c.in + 0.1); upd(); };
+    $('#iVol').oninput = e => c.vol = +e.target.value;
+  } else {
+    $('#iDur').oninput = e => { c.dur = Math.max(0.5, +e.target.value || 0.5); upd(); };
+    $('#iBg').onchange = e => { const id = e.target.value; if (!id){ c.kind = 'card'; c.mediaId = null; }
+      else { const v = media(id); c.mediaId = id; c.kind = v.kind; if (v.kind === 'video'){ c.in = 0; c.out = Math.min(v.duration || c.dur, Math.max(c.dur, 1)); } }
+      renderTimeline(); renderInspector(); };
+    if ($('#iColor')) $('#iColor').oninput = e => c.color = e.target.value;
+    if ($('#iBgStyle')) $('#iBgStyle').onchange = e => { c.bg = e.target.value; renderInspector(); };
+  }
+  $('#iText').oninput = e => { c.text = e.target.value; upd(); };
+  $('#iStyle').onchange = e => c.style = e.target.value;
+  $('#iPos').onchange = e => c.pos = e.target.value;
+  $('#iFilter').onchange = e => c.filter = e.target.value;
+  $('#iFade').onchange = e => c.fade = e.target.checked;
+  $('#iZoom').onchange = e => c.zoom = e.target.checked;
+  $('#iAnim').onchange = e => c.anim = e.target.checked;
+  const i = () => S.clips.indexOf(c);
+  $('#aL').onclick = () => { const k = i(); if (k > 0){ S.clips.splice(k, 1); S.clips.splice(k - 1, 0, c); upd(); } };
+  $('#aR').onclick = () => { const k = i(); if (k < S.clips.length - 1){ S.clips.splice(k, 1); S.clips.splice(k + 1, 0, c); upd(); } };
+  $('#aDup').onclick = () => { const n = {...c, id:uid()}; S.clips.splice(i() + 1, 0, n); S.sel = n.id; renderTimeline(); renderInspector(); };
+  $('#aDel').onclick = () => { S.clips.splice(i(), 1); S.sel = null; T = Math.min(T, total()); renderTimeline(); renderInspector(); };
+  $('#aNone').onclick = () => { S.sel = null; renderTimeline(); renderInspector(); };
+}
+
+$('#format').onchange = e => { S.format = e.target.value; };
+
+/* ---------- creează ---------- */
+function newCard(o){ return Object.assign({ id:uid(), kind:'card', mediaId:null, in:0, out:0, dur:4, text:'', style:'karaoke', pos:'jos', filter:'none', fade:true, zoom:true, vol:1, color:'#1f3b57', bg:'noapte', anim:true }, o); }
+const SAMPLE = `Delta Dunării se schimbă în fiecare an. Brațele râului mută nisipul și construiesc pământ nou acolo unde ieri era doar apă. Pescarii din Sfântu Gheorghe spun că harta bunicilor lor nu mai seamănă cu ce văd azi. Peste 300 de specii de păsări se opresc aici în drumul lor spre sud. Pelicanii vin în aprilie și pleacă înainte de primul frig. Iar noaptea, când motoarele bărcilor tac, delta se aude ca un oraș care nu doarme niciodată.`;
+let scenes = [];
+const W8 = { voice:'none', bg:'noapte' };
+const scriptEl = $('#script');
+try { scriptEl.value = localStorage.getItem('cadru-script') || SAMPLE; } catch(e){ scriptEl.value = SAMPLE; }
+const words = s => s.trim().split(/\s+/).filter(Boolean).length;
+const wpm = () => +$('#wpm').value || 150;
+function updStats(){ const n = words(scriptEl.value); $('#sstats').innerHTML = `<span><b>${n}</b> cuvinte</span><span><b>${scriptEl.value.length}</b> caractere</span><span>Durată estimată <b>${fmt(n / wpm() * 60)}</b></span>`; renderSummary(); }
+scriptEl.addEventListener('input', () => { scenes = []; renderScenes(); updStats(); try { localStorage.setItem('cadru-script', scriptEl.value); } catch(e){} });
+$('#wpm').addEventListener('input', () => { scenes.forEach(s => s.dur = sceneDur(s.text)); renderScenes(); updStats(); });
+const sceneDur = t => Math.max(2, +(words(t) / wpm() * 60 + 0.4).toFixed(1));
+function splitLocal(text){
+  const sents = text.replace(/\s+/g, ' ').trim().match(/[^.!?…]+[.!?…]+["”»]?|[^.!?…]+$/g) || [];
+  const out = []; let cur = '';
+  for (const s of sents.map(x => x.trim()).filter(Boolean)){ if (cur && words(cur + ' ' + s) > 22){ out.push(cur); cur = s; } else cur = cur ? cur + ' ' + s : s; }
+  if (cur) out.push(cur); return out.map(t => ({text:t, kw:'', dur:sceneDur(t)}));
+}
+function renderScenes(){
+  const el = $('#scenes');
+  $('#scSummary').textContent = scenes.length ? `${scenes.length} scene (apasă ca să le vezi și să le editezi)` : 'Scenele (se împart automat la Generează)';
+  if (!scenes.length){ el.innerHTML = '<p class="empty">Apasă „Împarte în scene” ca să vezi scenele aici.</p>'; renderSummary(); return; }
+  el.innerHTML = scenes.map((s, i) => {
+    const q = (s.kw || s.text.split(/\s+/).filter(w => w.length > 5).slice(0, 2).join(' ')).trim();
+    return `<div class="scene"><span class="n">${String(i + 1).padStart(2, '0')}</span><div style="min-width:0">
+      <textarea data-i="${i}" style="min-height:58px">${esc(s.text)}</textarea>
+      <div class="meta"><span>${s.dur.toFixed(1)} s</span>${s.kw ? `<span>Imagine: <b>${esc(s.kw)}</b></span>` : ''}
+      <a href="https://www.pexels.com/search/videos/${encodeURIComponent(q)}/" target="_blank" rel="noopener">Caută imagini ↗</a><button class="ghost" data-ai="${esc(q)}" style="padding:2px 8px;font-size:12px">Caută cu AI Personal</button></div></div></div>`;
+  }).join('');
+  renderSummary();
+}
+$('#scenes').addEventListener('input', e => { const i = e.target.dataset.i; if (i == null) return; scenes[i].text = e.target.value; scenes[i].dur = sceneDur(e.target.value); renderSummary(); });
+$('#scenes').addEventListener('change', renderScenes);
+$('#btnSplitLocal').onclick = () => { scenes = splitLocal(scriptEl.value); renderScenes(); $('#scDetails').open = true; if (!scenes.length) toast('Scrie întâi un scenariu.'); };
+
+/* voce */
+function audioOptions(sel, cur, empty){ const list = S.media.filter(m => m.kind === 'audio'); sel.innerHTML = (list.length ? '' : `<option value="">${empty}</option>`) + list.map(m => `<option value="${m.id}" ${m.id === cur ? 'selected' : ''}>${esc(m.name)}</option>`).join(''); }
+function refreshPickers(){ audioOptions($('#voiceFile'), S.audio.voce, 'Încarcă întâi un fișier audio în Montaj'); audioOptions($('#musicFile'), S.audio.muzica, 'Încarcă întâi o melodie în Montaj'); renderTBgOptions(); renderSummary(); }
+$('#voiceMode').addEventListener('click', e => { const b = e.target.closest('[data-v]'); if (!b) return; W8.voice = b.dataset.v;
+  $('#voiceMode').querySelectorAll('[data-v]').forEach(x => x.setAttribute('aria-pressed', x === b)); $('#voiceFileWrap').hidden = W8.voice !== 'mine'; renderSummary(); });
+$('#voiceFile').onchange = renderSummary;
+const AVC = ['#3d6fd8','#c4407a','#2f9a6a','#c87a1e','#7a52c9','#2a8fa8'];
+function renderVoices(){
+  const ss = window.speechSynthesis; const el = $('#vlist'); if (!ss){ el.innerHTML = '<p class="empty">Browserul tău nu are voci.</p>'; return; }
+  const lang = $('#vLang').value; const vs = ss.getVoices().filter(v => !lang || (v.lang || '').toLowerCase().startsWith(lang));
+  el.innerHTML = vs.length ? vs.slice(0, 40).map((v, i) => `<div class="vitem"><span class="av" style="background:${AVC[i % AVC.length]}">${esc(v.name.trim()[0] || '?')}</span><span class="nm">${esc(v.name)}</span><small>${esc(v.lang)}</small><button data-vi="${i}" style="padding:4px 10px;font-size:12px">▶ Ascultă</button></div>`).join('')
+    : '<p class="empty">Nicio voce în această limbă pe dispozitivul tău. Alege „Toate”.</p>';
+  el.onclick = e => { const b = e.target.closest('[data-vi]'); if (!b) return; ss.cancel(); const u = new SpeechSynthesisUtterance(lang === 'en' ? 'This is how your documentary will sound.' : lang === 'ru' ? 'Так будет звучать ваш документальный фильм.' : 'Așa va suna documentarul tău.'); u.voice = vs[+b.dataset.vi]; u.lang = u.voice.lang; ss.speak(u); };
+}
+$('#vLang').onchange = renderVoices; try { speechSynthesis.onvoiceschanged = renderVoices; } catch(e){}
+$('#btnSpeak').onclick = () => {
+  const ss = window.speechSynthesis; if (!ss){ toast('Browserul tău nu poate citi textul cu voce.'); return; }
+  if (ss.speaking){ ss.cancel(); $('#btnSpeak').textContent = '🔊 Ascultă scenariul'; return; }
+  const u = new SpeechSynthesisUtterance(scriptEl.value); u.lang = 'ro-RO'; u.rate = wpm() / 160;
+  const v = ss.getVoices().find(v => v.lang && v.lang.toLowerCase().startsWith('ro')); if (v) u.voice = v;
+  u.onend = () => $('#btnSpeak').textContent = '🔊 Ascultă scenariul'; ss.speak(u); $('#btnSpeak').textContent = '■ Oprește citirea';
+};
+
+/* fundal */
+const tileCanvases = [];
+$('#bgTiles').innerHTML = BGS.filter(b => b[0] !== 'culoare').map(([v, l]) => `<button class="tile" data-bg="${v}" aria-pressed="${v === W8.bg}"><canvas width="320" height="180"></canvas><span>${l}</span></button>`).join('');
+$('#bgTiles').querySelectorAll('.tile').forEach(t => tileCanvases.push([t.dataset.bg, t.querySelector('canvas').getContext('2d')]));
+$('#bgTiles').addEventListener('click', e => { const t = e.target.closest('.tile'); if (!t) return; W8.bg = t.dataset.bg; $('#bgTiles').querySelectorAll('.tile').forEach(x => x.setAttribute('aria-pressed', x === t)); renderSummary(); });
+function drawTiles(sec){ for (const [bg, ctx] of tileCanvases){ drawBg(ctx, bg, '#1f3b57', sec, 320, 180, 1);
+  ctx.font = '700 22px "Unbounded", sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = LIGHT_BG.has(bg) ? '#17120c' : '#fff'; ctx.fillText('Delta', 160, 98); } }
+
+/* opțiuni */
+const GENRES = [['Epic','epic orchestral'],['Documentar','documentary ambient'],['Tensiune','suspense tension'],['Emoțional','emotional piano'],['Liniștit','calm chill'],['Energic','upbeat energetic']];
+$('#genres').innerHTML = GENRES.map(([l, q]) => `<button class="chip" data-q="${q}" aria-pressed="false">${l}</button>`).join('');
+$('#optMusic').onchange = e => { $('#musicBox').hidden = !e.target.checked; renderSummary(); };
+['#optSubs','#optAnim','#sstyle','#musicFile'].forEach(id => $(id).addEventListener('change', renderSummary));
+$('#genres').addEventListener('click', async e => { const b = e.target.closest('[data-q]'); if (!b) return;
+  $('#genres').querySelectorAll('.chip').forEach(x => x.setAttribute('aria-pressed', x === b));
+  if (!mcp){ $('#genreRes').innerHTML = '<p class="note">AI Personal nu e disponibil aici. Încarcă o melodie în Montaj.</p>'; return; }
+  $('#genreRes').innerHTML = '<p class="note">Se caută…</p>';
+  try { const items = parseMedia(txt(await call('cauta_media_gratuita', {tip:'muzica', interogare:b.dataset.q + ' instrumental'}))).slice(0, 6);
+    $('#genreRes').innerHTML = items.length ? items.map(it => `<div class="ritem"><span class="t">${esc(it.title)}</span><span class="src">${esc(it.src)} · ${esc(it.autor)} · ${esc(it.lic)}</span><div class="links">${it.file ? linkHtml(it.file, 'Ascultă / salvează') : ''}${it.page ? linkHtml(it.page, 'Pagina') : ''}</div></div>`).join('') + '<p class="note">Salvează melodia, încarc-o în Montaj și alege-o mai sus.</p>' : '<p class="note">Nimic găsit. Încearcă alt gen.</p>';
+  } catch(err){ $('#genreRes').innerHTML = `<p class="note">${esc(errMsg(err))}</p>`; } });
+
+/* rezumat + generare */
+function renderSummary(){
+  const sc = scenes.length ? scenes : splitLocal(scriptEl.value);
+  const len = sc.reduce((a, s) => a + s.dur, 0) + ($('#vTitle').value.trim() ? 3 : 0);
+  const vm = media($('#voiceFile').value); const mm = media($('#musicFile').value);
+  const row = (k, v) => `<dt>${k}</dt><dd>${v}</dd>`;
+  $('#sumList').innerHTML = row('Fundal', esc((BGS.find(b => b[0] === W8.bg) || [, ''])[1])) + row('Voce', W8.voice === 'mine' ? (vm ? esc(vm.name) : 'lipsește fișierul') : 'Fără')
+    + row('Subtitrări', $('#optSubs').checked ? $('#sstyle').selectedOptions[0].textContent : 'Oprite') + row('Grafică animată', $('#optAnim').checked ? 'Pornită' : 'Oprită')
+    + row('Muzică', $('#optMusic').checked ? (mm ? esc(mm.name) : 'alege o melodie') : 'Fără') + row('Format', S.format) + row('Scene', sc.length) + row('Durată', fmt(len));
+  $('#btnToEditor').disabled = !sc.length;
+}
+$('#vTitle').addEventListener('input', renderSummary);
+$('#btnToEditor').onclick = () => {
+  if (!scenes.length) scenes = splitLocal(scriptEl.value);
+  if (!scenes.length){ toast('Scrie întâi un scenariu.'); return; }
+  const subs = $('#optSubs').checked, st = $('#sstyle').value, anim = $('#optAnim').checked, title = $('#vTitle').value.trim();
+  S.clips = [];
+  if (title) S.clips.push(newCard({ dur:3, text:title, style:'titlu', pos:'mijloc', bg:W8.bg, anim }));
+  scenes.forEach(s => S.clips.push(newCard({ dur:s.dur, text:subs ? s.text : '', style:st, pos:st === 'titlu' ? 'mijloc' : 'jos', bg:W8.bg, anim })));
+  S.audio.voce = W8.voice === 'mine' ? ($('#voiceFile').value || null) : null;
+  S.audio.muzica = $('#optMusic').checked ? ($('#musicFile').value || null) : null;
+  if (S.audio.voce && S.audio.voce === S.audio.muzica) S.audio.muzica = null;
+  toast(`Video generat: ${S.clips.length} scene. Înlocuiește fundalurile cu filmele tale.`); S.sel = null; T = 0.8; renderMedia(); renderTimeline(); renderInspector(); location.hash = 'montaj';
+};
+let sampleFn = null;
+(async () => { try { if (window.claude?.use){ sampleFn = await window.claude.use('sample'); } } catch(e){}
+  $('#btnSplitAI').hidden = !sampleFn; $('#wGo').disabled = $('#wTitles').disabled = !sampleFn; if (!sampleFn) $('#wNote').textContent = 'Scrierea cu Claude nu e disponibilă în această vizualizare. Deschide pagina în claude.ai.'; })();
+$('#btnSplitAI').onclick = async () => {
+  const b = $('#btnSplitAI'); b.disabled = true; b.textContent = 'Se împarte…';
+  try {
+    const res = await sampleFn.json(`Împarte scenariul de mai jos în scene pentru un video documentar. Fiecare scenă are 1-2 propoziții (maxim 25 de cuvinte) și păstrează textul original exact, fără să-l rescrii. Pentru fiecare scenă propune 2-3 cuvinte de căutare în engleză pentru imagini video de stoc. Răspunde doar cu JSON: un array de obiecte {"text": string, "kw": string}.\n\nSCENARIU:\n${scriptEl.value}`, {modelTier:'quick'});
+    const arr = Array.isArray(res) ? res : (res?.scenes || []);
+    scenes = arr.filter(x => x && x.text).map(x => ({text:String(x.text), kw:String(x.kw || ''), dur:sceneDur(String(x.text))}));
+    renderScenes(); $('#scDetails').open = true; if (!scenes.length) toast('AI-ul nu a întors scene. Folosește „Împarte în scene”.');
+  } catch(e){ if (e?.code === 'not_granted') b.hidden = true; toast(e?.code === 'rate_limited' ? 'Prea multe cereri. Încearcă din nou peste un minut.' : 'Împărțirea cu AI nu a mers. Folosește „Împarte în scene”.'); }
+  b.disabled = false; b.textContent = '✦ Împarte cu AI';
+};
+
+/* ---------- scenarii ---------- */
+$('#wMin').oninput = e => $('#wMinLbl').textContent = e.target.value + (e.target.value === '1' ? ' minut' : ' minute');
+$('#wGo').onclick = async () => {
+  const topic = $('#wTopic').value.trim(); if (!topic){ toast('Scrie despre ce e video-ul.'); return; }
+  const min = +$('#wMin').value; const b = $('#wGo'); b.disabled = true; b.textContent = 'Se scrie…'; $('#wOut').value = '';
+  const prompt = `Scrie scenariul de narațiune pentru un video YouTube fără prezentator.\nSubiect: ${topic}\nStil: ${$('#wStyle').value}\nLimba: ${$('#wLang').value}\nLungime: aproximativ ${min * 150} de cuvinte (${min} minute citite cu voce tare).\n${$('#wVoice').value.trim() ? 'Cum vorbește canalul: ' + $('#wVoice').value.trim() + '\n' : ''}Reguli: începe cu un cârlig puternic în prima propoziție; propoziții clare, ușor de citit cu voce tare; fără titluri de secțiuni, fără indicații de regie, fără emoji; doar textul care va fi citit. Folosește fapte reale și nu inventa cifre sau date de care nu ești sigur.`;
+  try { const r = await sampleFn(prompt, { onText: ({text}) => { $('#wOut').value = text; }, cache:false }); $('#wOut').value = r.text; $('#wUse').disabled = !r.text.trim();
+    $('#wNote').textContent = r.truncated ? 'Scenariul a fost tăiat la limită. Cere o lungime mai mică.' : `Gata: ${words(r.text)} cuvinte, cam ${fmt(words(r.text) / 150 * 60)} citit.`; }
+  catch(e){ $('#wNote').textContent = e?.code === 'rate_limited' ? 'Prea multe cereri. Încearcă peste un minut.' : e?.code === 'not_granted' ? 'Ai refuzat accesul la Claude pentru această pagină.' : 'Scrierea nu a mers. Încearcă din nou.'; }
+  b.disabled = false; b.textContent = '✦ Scrie scenariul';
+};
+$('#wTitles').onclick = async () => {
+  const topic = $('#wTopic').value.trim(); if (!topic){ toast('Scrie despre ce e video-ul.'); return; }
+  const b = $('#wTitles'); b.disabled = true; $('#wTitleRes').innerHTML = '<p class="note">Se caută titluri…</p>';
+  try { const res = await sampleFn.json(`Propune 5 titluri de video YouTube în ${$('#wLang').value} pentru subiectul: ${topic}. Stil: ${$('#wStyle').value}. Maxim 60 de caractere fiecare, curiozitate reală, fără clickbait mincinos, fără emoji. Răspunde doar cu JSON: array de 5 stringuri.`, {modelTier:'quick', cache:false});
+    const arr = (Array.isArray(res) ? res : []).map(String).slice(0, 5);
+    $('#wTitleRes').innerHTML = arr.map(t => `<div class="ritem" style="grid-template-columns:1fr auto;align-items:center"><span>${esc(t)}</span><button data-t="${esc(t)}" style="padding:3px 9px;font-size:12px">Folosește</button></div>`).join('') || '<p class="note">Niciun titlu primit.</p>';
+  } catch(e){ $('#wTitleRes').innerHTML = '<p class="note">Titlurile nu au mers. Încearcă din nou.</p>'; }
+  b.disabled = false;
+};
+$('#wTitleRes').addEventListener('click', e => { const b = e.target.closest('[data-t]'); if (!b) return; $('#vTitle').value = b.dataset.t; $('#tText').value = b.dataset.t.toUpperCase(); drawThumb(); renderSummary(); toast('Titlul e pus în Creează și pe miniatură.'); });
+$('#wUse').onclick = () => { scriptEl.value = $('#wOut').value; scenes = []; renderScenes(); updStats(); try { localStorage.setItem('cadru-script', scriptEl.value); } catch(e){} location.hash = 'creeaza'; toast('Scenariul e în Creează.'); };
+
+/* ---------- miniaturi ---------- */
+const tcv = $('#tcv'), tg = tcv.getContext('2d'); let tBgImg = null, tPreset = 'doc';
+const PRE = { doc:{color:'#ffffff', label:'#d7261e', dark:0.35}, mister:{color:'#ffffff', label:'#c01818', dark:0.55}, top:{color:'#ffd21f', label:'#e0201b', dark:0.4}, vs:{color:'#ffffff', label:'#1d7a3a', dark:0.3} };
+function renderTBgOptions(){ const sel = $('#tBg'); const cur = sel.value; const imgs = S.media.filter(m => m.kind === 'image');
+  sel.innerHTML = `<option value="bg:noapte">Albastru noapte</option><option value="bg:cinematic">Cinematic</option><option value="bg:vintage">Hârtie veche</option><option value="bg:grila">Grilă</option>${tBgImg ? '<option value="frame">Cadru din Montaj / poză lipită</option>' : ''}${imgs.map(m => `<option value="m:${m.id}">${esc(m.name)}</option>`).join('')}`;
+  if ([...sel.options].some(o => o.value === cur)) sel.value = cur; }
+function drawThumb(){
+  const W = 1280, H = 720, v = $('#tBg').value || 'bg:cinematic';
+  tg.save(); tg.fillStyle = '#000'; tg.fillRect(0, 0, W, H);
+  let src = null; if (v === 'frame') src = tBgImg; else if (v.startsWith('m:')) src = media(v.slice(2))?.el;
+  if (src && (src.naturalWidth || src.width)){ const sw = src.naturalWidth || src.width, sh = src.naturalHeight || src.height; const r = Math.max(W / sw, H / sh); tg.drawImage(src, (W - sw * r) / 2, (H - sh * r) / 2, sw * r, sh * r); }
+  else { drawBg(tg, v.slice(3) || 'cinematic', '#1f3b57', 2, W, H, 1); }
+  const dark = +$('#tDark').value; const gr = tg.createLinearGradient(0, 0, W, 0); gr.addColorStop(0, `rgba(0,0,0,${Math.min(0.95, dark + 0.25)})`); gr.addColorStop(0.7, `rgba(0,0,0,${dark * 0.4})`); gr.addColorStop(1, 'rgba(0,0,0,0)'); tg.fillStyle = gr; tg.fillRect(0, 0, W, H);
+  if (tPreset === 'mister'){ const vg = tg.createRadialGradient(W / 2, H / 2, H * 0.3, W / 2, H / 2, W * 0.75); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.85)'); tg.fillStyle = vg; tg.fillRect(0, 0, W, H); }
+  if (tPreset === 'vs'){ tg.fillStyle = 'rgba(0,0,0,.25)'; tg.fillRect(W / 2, 0, W / 2, H); tg.fillStyle = '#fff'; tg.fillRect(W / 2 - 4, 0, 8, H);
+    tg.font = '700 64px "Unbounded", sans-serif'; tg.textAlign = 'center'; tg.lineWidth = 10; tg.strokeStyle = '#000'; tg.strokeText('VS', W / 2, H / 2 + 22); tg.fillText('VS', W / 2, H / 2 + 22); }
+  const text = $('#tText').value.trim().toUpperCase(); const label = $('#tLabel').value.trim().toUpperCase(); const glow = $('#tGlow').checked;
+  let x0 = 60, maxW = tPreset === 'vs' ? W / 2 - 110 : W * 0.6;
+  if (tPreset === 'top'){ const num = (text.match(/\d+/) || ['10'])[0]; tg.font = '700 330px "Unbounded", "Arial Black", sans-serif'; tg.textAlign = 'left'; tg.textBaseline = 'alphabetic';
+    tg.lineWidth = 24; tg.strokeStyle = '#000'; tg.strokeText(num, 40, H - 90); tg.fillStyle = $('#tColor').value; tg.fillText(num, 40, H - 90); x0 = 60 + tg.measureText(num).width + 20; maxW = Math.max(300, W * 0.7 - x0); }
+  const rest = tPreset === 'top' ? text.replace(/^\s*\d+\s*/, '') : text;
+  let fs = 132; tg.font = `700 ${fs}px "Unbounded", "Arial Black", sans-serif`; let lines = wrapCtx(tg, rest, maxW);
+  while ((lines.length > 3 || lines.some(l => tg.measureText(l).width > maxW)) && fs > 48){ fs -= 6; tg.font = `700 ${fs}px "Unbounded", "Arial Black", sans-serif`; lines = wrapCtx(tg, rest, maxW); }
+  const lh = fs * 1.08; let y = H - 70 - (lines.length - 1) * lh; tg.textAlign = 'left'; tg.textBaseline = 'alphabetic'; tg.lineJoin = 'round';
+  if (label){ tg.font = '700 40px "IBM Plex Sans", sans-serif'; const lw = tg.measureText(label).width + 40; const ly = y - fs - 34; tg.fillStyle = $('#tLabelColor').value; tg.save(); tg.translate(x0, ly); tg.rotate(-0.03); tg.fillRect(0, -44, lw, 60); tg.fillStyle = '#fff'; tg.fillText(label, 20, 0); tg.restore(); }
+  tg.font = `700 ${fs}px "Unbounded", "Arial Black", sans-serif`;
+  for (const l of lines){ if (glow){ tg.lineWidth = fs * 0.16; tg.strokeStyle = '#000'; tg.strokeText(l, x0, y); } tg.fillStyle = $('#tColor').value; tg.fillText(l, x0, y); y += lh; }
+  if ($('#tArrow').checked){ const ax = W * 0.76, ay = H * 0.62, bx = W * 0.9, by = H * 0.36; tg.lineCap = 'round'; tg.lineWidth = 22; tg.strokeStyle = '#000'; tg.beginPath(); tg.moveTo(ax, ay); tg.quadraticCurveTo(W * 0.79, H * 0.38, bx, by); tg.stroke(); tg.lineWidth = 12; tg.strokeStyle = $('#tLabelColor').value; tg.stroke();
+    const ang = Math.atan2(by - H * 0.38, bx - W * 0.79); tg.fillStyle = $('#tLabelColor').value; tg.beginPath(); tg.moveTo(bx + Math.cos(ang) * 30, by + Math.sin(ang) * 30); tg.lineTo(bx + Math.cos(ang + 2.4) * 34, by + Math.sin(ang + 2.4) * 34); tg.lineTo(bx + Math.cos(ang - 2.4) * 34, by + Math.sin(ang - 2.4) * 34); tg.closePath(); tg.fill(); }
+  tg.restore();
+}
+function wrapCtx(ctx, text, maxW){ const ws = text.split(/\s+/).filter(Boolean); const out = []; let line = ''; for (const w of ws){ const t = line ? line + ' ' + w : w; if (ctx.measureText(t).width > maxW && line){ out.push(line); line = w; } else line = t; } if (line) out.push(line); return out; }
+$('#tPresets').addEventListener('click', e => { const b = e.target.closest('[data-p]'); if (!b) return; tPreset = b.dataset.p; $('#tPresets').querySelectorAll('[data-p]').forEach(x => x.setAttribute('aria-pressed', x === b));
+  const p = PRE[tPreset]; $('#tColor').value = p.color; $('#tLabelColor').value = p.label; $('#tDark').value = p.dark; if (tPreset === 'top' && !/\d/.test($('#tText').value)) $('#tText').value = '7 SECRETE ALE DELTEI'; drawThumb(); });
+['#tBg','#tText','#tLabel','#tColor','#tLabelColor','#tDark','#tArrow','#tGlow'].forEach(id => $(id).addEventListener('input', drawThumb));
+$('#tFrame').onclick = () => { const c = document.createElement('canvas'); c.width = cv.width; c.height = cv.height; c.getContext('2d').drawImage(cv, 0, 0); tBgImg = c; renderTBgOptions(); $('#tBg').value = 'frame'; drawThumb(); toast('Cadrul curent din Montaj e fundalul miniaturii.'); };
+$('#tUpload').onclick = () => $('#tFile').click();
+$('#tFile').onchange = e => { const f = e.target.files[0]; if (f){ addFiles([f]); setTimeout(() => { const m = S.media[S.media.length - 1]; renderTBgOptions(); $('#tBg').value = 'm:' + m.id; drawThumb(); }, 300); } e.target.value = ''; };
+$('#tSave').onclick = () => { tcv.toBlob(async blob => { let dl = null; try { dl = window.claude?.use ? await window.claude.use('downloads') : null; } catch(e){}
+  if (!dl){ if (!plainDownload(blob, 'miniatura-cadru.png')) toast('Ține apăsat pe miniatură → Salvează imaginea.'); return; }
+  try { await dl.save({filename:'miniatura-cadru.png', data:blob}); toast('Miniatura e salvată.'); } catch(e){ toast(e?.code === 'declined' ? 'Salvarea a fost anulată.' : 'Salvarea nu a mers. Ține apăsat pe imagine → Salvează.'); } }, 'image/png'); };
+
+/* ---------- proiecte ---------- */
+const DB = { db:null,
+  async open(){ if (this.db) return this.db; this.db = await new Promise((res, rej) => { const r = indexedDB.open('cadru', 1); r.onupgradeneeded = () => r.result.createObjectStore('proiecte', {keyPath:'id'}); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); return this.db; },
+  async run(mode, fn){ const db = await this.open(); return new Promise((res, rej) => { const t = db.transaction('proiecte', mode); const r = fn(t.objectStore('proiecte')); t.oncomplete = () => res(r && r.result); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error); }); } };
+let curProject = null, pendingDel = null;
+function thumbData(){ const c = document.createElement('canvas'); c.width = 320; c.height = Math.round(320 * cv.height / cv.width); c.getContext('2d').drawImage(cv, 0, 0, c.width, c.height); try { return c.toDataURL('image/jpeg', 0.7); } catch(e){ return ''; } }
+async function saveProject(){
+  const name = $('#pName').value.trim() || 'Proiect ' + new Date().toLocaleDateString('ro-RO');
+  const rec = { id:curProject || uid(), name, saved:Date.now(), format:S.format, clips:S.clips, audio:S.audio, vol:S.vol, script:scriptEl.value, title:$('#vTitle').value, dur:total(), thumb:thumbData(),
+    media:S.media.map(m => ({ id:m.id, name:m.name, kind:m.kind, blob:m.file })) };
+  try { await DB.run('readwrite', st => st.put(rec)); curProject = rec.id; toast(`Proiectul „${name}” e salvat.`); renderProjects(); }
+  catch(e){ toast(e?.name === 'QuotaExceededError' ? 'Nu mai e loc în browser. Șterge proiecte vechi sau filme mari.' : 'Salvarea nu a mers în acest browser.'); }
+}
+async function openProject(id){
+  let rec; try { rec = await DB.run('readonly', st => st.get(id)); } catch(e){ toast('Proiectul nu s-a putut deschide.'); return; }
+  if (!rec) return; stop(); S.media.forEach(m => { try { m.el.pause && m.el.pause(); URL.revokeObjectURL(m.url); } catch(e){} }); S.media = [];
+  (rec.media || []).forEach(m => { if (m.blob) makeMedia(m.blob, m.kind, m.name, m.id); });
+  S.clips = rec.clips || []; S.audio = rec.audio || {voce:null, muzica:null}; S.vol = rec.vol || S.vol; S.format = rec.format || '16:9'; $('#format').value = S.format;
+  scriptEl.value = rec.script || ''; $('#vTitle').value = rec.title || ''; scenes = []; curProject = rec.id; $('#pName').value = rec.name; T = 0; S.sel = null;
+  renderMedia(); renderTimeline(); renderInspector(); renderScenes(); updStats(); refreshPickers(); location.hash = 'montaj'; toast(`Ai deschis „${rec.name}”.`);
+}
+async function renderProjects(){
+  let list = []; try { list = await DB.run('readonly', st => st.getAll()) || []; } catch(e){ $('#pgrid').innerHTML = '<p class="note">Proiectele nu pot fi salvate în acest browser (de exemplu în fereastră privată).</p>'; return; }
+  list.sort((a, b) => b.saved - a.saved);
+  $('#pgrid').innerHTML = `<button class="pnew" id="pNew">＋ Video nou</button>` + list.map(r => `<div class="pcard"><div class="th">${r.thumb ? `<img src="${r.thumb}" alt="">` : 'fără previzualizare'}</div><div class="bd"><b title="${esc(r.name)}">${esc(r.name)}</b>
+    <span class="src">${new Date(r.saved).toLocaleString('ro-RO', {dateStyle:'medium', timeStyle:'short'})} · ${fmt(r.dur)} · ${(r.media || []).length} fișiere</span>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">${pendingDel === r.id ? `<span class="note">Sigur ștergi?</span><button class="rec" data-delok="${r.id}" style="padding:4px 10px;font-size:12px">Da, șterge</button><button data-delno style="padding:4px 10px;font-size:12px">Nu</button>`
+      : `<button class="primary" data-open="${r.id}" style="padding:4px 10px;font-size:12px">Deschide</button><button class="danger" data-del="${r.id}" style="padding:4px 10px;font-size:12px">Șterge</button>`}</div></div></div>`).join('');
+}
+$('#pgrid').addEventListener('click', async e => { const t = e.target.closest('button'); if (!t) return;
+  if (t.id === 'pNew'){ stop(); S.clips = []; S.audio = {voce:null, muzica:null}; curProject = null; $('#pName').value = 'Proiect nou'; scenes = []; T = 0; renderTimeline(); renderInspector(); location.hash = 'creeaza'; return; }
+  if (t.dataset.open) return openProject(t.dataset.open);
+  if (t.dataset.del){ pendingDel = t.dataset.del; return renderProjects(); }
+  if (t.hasAttribute('data-delno')){ pendingDel = null; return renderProjects(); }
+  if (t.dataset.delok){ try { await DB.run('readwrite', st => st.delete(t.dataset.delok)); } catch(err){} if (curProject === t.dataset.delok) curProject = null; pendingDel = null; toast('Proiect șters.'); renderProjects(); } });
+$('#pSave').onclick = saveProject; $('#btnSave').onclick = saveProject;
+
+/* ---------- export ---------- */
+let blob = null, ext = 'webm';
+$('#btnExport').onclick = () => {
+  if (!S.clips.length){ toast('Adaugă întâi clipuri pe timeline.'); return; }
+  if (!window.MediaRecorder || !cv.captureStream){ toast('Browserul tău nu poate exporta. Încearcă Chrome sau Edge.'); return; }
+  location.hash = 'montaj'; ensureAudio();
+  const vs = cv.captureStream(30); const tracks = [...vs.getVideoTracks()]; if (recDest) tracks.push(...recDest.stream.getAudioTracks());
+  const stream = new MediaStream(tracks);
+  const types = ['video/mp4;codecs=avc1,mp4a','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
+  const mime = types.find(t => MediaRecorder.isTypeSupported(t)) || ''; ext = mime.includes('mp4') ? 'mp4' : 'webm';
+  const chunks = []; let mr; try { mr = new MediaRecorder(stream, mime ? {mimeType:mime, videoBitsPerSecond:6e6} : undefined); } catch(e){ toast('Exportul nu a putut porni în acest browser.'); return; }
+  mr.ondataavailable = e => e.data.size && chunks.push(e.data);
+  mr.onstop = () => { if (!rec || rec.cancel){ rec = null; return; } blob = new Blob(chunks, {type: mime || 'video/webm'}); const v = $('#mVideo'); v.src = URL.createObjectURL(blob); v.hidden = false;
+    $('#mTitle').textContent = 'Video gata'; $('#mText').textContent = `Fișier ${ext.toUpperCase()}, ${(blob.size / 1048576).toFixed(1)} MB. Verifică-l mai jos, apoi salvează-l.`; $('#mBar').style.width = '100%';
+    $('#mSave').hidden = false; $('#mCancel').textContent = 'Închide'; rec = null; };
+  rec = {mr, cancel:false}; blob = null;
+  $('#modal').hidden = false; $('#mVideo').hidden = true; $('#mSave').hidden = true; $('#mTitle').textContent = 'Export video'; $('#mCancel').textContent = 'Anulează';
+  T = 0; stop(); setTimeout(() => { mr.start(250); play(); }, 300);
+};
+function finishRec(){ if (rec && rec.mr.state !== 'inactive') setTimeout(() => rec && rec.mr.stop(), 300); }
+$('#mCancel').onclick = () => { if (rec){ rec.cancel = true; stop(); try { rec.mr.stop(); } catch(e){} } $('#modal').hidden = true; };
+$('#mSave').onclick = async () => {
+  if (!blob) return; let dl = null; try { dl = window.claude?.use ? await window.claude.use('downloads') : null; } catch(e){}
+  if (dl){ try { await dl.save({filename:`cadru-video.${ext}`, data:blob}); toast('Video salvat.'); } catch(e){ toast(e?.code === 'declined' ? 'Salvarea a fost anulată.' : 'Salvarea nu a mers aici. Clic dreapta pe video → Salvează videoclipul ca.'); } }
+  else if (plainDownload(blob, `cadru-video.${ext}`)) toast('Video salvat.'); else toast('Clic dreapta pe video → „Salvează videoclipul ca…”.');
+};
+
+/* ---------- AI Personal ---------- */
+const AIS = 'AI Personal'; let mcp = null; let jobs = [];
+(async () => { try { mcp = window.claude?.use ? await window.claude.use('mcp') : null; } catch(e){ mcp = null; }
+  $('#aiState').textContent = mcp ? 'Conector disponibil' : 'Conector indisponibil aici';
+  if (!mcp) document.querySelectorAll('#v-ai button:not(#aiUpload)').forEach(b => b.disabled = true); })();
+const txt = r => { const p = r?.payload; if (typeof p === 'string') return p; if (p != null) return JSON.stringify(p); return (r?.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n'); };
+const errMsg = e => ({not_granted:'Ai refuzat accesul la AI Personal pentru această pagină.', consent_required:'Permite accesul la AI Personal când ți se cere.', server_not_connected:'Conectorul AI Personal nu e conectat în contul tău.', rate_limited:'Prea multe cereri. Încearcă peste un minut.', tool_error:'AI Personal a răspuns cu o eroare'}[e?.code] || 'Cererea nu a mers') + (e?.message && e.code === 'tool_error' ? ': ' + e.message : '.');
+const links = s => [...String(s).matchAll(/https?:\/\/[^\s)>\]]+/g)].map(m => m[0]);
+const linkHtml = (u, label) => `<a href="${esc(u)}" target="_blank" rel="noopener">${label} ↗</a>`;
+async function call(tool, input){ return mcp.callTool(AIS, tool, input, {cache:false}); }
+function parseMedia(s){
+  return String(s).split(/\n(?=•)/).filter(b => b.trim().startsWith('•')).map(b => {
+    const first = b.split('\n')[0].replace(/^•\s*/, ''); const m = first.match(/^(.*)\[([^\]]+)\]\s*$/);
+    const g2 = re => (b.match(re) || [])[1] || '';
+    return { title:(m ? m[1] : first).trim(), src:m ? m[2] : '', autor:g2(/Autor:\s*([^·\n]+)/), lic:g2(/Licență:\s*([^\n]+)/), page:g2(/Pagina:\s*(\S+)/), file:g2(/Fișier:\s*(\S+)/) };
+  });
+}
+$('#qGo').onclick = async () => {
+  const q = $('#qText').value.trim(); if (!q){ toast('Scrie ce cauți.'); return; }
+  const b = $('#qGo'); b.disabled = true; b.textContent = 'Se caută…'; $('#qRes').innerHTML = '';
+  try { const r = await call('cauta_media_gratuita', {tip:$('#qTip').value, interogare:q, ...($('#qCom').checked ? {doar_comercial:true} : {})});
+    const s = txt(r); const items = parseMedia(s);
+    $('#qRes').innerHTML = items.length ? items.map(it => `<div class="ritem"><span class="t" title="${esc(it.title)}">${esc(it.title)}</span><span class="src">${esc(it.src)} · ${esc(it.autor)} · ${esc(it.lic)}</span><div class="links">${it.file ? linkHtml(it.file, 'Deschide fișierul') : ''}${it.page ? linkHtml(it.page, 'Pagina sursei') : ''}</div></div>`).join('')
+      : `<div class="ritem"><span class="note" style="white-space:pre-wrap">${esc(s) || 'Niciun rezultat.'}</span></div>`;
+  } catch(e){ $('#qRes').innerHTML = `<p class="note">${esc(errMsg(e))}</p>`; }
+  b.disabled = false; b.textContent = 'Caută';
+};
+$('#iFree').onclick = async () => {
+  const d = $('#iDesc').value.trim(); if (!d){ toast('Descrie imaginea.'); return; }
+  const [w, h] = {'16:9':[1280,720], '9:16':[720,1280], '1:1':[1024,1024]}[$('#iFmt').value];
+  const b = $('#iFree'); b.disabled = true;
+  try { const r = await call('imagine_gratuita', {descriere:d, latime:w, inaltime:h, aspect_natural:$('#iNat').checked}); const u = links(txt(r))[0];
+    $('#iRes').insertAdjacentHTML('afterbegin', `<div class="ritem"><span class="t">${esc(d)}</span><span class="src">gratuit · se generează la prima deschidere</span><div class="links">${u ? linkHtml(u, 'Deschide imaginea') : esc(txt(r))}</div></div>`);
+  } catch(e){ toast(errMsg(e)); }
+  b.disabled = false;
+};
+function askConfirm(box, what, run){
+  $(box).innerHTML = `<div class="confirm"><span>${what} Costă bani din contul tău AI Personal. Continui?</span><button class="rec" data-ok>Da, generează</button><button data-no>Nu</button></div>`;
+  $(box + ' [data-no]').onclick = () => $(box).innerHTML = '';
+  $(box + ' [data-ok]').onclick = async e => { e.target.disabled = true; await run(); $(box).innerHTML = ''; };
+}
+function addJob(kind, label, s){ const id = +((String(s).match(/(?:job|id|nr\.?|număr(?:ul)?)\D{0,12}(\d+)/i) || String(s).match(/(\d+)/) || [])[1]);
+  jobs.unshift({id, kind, label, status:String(s), links:[]}); renderJobs(); location.hash = 'ai'; }
+function renderJobs(){
+  $('#jobs').innerHTML = jobs.length ? jobs.map((j, i) => `<div class="ritem"><span class="t">${j.kind === 'img' ? 'Imagine' : 'Melodie'}: ${esc(j.label)}</span><span class="src">${Number.isFinite(j.id) ? 'job ' + j.id + ' · ' : ''}${esc(j.status.slice(0, 220))}</span><div class="links">${j.links.map((u, k) => linkHtml(u, j.links.length > 1 ? 'Fișier ' + (k + 1) : 'Deschide fișierul')).join('')}${Number.isFinite(j.id) ? `<button data-j="${i}" style="padding:3px 9px;font-size:12px">Verifică</button>` : ''}</div></div>`).join('')
+    : '<p class="empty">Nicio generare pornită.</p>';
+}
+$('#jobs').addEventListener('click', async e => { const b = e.target.closest('[data-j]'); if (!b) return; const j = jobs[+b.dataset.j]; b.disabled = true; b.textContent = 'Se verifică…';
+  try { const s = txt(await call('stare_generare', {id:j.id})); j.status = s; j.links = links(s); } catch(err){ j.status = errMsg(err); }
+  renderJobs(); });
+$('#iPaid').onclick = () => { const d = $('#iDesc').value.trim(); if (!d){ toast('Descrie imaginea.'); return; }
+  askConfirm('#iConfirm', 'Imaginea 8K durează câteva minute.', async () => { try { const s = txt(await call('genereaza_imagine', {descriere:d, format:$('#iFmt').value, aspect_natural:$('#iNat').checked})); addJob('img', d, s); } catch(e){ toast(errMsg(e)); } }); };
+$('#sInstr').onchange = e => $('#sLyrWrap').hidden = e.target.checked;
+$('#sUseLen').onclick = () => { $('#sDur').value = Math.max(3, Math.min(600, Math.ceil(total()))); };
+$('#sGo').onclick = () => { const d = $('#sDesc').value.trim(); if (!d){ toast('Descrie stilul melodiei.'); return; }
+  const dur = Math.max(3, Math.min(600, Math.round(+$('#sDur').value || 60)));
+  askConfirm('#sConfirm', `Melodie de ${dur} secunde.`, async () => { const input = {descriere:d, durata_secunde:dur, doar_instrumental:$('#sInstr').checked};
+    if (!$('#sInstr').checked && $('#sLyr').value.trim()) input.versuri = $('#sLyr').value.trim();
+    try { addJob('song', d, txt(await call('genereaza_melodie', input))); } catch(e){ toast(errMsg(e)); } }); };
+$('#aiUpload').onclick = () => $('#file').click();
+$('#scenes').addEventListener('click', e => { const b = e.target.closest('[data-ai]'); if (!b) return; $('#qText').value = b.dataset.ai; $('#qTip').value = 'imagine'; location.hash = 'ai'; });
+
+/* ---------- routing ---------- */
+const VIEWS = ['creeaza','montaj','scenarii','miniaturi','proiecte','ai','ghid'];
+function route(){ const v = (location.hash || '#creeaza').slice(1); const name = VIEWS.includes(v) ? v : 'creeaza';
+  for (const n of VIEWS) $('#v-' + n).hidden = n !== name;
+  if (name === 'miniaturi') drawThumb(); if (name === 'proiecte') renderProjects(); if (name === 'creeaza') renderVoices();
+  document.querySelectorAll('nav.tabs a').forEach(a => { if (a.dataset.view === name) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+  if (name !== 'montaj') stop(); }
+addEventListener('hashchange', route);
+
+/* ---------- start: proiect exemplu ---------- */
+scenes = splitLocal(SAMPLE);
+S.clips = [newCard({ dur:3, text:'Delta care se mișcă', style:'titlu', pos:'mijloc', bg:'noapte' }), newCard({ dur:scenes[0].dur, text:scenes[0].text, bg:'cinematic' }), newCard({ dur:scenes[3].dur, text:scenes[3].text, bg:'grila' })];
+scenes = []; T = 1.2;
+let tileT = 0; (function tileLoop(ts){ if (!$('#v-creeaza').hidden && ts - tileT > 90){ tileT = ts; drawTiles(ts / 1000); } requestAnimationFrame(tileLoop); })(0);
+renderMedia(); renderTimeline(); renderInspector(); renderScenes(); refreshPickers(); updStats(); route(); requestAnimationFrame(loop);
+setTimeout(drawThumb, 600);
+})();
+</script>
+
+</body>
+</html>
