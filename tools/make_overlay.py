@@ -33,7 +33,7 @@ def avatar_img(path, d):
     out = Image.new("RGBA", (d, d), (0, 0, 0, 0))
     out.paste(a, (0, 0), mask)
     ring = ImageDraw.Draw(out)
-    ring.ellipse((0, 0, d - 1, d - 1), outline=(255, 255, 255, 255), width=max(3, d // 30))
+    ring.ellipse((0, 0, d - 1, d - 1), outline=(232, 200, 95, 255), width=max(3, d // 30))
     return out
 
 
