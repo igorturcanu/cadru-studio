@@ -260,23 +260,33 @@ def build_video_cycle(args):
     n = len(imgs)
     frames = s * fps
     seq = imgs + [imgs[0]]              # prima imagine din nou -> buclă fără cusătură
+    # 1) fiecare imagine devine un clip separat, cu zoom lin la nivel de sub-pixel
+    #    (filtrul perspective interpolează, deci imaginea nu "tremură" ca la zoompan)
+    clip_dir = WORK / "clips"
+    clip_dir.mkdir(parents=True, exist_ok=True)
+    z = f"(1+0.10*on/{frames})"
+    mx, my = f"W/2*(1-1/{z})", f"H/2*(1-1/{z})"
+    persp = (f"perspective=x0='{mx}':y0='{my}':x1='W-{mx}':y1='{my}':"
+             f"x2='{mx}':y2='H-{my}':x3='W-{mx}':y3='H-{my}':interpolation=cubic:eval=frame")
+    clips = []
+    for i, p in enumerate(seq):
+        c = clip_dir / f"clip_{i:02d}_{w}x{h}_{s}s.mp4"
+        if not c.exists():
+            print(f"[clip {i + 1}/{len(seq)}] {p.name}")
+            run(["ffmpeg", "-y", "-v", "error", "-loop", "1", "-framerate", fps, "-t", s, "-i", p,
+                 "-vf", f"scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h},"
+                        f"setsar=1,format=yuv420p,{persp}",
+                 "-c:v", "libx264", "-preset", "medium", "-crf", "16", "-pix_fmt", "yuv420p", c])
+        clips.append(c)
     inputs = []
-    for p in seq:
-        inputs += ["-i", p]
+    for c in clips:
+        inputs += ["-i", c]
     logo_idx = None
     if args.logo:
         inputs += ["-i", args.logo]
         logo_idx = len(seq)
 
-    parts = []
-    for i in range(len(seq)):
-        # zoom foarte lent spre centru; scalare mărită ca să nu tremure
-        parts.append(
-            f"[{i}:v]scale={w * 2}:{h * 2}:force_original_aspect_ratio=increase,"
-            f"crop={w * 2}:{h * 2},"
-            f"zoompan=z='1+0.12*on/{frames}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':"
-            f"d={frames}:s={w}x{h}:fps={fps},setsar=1,format=yuv420p[v{i}]"
-        )
+    parts = [f"[{i}:v]setpts=PTS-STARTPTS[v{i}]" for i in range(len(seq))]
     prev = "[v0]"
     for k in range(1, len(seq)):
         lab = f"[x{k}]"
@@ -299,6 +309,30 @@ def build_video_cycle(args):
     return out
 
 
+ENC = ["-c:v", "libx264", "-preset", "medium", "-crf", "24", "-maxrate", "3M", "-bufsize", "6M",
+       "-pix_fmt", "yuv420p"]
+
+
+def _overlay_variant(video, out, fps, length, cta=None, cta_windows=(), endcard=None, end_secs=25):
+    """Re-encodează (o parte din) ciclu cu butoanele afișate în ferestrele date (cu fade)."""
+    inputs = ["-i", video]
+    parts, last, idx = [], "[0:v]", 1
+    for (a, b) in cta_windows:
+        inputs += ["-loop", "1", "-framerate", fps, "-t", length, "-i", cta]
+        parts.append(f"[{idx}:v]format=rgba,fade=t=in:st={a}:d=1:alpha=1,"
+                     f"fade=t=out:st={b - 1}:d=1:alpha=1[o{idx}]")
+        parts.append(f"{last}[o{idx}]overlay=enable='between(t,{a},{b})'[c{idx}]")
+        last, idx = f"[c{idx}]", idx + 1
+    if endcard:
+        st = length - end_secs
+        inputs += ["-loop", "1", "-framerate", fps, "-t", length, "-i", endcard]
+        parts.append(f"[{idx}:v]format=rgba,fade=t=in:st={st}:d=3:alpha=1[o{idx}]")
+        parts.append(f"{last}[o{idx}]overlay=enable='gte(t,{st})'[c{idx}]")
+        last = f"[c{idx}]"
+    run(["ffmpeg", "-y", "-v", "error", *inputs, "-t", length, "-filter_complex", ";".join(parts),
+         "-map", last, "-r", fps, *ENC, out])
+
+
 def build(args):
     need_ffmpeg()
     WORK.mkdir(exist_ok=True)
@@ -306,8 +340,43 @@ def build(args):
     video = build_video_cycle(args)
     total = int(args.hours * 3600)
     out = Path(args.output)
-    run(["ffmpeg", "-y",
-         "-stream_loop", "-1", "-i", video,
+    vin = ["-stream_loop", "-1", "-i", video]
+    if args.cta or args.endcard:
+        # butoane la început, la mijloc și la sfârșit + cadru de final:
+        # doar ciclurile care le conțin se re-encodează, restul se copiază
+        period = probe_duration(video)
+        n_full, rest = divmod(total, period)
+        n_full = int(n_full)
+        if rest < 60:                      # ultimul ciclu prea scurt -> îl lungim pe cel de dinainte
+            n_full, rest = n_full - 1, rest + period
+        assert n_full >= 2, "durata e prea scurtă pentru butoane la început/mijloc/sfârșit"
+        fps = args.fps
+        seg = WORK / "segments"
+        seg.mkdir(exist_ok=True)
+        cw = lambda t: (t, t + args.cta_seconds)
+        start_v = seg / "start.mp4"
+        _overlay_variant(video, start_v, fps, period, args.cta, [cw(args.cta_start)] if args.cta else [])
+        mid_t = total / 2
+        mid_k = min(int(mid_t // period), n_full - 1)
+        mid_v = seg / "mid.mp4"
+        if mid_k == 0:
+            mid_k = 1
+        _overlay_variant(video, mid_v, fps, period, args.cta,
+                         [cw(max(5, min(mid_t - mid_k * period, period - args.cta_seconds - 5)))]
+                         if args.cta else [])
+        end_v = seg / "end.mp4"
+        tail_src = video
+        if rest > period:                  # sfârșitul ține mai mult de un ciclu
+            tail_src = seg / "tail_src.mp4"
+            run(["ffmpeg", "-y", "-v", "error", "-stream_loop", "1", "-i", video, "-t", rest,
+                 "-c", "copy", tail_src])
+        end_cta = [cw(rest - args.end_seconds - args.cta_seconds - 30)] if args.cta else []
+        _overlay_variant(tail_src, end_v, fps, rest, args.cta, end_cta, args.endcard, args.end_seconds)
+        order = [start_v] + [video] * (mid_k - 1) + [mid_v] + [video] * (n_full - mid_k - 1) + [end_v]
+        lst = seg / "list.txt"
+        lst.write_text("".join(f"file '{Path(p).resolve()}'\n" for p in order))
+        vin = ["-f", "concat", "-safe", "0", "-i", lst]
+    run(["ffmpeg", "-y", *vin,
          "-stream_loop", "-1", "-i", audio,
          "-t", total, "-map", "0:v", "-map", "1:a",
          "-c:v", "copy",
@@ -329,6 +398,11 @@ def main():
     ap.add_argument("--audio-fade", type=int, default=4, help="secunde de dizolvare între piese")
     ap.add_argument("--music-dir", help="folder cu piesele tale (în loc de generare Lyria)")
     ap.add_argument("--logo", help="logo PNG pus în colțul stânga-jos (opțional)")
+    ap.add_argument("--cta", help="PNG transparent cu butoanele (tools/make_overlay.py)")
+    ap.add_argument("--cta-start", type=float, default=8, help="secunda la care apar prima dată")
+    ap.add_argument("--cta-seconds", type=float, default=15, help="cât timp stau pe ecran")
+    ap.add_argument("--endcard", help="PNG cu cadrul de final (tools/make_overlay.py --endcard)")
+    ap.add_argument("--end-seconds", type=float, default=25)
     ap.add_argument("--size", default="1920x1080")
     ap.add_argument("--fps", type=int, default=24)
     ap.add_argument("--output", default="video_3_ore.mp4")
