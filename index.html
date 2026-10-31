@@ -334,11 +334,17 @@ td.w{color:var(--muted);white-space:nowrap}
           <label class="sw"><input type="checkbox" id="optSubs" checked aria-label="Subtitrări"><i></i></label></div>
         <div class="optrow"><div><b>Grafică animată</b><small>Titluri care apar cuvânt cu cuvânt, numere care cresc pe ecran</small></div>
           <label class="sw"><input type="checkbox" id="optAnim" checked aria-label="Grafică animată"><i></i></label></div>
+        <div class="optrow"><div><b>Imagini automate</b><small>Caută poze gratuite (cu licență pentru canale monetizate) și le pune pe fiecare scenă</small></div>
+          <label class="sw"><input type="checkbox" id="optImg" checked aria-label="Imagini automate"><i></i></label></div>
+        <div id="imgBox" style="display:grid;gap:8px">
+          <label class="f">Subiectul imaginilor, în engleză (merge mult mai bine)<input type="text" id="imgTopic" value="danube delta"></label>
+          <p class="note" style="margin:0">Fiecare scenă poate avea propriile cuvinte de căutare, în lista de scene de la pasul 1. Imaginile vin de la Openverse (Wikimedia, Flickr și altele).</p>
+        </div>
         <div class="optrow"><div><b>Muzică de fundal</b><small>Se aude încet sub voce</small></div>
           <label class="sw"><input type="checkbox" id="optMusic" aria-label="Muzică de fundal"><i></i></label></div>
         <div id="musicBox" hidden style="display:grid;gap:8px">
           <label class="f">Melodia din Materiale<select id="musicFile"></select></label>
-          <span class="lbl">Sau caută muzică gratuită după gen (AI Personal)</span>
+          <span class="lbl">Sau caută muzică gratuită după gen și adaug-o direct</span>
           <div class="chips" id="genres"></div>
           <div class="res" id="genreRes"></div>
         </div>
@@ -350,6 +356,11 @@ td.w{color:var(--muted);white-space:nowrap}
       <dl id="sumList"></dl>
       <button class="primary" id="btnToEditor" style="justify-content:center;padding:11px">Generează video</button>
       <p class="note" style="margin:0;text-align:center" id="sumNote">Construiește timeline-ul în Montaj, scenă cu scenă. Înlocuiește ce e acum acolo.</p>
+      <div id="creditsBox" hidden style="display:grid;gap:6px">
+        <span class="lbl">Surse, pentru descrierea YouTube</span>
+        <textarea id="creditsOut" style="min-height:120px;font-size:12px" readonly></textarea>
+        <button id="creditsCopy">Copiază</button>
+      </div>
     </aside>
   </div>
 </main>
@@ -554,7 +565,10 @@ td.w{color:var(--muted);white-space:nowrap}
           <tr><td class="b">Plăcile de fundal</td><td class="w">Creează, pasul 3</td><td>Aleg aspectul scenelor: Albastru noapte, Cinematic, Hârtie veche, Luminos sau Grilă. Toate sunt animate.</td></tr>
           <tr><td class="b">Subtitrări</td><td class="w">Creează, pasul 4</td><td>Pornește sau oprește textul pe ecran și alege stilul: Karaoke, Simple sau Titlu mare.</td></tr>
           <tr><td class="b">Grafică animată</td><td class="w">Creează, pasul 4</td><td>Titlurile apar cuvânt cu cuvânt, iar numerele din text (de exemplu 300 sau 1949) cresc pe ecran.</td></tr>
-          <tr><td class="b">Muzică de fundal, genuri</td><td class="w">Creează, pasul 4</td><td>Alegi o melodie din Materiale sau cauți muzică gratuită după gen (Epic, Documentar, Tensiune…) prin AI Personal.</td></tr>
+          <tr><td class="b">Imagini automate</td><td class="w">Creează, pasul 4</td><td>La „Generează video”, caută singur poze gratuite (licență permisă pentru canale monetizate) după subiect sau după cuvintele fiecărei scene și le pune pe timeline, cu zoom lent. Merge pe site-ul de pe GitHub.</td></tr>
+          <tr><td class="b">Cuvinte pentru imagine</td><td class="w">Creează, pasul 1, la fiecare scenă</td><td>Ce poză vrei pe acea scenă, în engleză (ex: „old castle”). Gol = subiectul general.</td></tr>
+          <tr><td class="b">Muzică de fundal, genuri</td><td class="w">Creează, pasul 4</td><td>Alegi o melodie din Materiale sau cauți muzică gratuită după gen. „Adaugă ca muzică” o descarcă direct în proiect (pe site-ul de pe GitHub).</td></tr>
+          <tr><td class="b">Surse, pentru descrierea YouTube</td><td class="w">Creează, după generare</td><td>Lista autorilor și licențelor pentru imaginile și muzica folosite. Apasă „Copiază” și lipește-o în descrierea video-ului.</td></tr>
           <tr><td class="b">Generează video</td><td class="w">Creează, Rezumat</td><td>Construiește tot timeline-ul în Montaj din scenariu și alegerile tale. Înlocuiește ce era acolo.</td></tr>
           <tr><td class="b">✦ Scrie scenariul</td><td class="w">Scenarii</td><td>Claude scrie narațiunea după subiect, stil, limbă și lungime. O vezi cum se scrie și o poți edita.</td></tr>
           <tr><td class="b">✦ 5 idei de titlu</td><td class="w">Scenarii</td><td>Propune titluri. „Folosește” pune titlul în Creează și pe miniatură.</td></tr>
@@ -959,13 +973,14 @@ function renderScenes(){
     const q = (s.kw || s.text.split(/\s+/).filter(w => w.length > 5).slice(0, 2).join(' ')).trim();
     return `<div class="scene"><span class="n">${String(i + 1).padStart(2, '0')}</span><div style="min-width:0">
       <textarea data-i="${i}" style="min-height:58px">${esc(s.text)}</textarea>
+      <input type="text" data-kw="${i}" value="${esc(s.kw || '')}" placeholder="Cuvinte pentru imagine, în engleză (gol = subiectul general)" style="margin-top:6px;font-size:12px">
       <div class="meta"><span>${s.dur.toFixed(1)} s</span>${s.kw ? `<span>Imagine: <b>${esc(s.kw)}</b></span>` : ''}
       <a href="https://www.pexels.com/search/videos/${encodeURIComponent(q)}/" target="_blank" rel="noopener">Caută imagini ↗</a><button class="ghost" data-ai="${esc(q)}" style="padding:2px 8px;font-size:12px">Caută cu AI Personal</button></div></div></div>`;
   }).join('');
   renderSummary();
 }
 $('#scenes').addEventListener('input', e => { const i = e.target.dataset.i; if (i == null) return; scenes[i].text = e.target.value; scenes[i].dur = sceneDur(e.target.value); renderSummary(); });
-$('#scenes').addEventListener('change', renderScenes);
+$('#scenes').addEventListener('change', e => { if (e.target.dataset.kw != null){ scenes[e.target.dataset.kw].kw = e.target.value.trim(); return; } renderScenes(); });
 $('#btnSplitLocal').onclick = () => { scenes = splitLocal(scriptEl.value); renderScenes(); $('#scDetails').open = true; if (!scenes.length) toast('Scrie întâi un scenariu.'); };
 
 /* voce */
@@ -1006,11 +1021,39 @@ $('#optMusic').onchange = e => { $('#musicBox').hidden = !e.target.checked; rend
 ['#optSubs','#optAnim','#sstyle','#musicFile'].forEach(id => $(id).addEventListener('change', renderSummary));
 $('#genres').addEventListener('click', async e => { const b = e.target.closest('[data-q]'); if (!b) return;
   $('#genres').querySelectorAll('.chip').forEach(x => x.setAttribute('aria-pressed', x === b));
-  if (!mcp){ $('#genreRes').innerHTML = '<p class="note">AI Personal nu e disponibil aici. Încarcă o melodie în Montaj.</p>'; return; }
   $('#genreRes').innerHTML = '<p class="note">Se caută…</p>';
+  try { const res = await ovSearch('audio', b.dataset.q, 8);
+    musicFound = res; $('#genreRes').innerHTML = res.length ? res.map((r, i) => `<div class="ritem"><span class="t">${esc(r.title || 'Fără titlu')}</span><span class="src">${esc(r.creator || 'autor necunoscut')} · ${esc(licName(r))}${r.duration ? ' · ' + fmt(r.duration / 1000) : ''}</span><div class="links"><button class="primary" data-addm="${i}" style="padding:3px 10px;font-size:12px">Adaugă ca muzică</button>${r.foreign_landing_url ? linkHtml(r.foreign_landing_url, 'Pagina') : ''}</div></div>`).join('') : '<p class="note">Nimic găsit. Încearcă alt gen.</p>';
+    return; } catch(err){ if (!mcp){ $('#genreRes').innerHTML = '<p class="note">Căutarea directă merge pe site-ul de pe GitHub (igorturcanu.github.io/cadru-studio). Aici încarcă o melodie în Montaj.</p>'; return; } }
   try { const items = parseMedia(txt(await call('cauta_media_gratuita', {tip:'muzica', interogare:b.dataset.q + ' instrumental'}))).slice(0, 6);
     $('#genreRes').innerHTML = items.length ? items.map(it => `<div class="ritem"><span class="t">${esc(it.title)}</span><span class="src">${esc(it.src)} · ${esc(it.autor)} · ${esc(it.lic)}</span><div class="links">${it.file ? linkHtml(it.file, 'Ascultă / salvează') : ''}${it.page ? linkHtml(it.page, 'Pagina') : ''}</div></div>`).join('') + '<p class="note">Salvează melodia, încarc-o în Montaj și alege-o mai sus.</p>' : '<p class="note">Nimic găsit. Încearcă alt gen.</p>';
   } catch(err){ $('#genreRes').innerHTML = `<p class="note">${esc(errMsg(err))}</p>`; } });
+
+/* Openverse: imagini și muzică gratuite */
+let musicFound = [];
+const OV = 'https://api.openverse.org/v1/';
+const ovCache = new Map(); let ovLast = 0;
+const licName = r => (r.license === 'cc0' ? 'CC0' : r.license === 'pdm' ? 'Domeniu public' : 'CC ' + String(r.license || '').toUpperCase() + (r.license_version ? ' ' + r.license_version : ''));
+async function ovSearch(kind, q, n, page = 1){
+  const key = kind + '|' + q + '|' + n + '|' + page; if (ovCache.has(key)) return ovCache.get(key);
+  const wait = 3200 - (Date.now() - ovLast); if (wait > 0) await new Promise(r => setTimeout(r, wait)); ovLast = Date.now();
+  const r = await fetch(`${OV}${kind}/?q=${encodeURIComponent(q)}&license_type=commercial&page_size=${n}&page=${page}&mature=false` + (kind === 'images' ? '&aspect_ratio=wide&size=large' : ''));
+  if (r.status === 429) throw new Error('limita');
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  const res = ((await r.json()).results || []); ovCache.set(key, res); return res;
+}
+async function ovBlob(r, kind){
+  const tries = kind === 'images' ? [r.url, `${OV}images/${r.id}/thumb/?full_size=true`, `${OV}images/${r.id}/thumb/`] : [r.url];
+  for (const u of tries){ try { const x = await fetch(u); if (!x.ok) continue; const b = await x.blob(); if (b.size > 2000 && /^(image|audio)\//.test(b.type || (kind === 'images' ? 'image/jpeg' : 'audio/mpeg'))) return b; } catch(e){} }
+  return null;
+}
+$('#genreRes').addEventListener('click', async e => { const b = e.target.closest('[data-addm]'); if (!b) return; const r = musicFound[+b.dataset.addm]; b.disabled = true; b.textContent = 'Se descarcă…';
+  const blob = await ovBlob(r, 'audio');
+  if (!blob){ b.textContent = 'Nu se poate descărca'; return; }
+  const m = makeMedia(blob.type ? blob : new Blob([blob], {type:'audio/mpeg'}), 'audio', (r.title || 'muzica') + '.mp3'); m.credit = `Muzică: „${r.title || 'fără titlu'}” de ${r.creator || 'autor necunoscut'}, ${licName(r)}${r.foreign_landing_url ? ' (' + r.foreign_landing_url + ')' : ''}`;
+  S.audio.muzica = m.id; renderMedia(); refreshPickers(); $('#musicFile').value = m.id; renderSummary(); b.textContent = '✓ Adăugată'; toast('Melodia e în Materiale și e aleasă ca muzică.'); });
+$('#optImg').onchange = e => { $('#imgBox').hidden = !e.target.checked; renderSummary(); };
+$('#creditsCopy').onclick = async () => { try { await navigator.clipboard.writeText($('#creditsOut').value); toast('Copiat.'); } catch(e){ $('#creditsOut').select(); toast('Textul e selectat. Copiază-l.'); } };
 
 /* rezumat + generare */
 function renderSummary(){
@@ -1020,22 +1063,58 @@ function renderSummary(){
   const row = (k, v) => `<dt>${k}</dt><dd>${v}</dd>`;
   $('#sumList').innerHTML = row('Fundal', esc((BGS.find(b => b[0] === W8.bg) || [, ''])[1])) + row('Voce', W8.voice === 'mine' ? (vm ? esc(vm.name) : 'lipsește fișierul') : 'Fără')
     + row('Subtitrări', $('#optSubs').checked ? $('#sstyle').selectedOptions[0].textContent : 'Oprite') + row('Grafică animată', $('#optAnim').checked ? 'Pornită' : 'Oprită')
-    + row('Muzică', $('#optMusic').checked ? (mm ? esc(mm.name) : 'alege o melodie') : 'Fără') + row('Format', S.format) + row('Scene', sc.length) + row('Durată', fmt(len));
+    + row('Imagini', $('#optImg').checked ? 'Automate' : 'Fundalul ales') + row('Muzică', $('#optMusic').checked ? (mm ? esc(mm.name) : 'alege o melodie') : 'Fără') + row('Format', S.format) + row('Scene', sc.length) + row('Durată', fmt(len));
   $('#btnToEditor').disabled = !sc.length;
 }
 $('#vTitle').addEventListener('input', renderSummary);
-$('#btnToEditor').onclick = () => {
+$('#btnToEditor').onclick = async () => {
   if (!scenes.length) scenes = splitLocal(scriptEl.value);
   if (!scenes.length){ toast('Scrie întâi un scenariu.'); return; }
   const subs = $('#optSubs').checked, st = $('#sstyle').value, anim = $('#optAnim').checked, title = $('#vTitle').value.trim();
+  const btn = $('#btnToEditor'); const note = $('#sumNote'); const credits = [];
+  let imgs = null;
+  if ($('#optImg').checked){
+    btn.disabled = true; const topic = $('#imgTopic').value.trim() || 'nature landscape';
+    try { imgs = await autoImages(scenes, topic, (k, n) => { note.textContent = `Caut și descarc imagini: ${k} din ${n}…`; }, credits); }
+    catch(err){ imgs = null; note.textContent = err.message === 'limita' ? 'Openverse a limitat căutările pentru moment. Am folosit fundalurile desenate; încearcă din nou peste câteva minute.' : 'Imaginile automate merg pe site-ul de pe GitHub (igorturcanu.github.io/cadru-studio). Aici am folosit fundalurile desenate.'; }
+    btn.disabled = false;
+  }
   S.clips = [];
   if (title) S.clips.push(newCard({ dur:3, text:title, style:'titlu', pos:'mijloc', bg:W8.bg, anim }));
-  scenes.forEach(s => S.clips.push(newCard({ dur:s.dur, text:subs ? s.text : '', style:st, pos:st === 'titlu' ? 'mijloc' : 'jos', bg:W8.bg, anim })));
+  scenes.forEach((s, i) => { const m = imgs && imgs[i];
+    const c = newCard({ dur:s.dur, text:subs ? s.text : '', style:st, pos:st === 'titlu' ? 'mijloc' : 'jos', bg:W8.bg, anim });
+    if (m){ c.kind = 'image'; c.mediaId = m.id; c.zoom = true; }
+    S.clips.push(c); });
   S.audio.voce = W8.voice === 'mine' ? ($('#voiceFile').value || null) : null;
   S.audio.muzica = $('#optMusic').checked ? ($('#musicFile').value || null) : null;
   if (S.audio.voce && S.audio.voce === S.audio.muzica) S.audio.muzica = null;
-  toast(`Video generat: ${S.clips.length} scene. Înlocuiește fundalurile cu filmele tale.`); S.sel = null; T = 0.8; renderMedia(); renderTimeline(); renderInspector(); location.hash = 'montaj';
+  const mm = media(S.audio.muzica); if (mm && mm.credit) credits.push(mm.credit);
+  if (credits.length){ $('#creditsOut').value = credits.join('\n'); $('#creditsBox').hidden = false;
+    S.clips.push(newCard({ dur:Math.min(10, 4 + credits.length * 0.3), text:'Imagini și muzică: Openverse (Wikimedia, Flickr și alții). Lista completă a autorilor e în descriere.', style:'sub', pos:'mijloc', bg:W8.bg, anim:false })); }
+  if (imgs) note.textContent = `Gata: ${imgs.filter(Boolean).length} din ${scenes.length} scene au imagine. Copiază sursele în descrierea video-ului.`;
+  toast(`Video generat: ${S.clips.length} scene.`); S.sel = null; T = 0.8; renderMedia(); renderTimeline(); renderInspector(); refreshPickers(); location.hash = 'montaj';
 };
+async function autoImages(list, topic, progress, credits){
+  const groups = new Map(); list.forEach((s, i) => { const q = (s.kw || topic).toLowerCase(); if (!groups.has(q)) groups.set(q, []); groups.get(q).push(i); });
+  let queries = [...groups.keys()];
+  if (queries.length > 30){ const keep = new Set(queries.slice(0, 29)); for (const [q, idx] of [...groups]){ if (!keep.has(q) && q !== topic.toLowerCase()){ groups.delete(q); if (!groups.has(topic.toLowerCase())) groups.set(topic.toLowerCase(), []); groups.get(topic.toLowerCase()).push(...idx); } } queries = [...groups.keys()]; }
+  const out = new Array(list.length).fill(null); let done = 0; const used = new Set(); let anyOk = false;
+  for (const q of queries){
+    const idx = groups.get(q); let res;
+    try { res = await ovSearch('images', q, Math.min(20, idx.length + 4)); anyOk = true;
+      for (let pg = 2; pg <= 5 && res.length < idx.length + 4 && res.length >= (pg - 1) * 20; pg++){ try { res = res.concat(await ovSearch('images', q, 20, pg)); } catch(e){ break; } } }
+    catch(e){ if (e.message === 'limita' && anyOk) break; if (!anyOk) throw e; continue; }
+    res = res.filter(r => !used.has(r.id)); if (!res.length){ done += idx.length; continue; }
+    const loaded = [];
+    for (let k = 0; k < idx.length; k++){
+      progress(++done, list.length);
+      if (k < res.length){ const r = res[k]; const blob = await ovBlob(r, 'images'); if (blob){ used.add(r.id); const m = makeMedia(blob, 'image', (r.title || q).slice(0, 60) + '.jpg'); m.credit = `„${r.title || 'fără titlu'}” de ${r.creator || 'autor necunoscut'}, ${licName(r)}${r.foreign_landing_url ? ' (' + r.foreign_landing_url + ')' : ''}`; credits.push(m.credit); loaded.push(m); out[idx[k]] = m; continue; } }
+      if (loaded.length) out[idx[k]] = loaded[k % loaded.length];
+    }
+  }
+  if (!anyOk) throw new Error('fetch');
+  return out;
+}
 let sampleFn = null;
 (async () => { try { if (window.claude?.use){ sampleFn = await window.claude.use('sample'); } } catch(e){}
   $('#btnSplitAI').hidden = !sampleFn; $('#wGo').disabled = $('#wTitles').disabled = !sampleFn; if (!sampleFn) $('#wNote').textContent = 'Scrierea cu Claude nu e disponibilă în această vizualizare. Deschide pagina în claude.ai.'; })();
@@ -1259,6 +1338,5 @@ renderMedia(); renderTimeline(); renderInspector(); renderScenes(); refreshPicke
 setTimeout(drawThumb, 600);
 })();
 </script>
-
 </body>
 </html>
