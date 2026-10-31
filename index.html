@@ -449,7 +449,7 @@ td.w{color:var(--muted);white-space:nowrap}
       <p class="note" style="margin:0" id="ytNote">Fișierul se trimite direct din browserul tău la YouTube, în bucăți. Dacă se întrerupe internetul, încearcă din nou singur.</p>
     </section>
     <section class="panel">
-      <h2>Configurare, o singură dată</h2>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><h2>Configurare, o singură dată</h2><div class="spacer"></div><button id="ytRead">🔊 Citește pașii</button></div>
       <label class="f">Client ID Google<input type="text" id="ytClient" placeholder="123…apps.googleusercontent.com"></label>
       <ol class="note" style="margin:0;padding-left:18px;display:grid;gap:6px">
         <li>Deschide <a href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noopener">Google Cloud ↗</a> și creează un proiect, de exemplu „Cadru Studio”. E gratuit.</li>
@@ -1379,6 +1379,12 @@ function ytFill(){ const t = $('#vTitle').value.trim(); if (!$('#ytTitle').value
   $('#ytFileNote').textContent = YT.file ? `Ales: ${YT.file.name}, ${(YT.file.size / 1048576).toFixed(0)} MB.` : 'Alege fișierul exportat (merge și cel de 3 ore).'; ytState(); }
 $('#ytFile').onchange = e => { YT.file = e.target.files[0] || null; ytFill(); };
 $('#ytConnect').onclick = async () => { try { await ytToken(true); toast('Conectat la YouTube.'); } catch(e){ ytState(e.message); } };
+$('#ytRead').onclick = () => { const ss = window.speechSynthesis; if (!ss){ toast('Browserul nu poate citi cu voce.'); return; }
+  if (ss.speaking){ ss.cancel(); $('#ytRead').textContent = '🔊 Citește pașii'; return; }
+  const steps = [...document.querySelectorAll('#v-publica ol li')].map((li, i) => `Pasul ${i + 1}. ${li.textContent.replace(/↗/g, '')}`);
+  const vs = ss.getVoices(); const v = vs.find(x => /^ro/i.test(x.lang));
+  steps.forEach((t, i) => { const u = new SpeechSynthesisUtterance(t); u.lang = 'ro-RO'; if (v) u.voice = v; u.rate = 0.95; if (i === steps.length - 1) u.onend = () => { $('#ytRead').textContent = '🔊 Citește pașii'; }; ss.speak(u); });
+  $('#ytRead').textContent = '■ Oprește citirea'; };
 $('#pubToYt').onclick = () => { $('#modal').hidden = true; };
 $('#ytStop').onclick = () => { YT.stop = true; try { YT.xhr && YT.xhr.abort(); } catch(e){} };
 function xhrSend(method, url, headers, body, onProg){ return new Promise((res, rej) => { const x = new XMLHttpRequest(); YT.xhr = x; x.open(method, url);
