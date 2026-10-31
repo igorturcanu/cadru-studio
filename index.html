@@ -206,6 +206,7 @@ td.w{color:var(--muted);white-space:nowrap}
 .toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:13px;z-index:30}
 
 @media (max-width:1050px){.editor{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.stage{grid-column:1/-1;order:-1}}
+@media (max-width:1360px){.logo small{display:none}nav.tabs a{padding:6px 8px}}
 @media (max-width:720px){.editor,.scen{grid-template-columns:minmax(0,1fr)}.steps{grid-template-columns:minmax(0,1fr)}.logo small{display:none}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -219,6 +220,7 @@ td.w{color:var(--muted);white-space:nowrap}
       <a href="#scenarii" data-view="scenarii">Scenarii</a>
       <a href="#miniaturi" data-view="miniaturi">Miniaturi</a>
       <a href="#proiecte" data-view="proiecte">Proiecte</a>
+      <a href="#publica" data-view="publica">Publică</a>
       <a href="#ai" data-view="ai">AI Personal</a>
       <a href="#ghid" data-view="ghid">Ghid</a>
     </nav>
@@ -427,6 +429,41 @@ td.w{color:var(--muted);white-space:nowrap}
   </div>
 </main>
 
+<!-- PUBLICĂ -->
+<main class="view wrap" id="v-publica" hidden>
+  <div class="two">
+    <section class="panel">
+      <h2>Urcă pe YouTube</h2>
+      <div id="ytState" class="note" style="margin:0">Neconectat.</div>
+      <label class="f">Fișierul video<input type="file" id="ytFile" accept="video/*"></label>
+      <p class="note" style="margin:0" id="ytFileNote">Alege fișierul exportat (merge și cel de 3 ore). Dacă tocmai ai exportat un video scurt, e ales deja.</p>
+      <label class="f">Titlu (maxim 100 de caractere)<input type="text" id="ytTitle" maxlength="100"></label>
+      <label class="f">Descriere<textarea id="ytDesc" style="min-height:120px"></textarea></label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <label class="f">Cine îl vede<select id="ytPriv"><option value="private">Privat</option><option value="unlisted">Nelistat (doar cu link)</option><option value="public">Public</option></select></label>
+        <label class="f">Etichete, cu virgulă<input type="text" id="ytTags" placeholder="documentar, istorie"></label>
+      </div>
+      <label style="display:flex;gap:8px;align-items:center;font-size:13px"><input type="checkbox" id="ytThumb" checked> Pune și miniatura din tab-ul Miniaturi</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button id="ytConnect">Conectează YouTube</button><button class="primary" id="ytGo">Urcă pe YouTube</button><button id="ytStop" hidden>Oprește</button></div>
+      <div class="bar"><i id="ytBar"></i></div>
+      <p class="note" style="margin:0" id="ytNote">Fișierul se trimite direct din browserul tău la YouTube, în bucăți. Dacă se întrerupe internetul, încearcă din nou singur.</p>
+    </section>
+    <section class="panel">
+      <h2>Configurare, o singură dată</h2>
+      <label class="f">Client ID Google<input type="text" id="ytClient" placeholder="123…apps.googleusercontent.com"></label>
+      <ol class="note" style="margin:0;padding-left:18px;display:grid;gap:6px">
+        <li>Deschide <a href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noopener">Google Cloud ↗</a> și creează un proiect, de exemplu „Cadru Studio”. E gratuit.</li>
+        <li>Pornește <a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noopener">YouTube Data API v3 ↗</a>: apasă „Enable”.</li>
+        <li>La <a href="https://console.cloud.google.com/auth/overview" target="_blank" rel="noopener">Google Auth Platform ↗</a> completează numele aplicației și emailul, alege „External”, iar la „Audience → Test users” adaugă adresa ta de Gmail.</li>
+        <li>La <a href="https://console.cloud.google.com/auth/clients" target="_blank" rel="noopener">Clients ↗</a> apasă „Create client”, alege „Web application”, iar la „Authorized JavaScript origins” scrie <b>https://igorturcanu.github.io</b>.</li>
+        <li>Copiază „Client ID” și lipește-l aici, sus. Apoi apasă „Conectează YouTube” și alege canalul.</li>
+      </ol>
+      <p class="note" style="margin:0">Bine de știut: până când Google verifică aplicația, video-urile urcate de aici rămân <b>private</b>. Le faci publice din YouTube Studio sau ceri verificarea din Google Cloud. Ai voie cam 6 urcări pe zi. Client ID-ul nu e o parolă, se păstrează doar în acest browser.</p>
+      <p class="note" style="margin:0">Merge doar pe site-ul de pe GitHub, nu în versiunea din Claude.</p>
+    </section>
+  </div>
+</main>
+
 <!-- PROIECTE -->
 <main class="view wrap" id="v-proiecte" hidden>
   <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;padding-top:14px">
@@ -568,6 +605,7 @@ td.w{color:var(--muted);white-space:nowrap}
           <tr><td class="b">Imagini automate</td><td class="w">Creează, pasul 4</td><td>La „Generează video”, caută singur poze gratuite (licență permisă pentru canale monetizate) după subiect sau după cuvintele fiecărei scene și le pune pe timeline, cu zoom lent. Merge pe site-ul de pe GitHub.</td></tr>
           <tr><td class="b">Cuvinte pentru imagine</td><td class="w">Creează, pasul 1, la fiecare scenă</td><td>Ce poză vrei pe acea scenă, în engleză (ex: „old castle”). Gol = subiectul general.</td></tr>
           <tr><td class="b">Muzică de fundal, genuri</td><td class="w">Creează, pasul 4</td><td>Alegi o melodie din Materiale sau cauți muzică gratuită după gen. „Adaugă ca muzică” o descarcă direct în proiect (pe site-ul de pe GitHub).</td></tr>
+          <tr><td class="b">Publică → Urcă pe YouTube</td><td class="w">Tab-ul Publică</td><td>Conectezi o dată canalul (cu Client ID-ul tău Google, pașii sunt în dreapta), alegi fișierul, scrii titlul și descrierea și apeși „Urcă pe YouTube”. Merge și pentru 3 ore; se urcă în bucăți și reia singur dacă pică internetul. Până la verificarea aplicației de către Google, video-urile rămân private.</td></tr>
           <tr><td class="b">Export lung (peste 25 de minute)</td><td class="w">Butonul „Exportă video”</td><td>Pe calculator, în Chrome sau Edge, pe site-ul de pe GitHub: alegi unde se salvează fișierul și video-ul se scrie direct pe disc, oricât de lung (și 3 ore). Altfel îl salvează în părți de câte 20 de minute. Exportul durează cât video-ul: ține tab-ul vizibil și calculatorul la priză. Dacă ascunzi tab-ul, exportul pune pauză și continuă când revii.</td></tr>
           <tr><td class="b">Surse, pentru descrierea YouTube</td><td class="w">Creează, după generare</td><td>Lista autorilor și licențelor pentru imaginile și muzica folosite. Apasă „Copiază” și lipește-o în descrierea video-ului.</td></tr>
           <tr><td class="b">Generează video</td><td class="w">Creează, Rezumat</td><td>Construiește tot timeline-ul în Montaj din scenariu și alegerile tale. Înlocuiește ce era acolo.</td></tr>
@@ -628,6 +666,7 @@ td.w{color:var(--muted);white-space:nowrap}
         <button class="primary" id="pubShare" hidden>Trimite în altă aplicație</button>
       </div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:13px">
+        <a href="#publica" id="pubToYt"><b>Urcă direct pe YouTube →</b></a>
         <a href="https://www.youtube.com/upload" target="_blank" rel="noopener">YouTube Studio ↗</a>
         <a href="https://www.facebook.com/" target="_blank" rel="noopener">Facebook ↗</a>
         <a href="https://x.com/compose/post" target="_blank" rel="noopener">X (Twitter) ↗</a>
@@ -1314,6 +1353,92 @@ document.addEventListener('visibilitychange', () => { if (!rec || !rec.mr) retur
 $('#mCancel').onclick = () => { if (rec){ rec.cancel = true; stop(); try { rec.mr && rec.mr.stop(); } catch(e){} } wakeOff(); $('#modal').hidden = true; };
 $('#mSave').onclick = async () => { if (!blob) return; if (await saveBlob(blob, `cadru-video.${ext}`)) toast('Video salvat.'); else toast('Clic dreapta pe video → „Salvează videoclipul ca…”.'); };
 
+/* ---------- Publică pe YouTube ---------- */
+const YT = { token:null, exp:0, tc:null, xhr:null, stop:false, file:null };
+const lsGet = k => { try { return localStorage.getItem(k) || ''; } catch(e){ return ''; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch(e){} };
+$('#ytClient').value = lsGet('cadru.ytClient');
+$('#ytClient').onchange = e => { lsSet('cadru.ytClient', e.target.value.trim()); YT.tc = null; YT.token = null; ytState(); };
+function ytState(msg){ $('#ytState').textContent = msg || (YT.token && Date.now() < YT.exp ? 'Conectat la YouTube.' : $('#ytClient').value.trim() ? 'Neconectat. Apasă „Conectează YouTube”.' : 'Neconectat. Fă întâi configurarea din dreapta.'); }
+function loadGis(){ return new Promise((res, rej) => { if (window.google?.accounts?.oauth2) return res(); const sc = document.createElement('script'); sc.src = 'https://accounts.google.com/gsi/client'; sc.onload = res; sc.onerror = () => rej(new Error('gis')); document.head.appendChild(sc); }); }
+async function ytToken(interactive){
+  if (YT.token && Date.now() < YT.exp - 60000) return YT.token;
+  const cid = $('#ytClient').value.trim(); if (!cid) throw new Error('Lipsește Client ID. Fă configurarea din dreapta.');
+  if (inFrame) throw new Error('Conectarea la YouTube merge doar pe site-ul de pe GitHub (igorturcanu.github.io/cadru-studio).');
+  await loadGis().catch(() => { throw new Error('Nu se poate încărca autentificarea Google. Verifică internetul.'); });
+  return new Promise((res, rej) => {
+    YT.tc = google.accounts.oauth2.initTokenClient({ client_id:cid, scope:'https://www.googleapis.com/auth/youtube.upload',
+      callback: r => { if (r.error) return rej(new Error('Google a refuzat conectarea: ' + r.error)); YT.token = r.access_token; YT.exp = Date.now() + (r.expires_in || 3600) * 1000; ytState(); res(YT.token); },
+      error_callback: e => rej(new Error(e?.type === 'popup_closed' ? 'Ai închis fereastra Google.' : 'Fereastra Google a fost blocată. Permite ferestrele pop-up pentru acest site.')) });
+    YT.tc.requestAccessToken({ prompt: interactive ? 'consent' : '' });
+  });
+}
+function ytFill(){ const t = $('#vTitle').value.trim(); if (!$('#ytTitle').value) $('#ytTitle').value = t.slice(0, 100);
+  if (!$('#ytDesc').value){ const cr = $('#creditsOut').value.trim(); $('#ytDesc').value = [cr ? 'Surse imagini și muzică:\n' + cr : '', 'Realizat cu Cadru Studio.'].filter(Boolean).join('\n\n'); }
+  if (!YT.file && blob){ YT.file = new File([blob], `cadru-video.${ext}`, {type:blob.type || 'video/webm'}); }
+  $('#ytFileNote').textContent = YT.file ? `Ales: ${YT.file.name}, ${(YT.file.size / 1048576).toFixed(0)} MB.` : 'Alege fișierul exportat (merge și cel de 3 ore).'; ytState(); }
+$('#ytFile').onchange = e => { YT.file = e.target.files[0] || null; ytFill(); };
+$('#ytConnect').onclick = async () => { try { await ytToken(true); toast('Conectat la YouTube.'); } catch(e){ ytState(e.message); } };
+$('#pubToYt').onclick = () => { $('#modal').hidden = true; };
+$('#ytStop').onclick = () => { YT.stop = true; try { YT.xhr && YT.xhr.abort(); } catch(e){} };
+function xhrSend(method, url, headers, body, onProg){ return new Promise((res, rej) => { const x = new XMLHttpRequest(); YT.xhr = x; x.open(method, url);
+  for (const k in headers) x.setRequestHeader(k, headers[k]); if (onProg) x.upload.onprogress = onProg;
+  x.onload = () => res(x); x.onerror = () => rej(new Error('net')); x.onabort = () => rej(new Error('stop')); x.send(body); }); }
+const ytClean = s => String(s).replace(/[<>]/g, '');
+$('#ytGo').onclick = async () => {
+  const f = YT.file; if (!f){ toast('Alege întâi fișierul video.'); return; }
+  const title = ytClean($('#ytTitle').value.trim() || 'Video Cadru').slice(0, 100);
+  let desc = ytClean($('#ytDesc').value); while (new TextEncoder().encode(desc).length > 4900) desc = desc.slice(0, -200);
+  const tags = $('#ytTags').value.split(',').map(t => ytClean(t.trim())).filter(Boolean).slice(0, 30);
+  const note = $('#ytNote'), bar = $('#ytBar'); YT.stop = false; $('#ytGo').disabled = true; $('#ytStop').hidden = false;
+  const done = m => { note.textContent = m; $('#ytGo').disabled = false; $('#ytStop').hidden = true; YT.xhr = null; };
+  try {
+    let tok = await ytToken(false).catch(() => ytToken(true));
+    note.textContent = 'Pregătesc urcarea…'; await wakeOn();
+    const meta = { snippet:{ title, description:desc, tags, categoryId:'22' }, status:{ privacyStatus:$('#ytPriv').value, selfDeclaredMadeForKids:false } };
+    let x = await xhrSend('POST', 'https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status',
+      { Authorization:'Bearer ' + tok, 'Content-Type':'application/json; charset=UTF-8', 'X-Upload-Content-Length':String(f.size), 'X-Upload-Content-Type':f.type || 'video/webm' }, JSON.stringify(meta));
+    if (x.status === 403 && /quota/i.test(x.responseText)) throw new Error('Ai atins limita de urcări pe azi. Încearcă mâine.');
+    if (x.status === 401 || x.status === 403) throw new Error('YouTube a refuzat accesul. Verifică pașii de configurare și că ai ales canalul corect.');
+    const loc = x.getResponseHeader('Location'); if (!loc) throw new Error('YouTube nu a pornit urcarea (' + x.status + ').');
+    const CH = 32 * 1024 * 1024; let off = 0, fails = 0, res = null; const t0 = Date.now();
+    while (off < f.size){
+      if (YT.stop) throw new Error('stop');
+      const end = Math.min(off + CH, f.size);
+      try {
+        if (Date.now() > YT.exp - 120000) tok = await ytToken(false);
+        x = await xhrSend('PUT', loc, { Authorization:'Bearer ' + tok, 'Content-Range':`bytes ${off}-${end - 1}/${f.size}` }, f.slice(off, end), e => {
+          const sent = off + e.loaded; bar.style.width = (sent / f.size * 100).toFixed(1) + '%'; const sp = sent / ((Date.now() - t0) / 1000 || 1);
+          note.textContent = `Se urcă: ${(sent / 1048576).toFixed(0)} din ${(f.size / 1048576).toFixed(0)} MB${sp > 0 ? ', mai durează cam ' + fmtLong((f.size - sent) / sp) : ''}. Ține pagina deschisă.`; });
+        if (x.status === 308){ const r = x.getResponseHeader('Range'); off = r ? +r.split('-')[1] + 1 : end; fails = 0; continue; }
+        if (x.status === 200 || x.status === 201){ res = JSON.parse(x.responseText); break; }
+        if (x.status === 401){ YT.token = null; tok = await ytToken(false); continue; }
+        if (x.status >= 500 || x.status === 0) throw new Error('net');
+        throw new Error('YouTube a oprit urcarea (' + x.status + '): ' + x.responseText.slice(0, 160));
+      } catch(e){
+        if (e.message !== 'net' || YT.stop) throw e;
+        if (++fails > 8) throw new Error('Internetul s-a întrerupt de prea multe ori. Încearcă din nou.');
+        note.textContent = `Conexiunea s-a întrerupt. Reîncerc (${fails})…`; await new Promise(r => setTimeout(r, Math.min(60000, 2000 * 2 ** fails)));
+        try { const q = await xhrSend('PUT', loc, { Authorization:'Bearer ' + tok, 'Content-Range':`bytes */${f.size}` }, null);
+          if (q.status === 200 || q.status === 201){ res = JSON.parse(q.responseText); break; }
+          if (q.status === 308){ const r = q.getResponseHeader('Range'); off = r ? +r.split('-')[1] + 1 : 0; } } catch(_){}
+      }
+    }
+    if (!res || !res.id) throw new Error('YouTube nu a confirmat video-ul.');
+    bar.style.width = '100%'; let extra = '';
+    if ($('#ytThumb').checked){ try { const png = await new Promise(r => $('#tcv').toBlob(r, 'image/png'));
+      const tx = await xhrSend('POST', `https://www.googleapis.com/upload/youtube/v3/thumbnails/set?videoId=${res.id}&uploadType=media`, { Authorization:'Bearer ' + tok, 'Content-Type':'image/png' }, png);
+      extra = tx.status === 200 ? ' Miniatura e pusă.' : ' Miniatura nu s-a pus (canalul trebuie verificat cu telefonul pentru miniaturi).'; } catch(e){ extra = ' Miniatura nu s-a pus.'; } }
+    const link = 'https://youtu.be/' + res.id;
+    done(`Gata! Video-ul e pe YouTube: ${link} . YouTube îl mai procesează câteva minute.${extra}`);
+    note.innerHTML = `Gata! Video-ul e pe YouTube: <a href="${link}" target="_blank" rel="noopener">${link} ↗</a>. YouTube îl mai procesează câteva minute.${esc(extra)} <a href="https://studio.youtube.com/video/${res.id}/edit" target="_blank" rel="noopener">Deschide în Studio ↗</a>`;
+  } catch(e){ done(e.message === 'stop' ? 'Urcarea a fost oprită.' : e.message === 'net' ? 'Nu am putut ajunge la YouTube. Verifică internetul.' : e.message); }
+  wakeOff();
+};
+const fmtLong = s => { s = Math.round(s); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60); return h ? `${h} h ${m} min` : m ? `${m} min` : `${s} s`; };
+window.addEventListener('hashchange', () => { if (location.hash === '#publica') ytFill(); });
+if (location.hash === '#publica') setTimeout(ytFill, 0);
+
 /* ---------- AI Personal ---------- */
 const AIS = 'AI Personal'; let mcp = null; let jobs = [];
 (async () => { try { mcp = window.claude?.use ? await window.claude.use('mcp') : null; } catch(e){ mcp = null; }
@@ -1377,7 +1502,7 @@ $('#aiUpload').onclick = () => $('#file').click();
 $('#scenes').addEventListener('click', e => { const b = e.target.closest('[data-ai]'); if (!b) return; $('#qText').value = b.dataset.ai; $('#qTip').value = 'imagine'; location.hash = 'ai'; });
 
 /* ---------- routing ---------- */
-const VIEWS = ['creeaza','montaj','scenarii','miniaturi','proiecte','ai','ghid'];
+const VIEWS = ['creeaza','montaj','scenarii','miniaturi','proiecte','publica','ai','ghid'];
 function route(){ const v = (location.hash || '#creeaza').slice(1); const name = VIEWS.includes(v) ? v : 'creeaza';
   for (const n of VIEWS) $('#v-' + n).hidden = n !== name;
   if (name === 'miniaturi') drawThumb(); if (name === 'proiecte') renderProjects(); if (name === 'creeaza') renderVoices();
