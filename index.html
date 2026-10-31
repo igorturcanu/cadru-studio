@@ -619,6 +619,22 @@ td.w{color:var(--muted);white-space:nowrap}
       <button id="mCancel">Anulează</button>
       <button class="primary" id="mSave" hidden>Salvează pe dispozitiv</button>
     </div>
+    <div id="mPub" hidden style="display:grid;gap:8px;border-top:1px solid var(--line, #ddd);padding-top:10px">
+      <b>Publică</b>
+      <p class="note" style="margin:0">Titlul și descrierea (cu sursele imaginilor și muzicii) sunt gata de copiat. Apoi deschizi platforma și alegi fișierul salvat.</p>
+      <textarea id="pubText" style="min-height:90px;font-size:12px"></textarea>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button id="pubCopy">Copiază titlu + descriere</button>
+        <button class="primary" id="pubShare" hidden>Trimite în altă aplicație</button>
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:13px">
+        <a href="https://www.youtube.com/upload" target="_blank" rel="noopener">YouTube Studio ↗</a>
+        <a href="https://www.facebook.com/" target="_blank" rel="noopener">Facebook ↗</a>
+        <a href="https://x.com/compose/post" target="_blank" rel="noopener">X (Twitter) ↗</a>
+        <a href="https://web.whatsapp.com/" target="_blank" rel="noopener">WhatsApp ↗</a>
+      </div>
+      <p class="note" style="margin:0">YouTube primește video-uri de până la 12 ore, dar peste 15 minute contul trebuie verificat o dată cu telefonul (youtube.com/verify). WhatsApp și X acceptă doar fișiere scurte: acolo pune un fragment sau linkul de YouTube.</p>
+    </div>
   </div>
 </div>
 
@@ -1277,10 +1293,16 @@ $('#btnExport').onclick = async () => {
     rec.mr = mr; setTimeout(() => { if (!rec || rec.cancel) return; mr.start(1000); play(); }, 300);
   };
   blob = null;
-  $('#modal').hidden = false; $('#mVideo').hidden = true; $('#mSave').hidden = true; $('#mTitle').textContent = mode === 'disk' ? 'Export lung, direct pe disc' : mode === 'parts' ? `Export lung, în ${nParts} părți` : 'Export video'; $('#mCancel').textContent = 'Anulează';
+  $('#modal').hidden = false; $('#mPub').hidden = true; $('#mVideo').hidden = true; $('#mSave').hidden = true; $('#mTitle').textContent = mode === 'disk' ? 'Export lung, direct pe disc' : mode === 'parts' ? `Export lung, în ${nParts} părți` : 'Export video'; $('#mCancel').textContent = 'Anulează';
   T = 0; stop(); startPart();
 };
-function doneUI(msg){ $('#mTitle').textContent = 'Video gata'; $('#mText').textContent = msg; $('#mBar').style.width = '100%'; $('#mCancel').textContent = 'Închide'; rec = null; wakeOff(); }
+function doneUI(msg){ showPub(); $('#mTitle').textContent = 'Video gata'; $('#mText').textContent = msg; $('#mBar').style.width = '100%'; $('#mCancel').textContent = 'Închide'; rec = null; wakeOff(); }
+function showPub(){ const t = $('#vTitle').value.trim(); const cr = $('#creditsOut').value.trim();
+  $('#pubText').value = [t, cr ? 'Surse imagini și muzică:\n' + cr : '', 'Realizat cu Cadru Studio.'].filter(Boolean).join('\n\n');
+  let can = false; try { can = !!(blob && navigator.canShare && navigator.canShare({files:[new File([blob], 'v.' + ext, {type:blob.type})]})); } catch(e){}
+  $('#pubShare').hidden = !can; $('#mPub').hidden = false; }
+$('#pubCopy').onclick = async () => { try { await navigator.clipboard.writeText($('#pubText').value); toast('Copiat. Lipește-l în descriere.'); } catch(e){ $('#pubText').select(); toast('Textul e selectat. Copiază-l.'); } };
+$('#pubShare').onclick = async () => { try { await navigator.share({ files:[new File([blob], `cadru-video.${ext}`, {type:blob.type})], title:$('#vTitle').value.trim() || 'Video', text:$('#pubText').value }); } catch(e){ if (e?.name !== 'AbortError') toast('Trimiterea nu a mers aici. Salvează fișierul și urcă-l din aplicație.'); } };
 async function saveBlob(b, name){ let dl = null; try { dl = window.claude?.use ? await window.claude.use('downloads') : null; } catch(e){}
   if (dl){ try { await dl.save({filename:name, data:b}); return true; } catch(e){ toast('O parte nu s-a salvat: ' + name); return false; } }
   return plainDownload(b, name); }
