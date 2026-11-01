@@ -264,18 +264,18 @@ def build_video_cycle(args):
     #    (filtrul perspective interpolează, deci imaginea nu "tremură" ca la zoompan)
     clip_dir = WORK / "clips"
     clip_dir.mkdir(parents=True, exist_ok=True)
-    z = f"(1+0.10*on/{frames})"
+    z = f"(1+{args.zoom}*on/{frames})"
     mx, my = f"W/2*(1-1/{z})", f"H/2*(1-1/{z})"
     persp = (f"perspective=x0='{mx}':y0='{my}':x1='W-{mx}':y1='{my}':"
              f"x2='{mx}':y2='H-{my}':x3='W-{mx}':y3='H-{my}':interpolation=cubic:eval=frame")
     clips = []
     for i, p in enumerate(seq):
-        c = clip_dir / f"clip_{i:02d}_{w}x{h}_{s}s.mp4"
+        c = clip_dir / f"clip_{i:02d}_{w}x{h}_{s}s_z{args.zoom}.mp4"
         if not c.exists():
             print(f"[clip {i + 1}/{len(seq)}] {p.name}")
             run(["ffmpeg", "-y", "-v", "error", "-loop", "1", "-framerate", fps, "-t", s, "-i", p,
                  "-vf", f"scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h},"
-                        f"setsar=1,format=yuv420p,{persp}",
+                        f"setsar=1,format=yuv420p" + (f",{persp}" if args.zoom else ""),
                  "-c:v", "libx264", "-preset", "medium", "-crf", "16", "-pix_fmt", "yuv420p", c])
         clips.append(c)
     inputs = []
@@ -409,6 +409,8 @@ def main():
     ap.add_argument("--end-seconds", type=float, default=25)
     ap.add_argument("--maxrate", default="3M",
                     help="debit video maxim (ex. 1.3M pentru un fișier de ~2 GB la 3 ore)")
+    ap.add_argument("--zoom", type=float, default=0,
+                    help="zoom lent pe fiecare imagine (0 = imagini nemișcate, ex. 0.1 = 10%%)")
     ap.add_argument("--size", default="1920x1080")
     ap.add_argument("--fps", type=int, default=24)
     ap.add_argument("--output", default="video_3_ore.mp4")
