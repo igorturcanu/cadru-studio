@@ -398,11 +398,27 @@ def build(args):
         lst = seg / "list.txt"
         lst.write_text("".join(f"file '{Path(p).resolve()}'\n" for p in order))
         vin = ["-f", "concat", "-safe", "0", "-i", lst]
+    fades = f"afade=t=in:d=3,afade=t=out:st={total - 8}:d=8"
+    if args.water:
+        # pârâu fin în fundal: zgomot roz filtrat (clipocit) + zgomot maro (murmur), sub muzică
+        g = args.water
+        water = [
+            "-f", "lavfi", "-i", "anoisesrc=color=pink:sample_rate=48000:seed=7",
+            "-f", "lavfi", "-i", "anoisesrc=color=brown:sample_rate=48000:seed=11",
+        ]
+        afilt = ["-filter_complex",
+                 f"[2:a]highpass=f=500,lowpass=f=4500,tremolo=f=0.13:d=0.35,volume={g}[w1];"
+                 f"[3:a]highpass=f=60,lowpass=f=900,volume={g * 0.6}[w2];"
+                 f"[w1][w2]amix=inputs=2:normalize=0,aformat=channel_layouts=stereo,"
+                 f"aecho=0.8:0.7:23|37:0.25|0.2[wt];"
+                 f"[1:a][wt]amix=inputs=2:normalize=0,{fades}[aout]",
+                 "-map", "0:v", "-map", "[aout]"]
+    else:
+        water, afilt = [], ["-map", "0:v", "-map", "1:a", "-af", fades]
     run(["ffmpeg", "-y", *vin,
-         "-stream_loop", "-1", "-i", audio,
-         "-t", total, "-map", "0:v", "-map", "1:a",
+         "-stream_loop", "-1", "-i", audio, *water,
+         "-t", total, *afilt,
          "-c:v", "copy",
-         "-af", f"afade=t=in:d=3,afade=t=out:st={total - 8}:d=8",
          "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", out])
     print(f"\nGata: {out}  ({probe_duration(out) / 3600:.2f} ore)")
 
@@ -431,6 +447,8 @@ def main():
                     help="zoom lent pe fiecare imagine (0 = imagini nemișcate, ex. 0.1 = 10%%)")
     ap.add_argument("--effects", action="store_true",
                     help="efecte variate: zoom alternativ (apropiere/depărtare) și treceri diferite")
+    ap.add_argument("--water", type=float, default=0,
+                    help="sunet fin de apă curgătoare sub muzică (ex. 0.08; 0 = fără)")
     ap.add_argument("--vivid", action="store_true", help="culori mai vii și imagine mai clară")
     ap.add_argument("--crf", default="24", help="calitate compresie (mai mic = mai clar, ex. 18)")
     ap.add_argument("--images-dir", help="folder cu imaginile (implicit work/images)")
