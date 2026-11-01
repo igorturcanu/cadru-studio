@@ -73,7 +73,7 @@ const srv = http.createServer((q, r) => {
     if (flow === 'videos') { await go('creeaza'); await p.fill('#script', 'Un test scurt pentru biblioteca de video.'); await p.click('#optImg'); await p.click('#btnToEditor'); await p.waitForFunction(() => location.hash === '#montaj');
       await p.click('#btnExport'); await p.waitForFunction(() => document.querySelector('#mTitle').textContent === 'Video gata', null, { timeout: 120000 }); await p.click('#mCancel'); }
     await go('videoclipuri');
-    await p.setInputFiles('#vidFile', path.join(ROOT, 'media/relaxant-test-3min.mp4'));
+    await p.setInputFiles('#vidFile', path.join(ROOT, 'media/relaxant-mostra-2min.mp4'));
     await p.waitForFunction(() => document.querySelectorAll('#vidGrid .pcard').length >= 2, null, { timeout: 30000 });
     await p.waitForSelector('#vidStudio .pcard'); await p.waitForTimeout(500); await shot('videos');
     console.log('videos:', await p.$$eval('#vidGrid .pcard b, #vidStudio .pcard b', e => e.map(x => x.textContent)));
