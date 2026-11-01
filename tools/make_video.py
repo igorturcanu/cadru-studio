@@ -304,13 +304,17 @@ def build_video_cycle(args):
     out = WORK / "video_cycle.mp4"
     run(["ffmpeg", "-y", *inputs, "-filter_complex", ";".join(parts), "-map", last,
          "-r", fps, "-c:v", "libx264", "-preset", "medium", "-crf", "24",
-         "-maxrate", "3M", "-bufsize", "6M", "-pix_fmt", "yuv420p", out])
+         "-maxrate", MAXRATE[0], "-bufsize", MAXRATE[1], "-pix_fmt", "yuv420p", out])
     print(f"Ciclu video: {period / 60:.1f} min")
     return out
 
 
-ENC = ["-c:v", "libx264", "-preset", "medium", "-crf", "24", "-maxrate", "3M", "-bufsize", "6M",
-       "-pix_fmt", "yuv420p"]
+MAXRATE = ["3M", "6M"]      # schimbat de --maxrate
+
+
+def enc():
+    return ["-c:v", "libx264", "-preset", "medium", "-crf", "24", "-maxrate", MAXRATE[0],
+            "-bufsize", MAXRATE[1], "-pix_fmt", "yuv420p"]
 
 
 def _overlay_variant(video, out, fps, length, cta=None, cta_windows=(), endcard=None, end_secs=25):
@@ -330,7 +334,7 @@ def _overlay_variant(video, out, fps, length, cta=None, cta_windows=(), endcard=
         parts.append(f"{last}[o{idx}]overlay=enable='gte(t,{st})'[c{idx}]")
         last = f"[c{idx}]"
     run(["ffmpeg", "-y", "-v", "error", *inputs, "-t", length, "-filter_complex", ";".join(parts),
-         "-map", last, "-r", fps, *ENC, out])
+         "-map", last, "-r", fps, *enc(), out])
 
 
 def build(args):
@@ -403,10 +407,14 @@ def main():
     ap.add_argument("--cta-seconds", type=float, default=15, help="cât timp stau pe ecran")
     ap.add_argument("--endcard", help="PNG cu cadrul de final (tools/make_overlay.py --endcard)")
     ap.add_argument("--end-seconds", type=float, default=25)
+    ap.add_argument("--maxrate", default="3M",
+                    help="debit video maxim (ex. 1.3M pentru un fișier de ~2 GB la 3 ore)")
     ap.add_argument("--size", default="1920x1080")
     ap.add_argument("--fps", type=int, default=24)
     ap.add_argument("--output", default="video_3_ore.mp4")
     args = ap.parse_args()
+    rate = float(args.maxrate.rstrip("Mm"))
+    MAXRATE[:] = [args.maxrate, f"{rate * 2:g}M"]
 
     if args.step in ("images", "all"):
         make_images(args)
