@@ -220,6 +220,7 @@ td.w{color:var(--muted);white-space:nowrap}
       <a href="#scenarii" data-view="scenarii">Scenarii</a>
       <a href="#miniaturi" data-view="miniaturi">Miniaturi</a>
       <a href="#proiecte" data-view="proiecte">Proiecte</a>
+      <a href="#videoclipuri" data-view="videoclipuri">Videoclipuri</a>
       <a href="#publica" data-view="publica">Publică</a>
       <a href="#ai" data-view="ai">AI Personal</a>
       <a href="#ghid" data-view="ghid">Ghid</a>
@@ -429,6 +430,21 @@ td.w{color:var(--muted);white-space:nowrap}
   </div>
 </main>
 
+<!-- VIDEOCLIPURI -->
+<main class="view wrap" id="v-videoclipuri" hidden>
+  <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;padding-top:14px">
+    <div style="display:grid;gap:2px"><h2 style="font-size:20px">Videoclipurile mele</h2><span class="note">Tot ce exporți din Cadru apare aici singur. Poți adăuga și video-uri făcute în altă parte.</span></div>
+    <div class="spacer"></div>
+    <button class="primary" id="vidAdd">＋ Adaugă video</button>
+    <input type="file" id="vidFile" accept="video/*" multiple hidden>
+  </div>
+  <h3 style="margin:16px 0 8px">Create de tine</h3>
+  <div class="pgrid" id="vidGrid"></div>
+  <h3 style="margin:22px 0 8px">Create de Claude pentru tine</h3>
+  <div class="pgrid" id="vidStudio"></div>
+  <div class="modal" id="vidPlayer" hidden><div class="box"><h2 id="vpTitle">Video</h2><video id="vpVideo" controls playsinline style="width:100%;max-height:60vh;background:#000"></video><div style="display:flex;justify-content:flex-end"><button id="vpClose">Închide</button></div></div></div>
+</main>
+
 <!-- PUBLICĂ -->
 <main class="view wrap" id="v-publica" hidden>
   <div class="two">
@@ -605,6 +621,7 @@ td.w{color:var(--muted);white-space:nowrap}
           <tr><td class="b">Imagini automate</td><td class="w">Creează, pasul 4</td><td>La „Generează video”, caută singur poze gratuite (licență permisă pentru canale monetizate) după subiect sau după cuvintele fiecărei scene și le pune pe timeline, cu zoom lent. Merge pe site-ul de pe GitHub.</td></tr>
           <tr><td class="b">Cuvinte pentru imagine</td><td class="w">Creează, pasul 1, la fiecare scenă</td><td>Ce poză vrei pe acea scenă, în engleză (ex: „old castle”). Gol = subiectul general.</td></tr>
           <tr><td class="b">Muzică de fundal, genuri</td><td class="w">Creează, pasul 4</td><td>Alegi o melodie din Materiale sau cauți muzică gratuită după gen. „Adaugă ca muzică” o descarcă direct în proiect (pe site-ul de pe GitHub).</td></tr>
+          <tr><td class="b">Videoclipuri</td><td class="w">Tab-ul Videoclipuri</td><td>Biblioteca ta: fiecare video exportat apare aici singur. „Adaugă video” pune și fișiere făcute în altă parte. Pe fiecare îl poți vedea, salva, urca pe YouTube sau șterge. Jos sunt video-urile făcute de Claude pentru tine, de exemplu cel de 3 ore.</td></tr>
           <tr><td class="b">Publică → Urcă pe YouTube</td><td class="w">Tab-ul Publică</td><td>Conectezi o dată canalul (cu Client ID-ul tău Google, pașii sunt în dreapta), alegi fișierul, scrii titlul și descrierea și apeși „Urcă pe YouTube”. Merge și pentru 3 ore; se urcă în bucăți și reia singur dacă pică internetul. Până la verificarea aplicației de către Google, video-urile rămân private.</td></tr>
           <tr><td class="b">Export lung (peste 25 de minute)</td><td class="w">Butonul „Exportă video”</td><td>Pe calculator, în Chrome sau Edge, pe site-ul de pe GitHub: alegi unde se salvează fișierul și video-ul se scrie direct pe disc, oricât de lung (și 3 ore). Altfel îl salvează în părți de câte 20 de minute. Exportul durează cât video-ul: ține tab-ul vizibil și calculatorul la priză. Dacă ascunzi tab-ul, exportul pune pauză și continuă când revii.</td></tr>
           <tr><td class="b">Surse, pentru descrierea YouTube</td><td class="w">Creează, după generare</td><td>Lista autorilor și licențelor pentru imaginile și muzica folosite. Apasă „Copiază” și lipește-o în descrierea video-ului.</td></tr>
@@ -1273,7 +1290,7 @@ $('#tSave').onclick = () => { tcv.toBlob(async blob => { let dl = null; try { dl
 
 /* ---------- proiecte ---------- */
 const DB = { db:null,
-  async open(){ if (this.db) return this.db; this.db = await new Promise((res, rej) => { const r = indexedDB.open('cadru', 1); r.onupgradeneeded = () => r.result.createObjectStore('proiecte', {keyPath:'id'}); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); return this.db; },
+  async open(){ if (this.db) return this.db; this.db = await new Promise((res, rej) => { const r = indexedDB.open('cadru', 2); r.onupgradeneeded = () => { const d = r.result; if (!d.objectStoreNames.contains('proiecte')) d.createObjectStore('proiecte', {keyPath:'id'}); if (!d.objectStoreNames.contains('videoclipuri')) d.createObjectStore('videoclipuri', {keyPath:'id'}); }; r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); return this.db; },
   async run(mode, fn){ const db = await this.open(); return new Promise((res, rej) => { const t = db.transaction('proiecte', mode); const r = fn(t.objectStore('proiecte')); t.oncomplete = () => res(r && r.result); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error); }); } };
 let curProject = null, pendingDel = null;
 function thumbData(){ const c = document.createElement('canvas'); c.width = 320; c.height = Math.round(320 * cv.height / cv.width); c.getContext('2d').drawImage(cv, 0, 0, c.width, c.height); try { return c.toDataURL('image/jpeg', 0.7); } catch(e){ return ''; } }
@@ -1340,14 +1357,14 @@ $('#btnExport').onclick = async () => {
     mr.ondataavailable = e => { if (!e.data.size) return; if (rec?.mode === 'disk'){ const d = e.data; rec.written += d.size; rec.writeQ = rec.writeQ.then(() => writable.write(d)); } else chunks.push(e.data); };
     mr.onstop = async () => {
       if (!rec || rec.cancel){ if (writable) try { await writable.abort(); } catch(e){} rec = null; wakeOff(); return; }
-      if (rec.mode === 'disk'){ await rec.writeQ; await writable.close(); doneUI(`Video salvat direct în fișierul „${fname}”, ${rec.written > 1073741824 ? (rec.written / 1073741824).toFixed(2) + ' GB' : (rec.written / 1048576).toFixed(0) + ' MB'}. Îl poți urca pe YouTube.`); return; }
+      if (rec.mode === 'disk'){ await rec.writeQ; await writable.close(); addVideo(null, fname, { size:rec.written, dur:total(), note:'Salvat direct pe dispozitiv, în fișierul „' + fname + '”.' }); doneUI(`Video salvat direct în fișierul „${fname}”, ${rec.written > 1073741824 ? (rec.written / 1073741824).toFixed(2) + ' GB' : (rec.written / 1048576).toFixed(0) + ' MB'}. Îl poți urca pe YouTube.`); return; }
       const part = new Blob(chunks, {type: mime || 'video/webm'});
       if (rec.mode === 'parts'){
-        const name = `cadru-video-partea-${String(rec.part + 1).padStart(2, '0')}.${ext}`; await saveBlob(part, name);
+        const name = `cadru-video-partea-${String(rec.part + 1).padStart(2, '0')}.${ext}`; await saveBlob(part, name); addVideo(part, ($('#vTitle').value.trim() || 'Video') + ` – partea ${rec.part + 1}`);
         rec.part++; if (rec.part < rec.nParts && T < total() - 0.05){ rec.partEnd = (rec.part + 1) * PART; startPart(); return; }
         doneUI(`Gata: ${rec.part} părți salvate (cadru-video-partea-01, 02…), fiecare de până la ${PART / 60} minute.`); return;
       }
-      blob = part; const v = $('#mVideo'); v.src = URL.createObjectURL(blob); v.hidden = false;
+      blob = part; addVideo(part, ($('#vTitle').value.trim() || 'Video Cadru') + '.' + ext); const v = $('#mVideo'); v.src = URL.createObjectURL(blob); v.hidden = false;
       $('#mSave').hidden = false; doneUI(`Fișier ${ext.toUpperCase()}, ${(blob.size / 1048576).toFixed(1)} MB. Verifică-l mai jos, apoi salvează-l.`);
     };
     rec.mr = mr; setTimeout(() => { if (!rec || rec.cancel) return; mr.start(1000); play(); }, 300);
@@ -1373,6 +1390,53 @@ document.addEventListener('visibilitychange', () => { if (!rec || !rec.mr) retur
   else if (rec.paused){ rec.paused = false; ensureAudio(); setTimeout(() => { if (rec && rec.mr.state === 'paused'){ rec.mr.resume(); play(); } }, 300); } });
 $('#mCancel').onclick = () => { if (rec){ rec.cancel = true; stop(); try { rec.mr && rec.mr.stop(); } catch(e){} } wakeOff(); $('#modal').hidden = true; };
 $('#mSave').onclick = async () => { if (!blob) return; if (await saveBlob(blob, `cadru-video.${ext}`)) toast('Video salvat.'); else toast('Clic dreapta pe video → „Salvează videoclipul ca…”.'); };
+
+/* ---------- Videoclipurile mele ---------- */
+async function vstore(mode, fn){ const db = await DB.open(); return new Promise((res, rej) => { const tx = db.transaction('videoclipuri', mode); const r = fn(tx.objectStore('videoclipuri')); tx.oncomplete = () => res(r && 'result' in r ? r.result : r); tx.onerror = () => rej(tx.error); tx.onabort = () => rej(tx.error); }); }
+function videoInfo(b){ return new Promise(res => { const v = document.createElement('video'); v.muted = true; v.preload = 'auto'; const u = URL.createObjectURL(b); let done = false;
+  const fin = (thumb) => { if (done) return; done = true; const d = isFinite(v.duration) ? v.duration : 0; URL.revokeObjectURL(u); res({ dur:d, thumb }); };
+  v.onloadedmetadata = () => { const t = isFinite(v.duration) && v.duration > 2 ? Math.min(v.duration / 3, 20) : 0.5; try { v.currentTime = t; } catch(e){ fin(''); } };
+  v.onseeked = () => { try { const c = document.createElement('canvas'); c.width = 320; c.height = Math.round(320 * (v.videoHeight || 9) / (v.videoWidth || 16)); c.getContext('2d').drawImage(v, 0, 0, c.width, c.height); fin(c.toDataURL('image/jpeg', 0.7)); } catch(e){ fin(''); } };
+  v.onerror = () => fin(''); setTimeout(() => fin(''), 8000); v.src = u; }); }
+async function addVideo(b, name, extra = {}){
+  const info = b ? await videoInfo(b) : { dur:extra.dur || 0, thumb:'' };
+  const rec = { id:uid(), name, saved:Date.now(), size:b ? b.size : (extra.size || 0), dur:info.dur || extra.dur || 0, thumb:info.thumb || extra.thumb || '', blob:b || null, note:extra.note || '' };
+  try { await vstore('readwrite', st => st.put(rec)); return true; }
+  catch(e){ if (b){ rec.blob = null; rec.note = 'Prea mare pentru memoria browserului: e salvat doar pe dispozitiv.'; try { await vstore('readwrite', st => st.put(rec)); } catch(_){} } return false; }
+}
+const sizeTxt = n => n > 1073741824 ? (n / 1073741824).toFixed(2) + ' GB' : (n / 1048576).toFixed(n > 10485760 ? 0 : 1) + ' MB';
+let vidPendingDel = null;
+async function renderVideos(){
+  let list = []; try { list = await vstore('readonly', st => st.getAll()) || []; } catch(e){ $('#vidGrid').innerHTML = '<p class="note">Videoclipurile nu pot fi păstrate în acest browser (de exemplu în fereastră privată).</p>'; renderStudio(); return; }
+  list.sort((a, b) => b.saved - a.saved);
+  $('#vidGrid').innerHTML = list.length ? list.map(r => `<div class="pcard"><div class="th">${r.thumb ? `<img src="${r.thumb}" alt="">` : '🎬'}</div><div class="bd"><b title="${esc(r.name)}">${esc(r.name)}</b>
+    <span class="src">${new Date(r.saved).toLocaleString('ro-RO', {dateStyle:'medium', timeStyle:'short'})}${r.dur ? ' · ' + fmtLong(r.dur) : ''}${r.size ? ' · ' + sizeTxt(r.size) : ''}</span>${r.note ? `<span class="note">${esc(r.note)}</span>` : ''}
+    <div style="display:flex;gap:6px;flex-wrap:wrap">${vidPendingDel === r.id ? `<span class="note">Sigur ștergi?</span><button class="rec" data-vdelok="${r.id}" style="padding:4px 10px;font-size:12px">Da, șterge</button><button data-vdelno style="padding:4px 10px;font-size:12px">Nu</button>`
+      : `${r.blob ? `<button class="primary" data-vplay="${r.id}" style="padding:4px 10px;font-size:12px">▶ Vezi</button><button data-vsave="${r.id}" style="padding:4px 10px;font-size:12px">Salvează</button><button data-vyt="${r.id}" style="padding:4px 10px;font-size:12px">Urcă pe YouTube</button>` : ''}<button class="danger" data-vdel="${r.id}" style="padding:4px 10px;font-size:12px">Șterge</button>`}</div></div></div>`).join('')
+    : '<p class="note">Încă nu ai niciun video aici. Exportă unul din Montaj sau apasă „Adaugă video”.</p>';
+  renderStudio();
+}
+let studioList = null;
+async function renderStudio(){
+  if (!studioList){ try { const r = await fetch('videos.json', {cache:'no-store'}); studioList = r.ok ? await r.json() : []; } catch(e){ studioList = []; } }
+  $('#vidStudio').innerHTML = studioList.length ? studioList.map((v, i) => `<div class="pcard"><div class="th">${v.thumb ? `<img src="${esc(v.thumb)}" alt="">` : '🎬'}</div><div class="bd"><b title="${esc(v.title)}">${esc(v.title)}</b>
+    <span class="src">${esc(v.date || '')}${v.duration ? ' · ' + fmtLong(v.duration) : ''}${v.size ? ' · ' + esc(v.size) : ''}</span>${v.note ? `<span class="note">${esc(v.note)}</span>` : ''}
+    <div style="display:flex;gap:6px;flex-wrap:wrap">${v.preview ? `<button class="primary" data-splay="${i}" style="padding:4px 10px;font-size:12px">▶ Previzualizare</button>` : ''}${v.download ? `<a class="btn" href="${esc(v.download)}" target="_blank" rel="noopener" style="padding:4px 10px;font-size:12px">Descarcă ↗</a>` : '<span class="note">Linkul de descărcare vine în curând.</span>'}${v.youtube ? `<a href="${esc(v.youtube)}" target="_blank" rel="noopener" style="font-size:12px">Pe YouTube ↗</a>` : ''}</div></div></div>`).join('')
+    : '<p class="note">Aici apar video-urile făcute de Claude (de exemplu cele de 3 ore). Momentan lista nu e disponibilă în această versiune.</p>';
+}
+function openPlayer(title, src){ $('#vpTitle').textContent = title; const v = $('#vpVideo'); v.src = src; $('#vidPlayer').hidden = false; v.play().catch(() => {}); }
+$('#vpClose').onclick = () => { const v = $('#vpVideo'); v.pause(); if (v.src.startsWith('blob:')) URL.revokeObjectURL(v.src); v.removeAttribute('src'); $('#vidPlayer').hidden = true; };
+$('#vidAdd').onclick = () => $('#vidFile').click();
+$('#vidFile').onchange = async e => { const fs = [...e.target.files]; e.target.value = ''; for (const f of fs){ toast('Se adaugă ' + f.name + '…'); await addVideo(f, f.name); } renderVideos(); toast(fs.length > 1 ? 'Video-urile au fost adăugate.' : 'Video adăugat.'); };
+$('#vidStudio').addEventListener('click', e => { const b = e.target.closest('[data-splay]'); if (!b) return; const v = studioList[+b.dataset.splay]; openPlayer(v.title, v.preview); });
+$('#vidGrid').addEventListener('click', async e => { const t = e.target.closest('button'); if (!t) return;
+  const get = async id => vstore('readonly', st => st.get(id));
+  if (t.dataset.vplay){ const r = await get(t.dataset.vplay); if (r?.blob) openPlayer(r.name, URL.createObjectURL(r.blob)); return; }
+  if (t.dataset.vsave){ const r = await get(t.dataset.vsave); if (r?.blob){ const n = /\.\w{2,4}$/.test(r.name) ? r.name : r.name + '.' + (r.blob.type.includes('mp4') ? 'mp4' : 'webm'); toast(await saveBlob(r.blob, n) ? 'Video salvat.' : 'Nu s-a putut salva.'); } return; }
+  if (t.dataset.vyt){ const r = await get(t.dataset.vyt); if (r?.blob){ YT.file = new File([r.blob], /\.\w{2,4}$/.test(r.name) ? r.name : r.name + '.webm', {type:r.blob.type || 'video/webm'}); $('#ytTitle').value = r.name.replace(/\.\w{2,4}$/, '').slice(0, 100); location.hash = 'publica'; } return; }
+  if (t.dataset.vdel){ vidPendingDel = t.dataset.vdel; return renderVideos(); }
+  if (t.hasAttribute('data-vdelno')){ vidPendingDel = null; return renderVideos(); }
+  if (t.dataset.vdelok){ try { await vstore('readwrite', st => st.delete(t.dataset.vdelok)); } catch(err){} vidPendingDel = null; toast('Video șters.'); renderVideos(); } });
 
 /* ---------- Publică pe YouTube ---------- */
 const YT = { token:null, exp:0, tc:null, xhr:null, stop:false, file:null };
@@ -1529,10 +1593,10 @@ $('#aiUpload').onclick = () => $('#file').click();
 $('#scenes').addEventListener('click', e => { const b = e.target.closest('[data-ai]'); if (!b) return; $('#qText').value = b.dataset.ai; $('#qTip').value = 'imagine'; location.hash = 'ai'; });
 
 /* ---------- routing ---------- */
-const VIEWS = ['creeaza','montaj','scenarii','miniaturi','proiecte','publica','ai','ghid'];
+const VIEWS = ['creeaza','montaj','scenarii','miniaturi','proiecte','videoclipuri','publica','ai','ghid'];
 function route(){ const v = (location.hash || '#creeaza').slice(1); const name = VIEWS.includes(v) ? v : 'creeaza';
   for (const n of VIEWS) $('#v-' + n).hidden = n !== name;
-  if (name === 'miniaturi') drawThumb(); if (name === 'proiecte') renderProjects(); if (name === 'creeaza') renderVoices();
+  if (name === 'miniaturi') drawThumb(); if (name === 'proiecte') renderProjects(); if (name === 'videoclipuri') renderVideos(); if (name === 'creeaza') renderVoices();
   document.querySelectorAll('nav.tabs a').forEach(a => { if (a.dataset.view === name) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
   if (name !== 'montaj') stop(); }
 addEventListener('hashchange', route);
