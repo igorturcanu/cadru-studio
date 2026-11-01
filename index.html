@@ -1290,7 +1290,7 @@ $('#tSave').onclick = () => { tcv.toBlob(async blob => { let dl = null; try { dl
 
 /* ---------- proiecte ---------- */
 const DB = { db:null,
-  async open(){ if (this.db) return this.db; this.db = await new Promise((res, rej) => { const r = indexedDB.open('cadru', 2); r.onupgradeneeded = () => { const d = r.result; if (!d.objectStoreNames.contains('proiecte')) d.createObjectStore('proiecte', {keyPath:'id'}); if (!d.objectStoreNames.contains('videoclipuri')) d.createObjectStore('videoclipuri', {keyPath:'id'}); }; r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); return this.db; },
+  async open(){ if (this.db) return this.db; this.db = await new Promise((res, rej) => { const r = indexedDB.open('cadru', 2); r.onupgradeneeded = () => { const d = r.result; if (!d.objectStoreNames.contains('proiecte')) d.createObjectStore('proiecte', {keyPath:'id'}); if (!d.objectStoreNames.contains('videoclipuri')) d.createObjectStore('videoclipuri', {keyPath:'id'}); }; r.onsuccess = () => { r.result.onversionchange = () => { try { r.result.close(); } catch(e){} DB.db = null; }; res(r.result); }; r.onerror = () => rej(r.error); r.onblocked = () => { toast('Închide celelalte file cu Cadru deschise, apoi reîncarcă pagina.'); rej(new Error('blocked')); }; setTimeout(() => rej(new Error('timeout')), 8000); }).catch(e => { this.db = null; throw e; }); return this.db; },
   async run(mode, fn){ const db = await this.open(); return new Promise((res, rej) => { const t = db.transaction('proiecte', mode); const r = fn(t.objectStore('proiecte')); t.oncomplete = () => res(r && r.result); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error); }); } };
 let curProject = null, pendingDel = null;
 function thumbData(){ const c = document.createElement('canvas'); c.width = 320; c.height = Math.round(320 * cv.height / cv.width); c.getContext('2d').drawImage(cv, 0, 0, c.width, c.height); try { return c.toDataURL('image/jpeg', 0.7); } catch(e){ return ''; } }
@@ -1407,14 +1407,13 @@ async function addVideo(b, name, extra = {}){
 const sizeTxt = n => n > 1073741824 ? (n / 1073741824).toFixed(2) + ' GB' : (n / 1048576).toFixed(n > 10485760 ? 0 : 1) + ' MB';
 let vidPendingDel = null;
 async function renderVideos(){
-  let list = []; try { list = await vstore('readonly', st => st.getAll()) || []; } catch(e){ $('#vidGrid').innerHTML = '<p class="note">Videoclipurile nu pot fi păstrate în acest browser (de exemplu în fereastră privată).</p>'; renderStudio(); return; }
+  renderStudio(); let list = []; try { list = await vstore('readonly', st => st.getAll()) || []; } catch(e){ $('#vidGrid').innerHTML = e?.message === 'blocked' || e?.message === 'timeout' ? '<p class="note">Biblioteca e blocată de altă filă cu Cadru deschisă (o versiune mai veche). Închide celelalte file Cadru și reîncarcă pagina.</p>' : '<p class="note">Videoclipurile nu pot fi păstrate în acest browser (de exemplu în fereastră privată).</p>'; return; }
   list.sort((a, b) => b.saved - a.saved);
   $('#vidGrid').innerHTML = list.length ? list.map(r => `<div class="pcard"><div class="th">${r.thumb ? `<img src="${r.thumb}" alt="">` : '🎬'}</div><div class="bd"><b title="${esc(r.name)}">${esc(r.name)}</b>
     <span class="src">${new Date(r.saved).toLocaleString('ro-RO', {dateStyle:'medium', timeStyle:'short'})}${r.dur ? ' · ' + fmtLong(r.dur) : ''}${r.size ? ' · ' + sizeTxt(r.size) : ''}</span>${r.note ? `<span class="note">${esc(r.note)}</span>` : ''}
     <div style="display:flex;gap:6px;flex-wrap:wrap">${vidPendingDel === r.id ? `<span class="note">Sigur ștergi?</span><button class="rec" data-vdelok="${r.id}" style="padding:4px 10px;font-size:12px">Da, șterge</button><button data-vdelno style="padding:4px 10px;font-size:12px">Nu</button>`
       : `${r.blob ? `<button class="primary" data-vplay="${r.id}" style="padding:4px 10px;font-size:12px">▶ Vezi</button><button data-vsave="${r.id}" style="padding:4px 10px;font-size:12px">Salvează</button><button data-vyt="${r.id}" style="padding:4px 10px;font-size:12px">Urcă pe YouTube</button>` : ''}<button class="danger" data-vdel="${r.id}" style="padding:4px 10px;font-size:12px">Șterge</button>`}</div></div></div>`).join('')
     : '<p class="note">Încă nu ai niciun video aici. Exportă unul din Montaj sau apasă „Adaugă video”.</p>';
-  renderStudio();
 }
 let studioList = null;
 async function renderStudio(){
