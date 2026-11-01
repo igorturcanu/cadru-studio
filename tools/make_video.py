@@ -252,7 +252,8 @@ def build_audio_cycle(xfade):
 
 
 def build_video_cycle(args):
-    imgs = sorted(IMG_DIR.glob("*.png")) + sorted(IMG_DIR.glob("*.jpg"))
+    src = Path(args.images_dir) if args.images_dir else IMG_DIR
+    imgs = sorted(src.glob("*.png")) + sorted(src.glob("*.jpg"))
     if len(imgs) < 2:
         sys.exit("Ai nevoie de cel puțin 2 imagini în work/images/")
     w, h = [int(x) for x in args.size.lower().split("x")]
@@ -260,28 +261,48 @@ def build_video_cycle(args):
     n = len(imgs)
     frames = s * fps
     seq = imgs + [imgs[0]]              # prima imagine din nou -> buclă fără cusătură
+    # 1) fiecare imagine devine un clip separat, cu zoom lin la nivel de sub-pixel
+    #    (filtrul perspective interpolează, deci imaginea nu "tremură" ca la zoompan)
+    clip_dir = WORK / "clips"
+    clip_dir.mkdir(parents=True, exist_ok=True)
+    def persp_for(i):
+        """Zoom lin (cu accelerare/încetinire), pe rând spre interior și spre exterior."""
+        if not args.zoom:
+            return ""
+        ease = f"(0.5-0.5*cos(PI*on/{frames}))"
+        if args.effects and (i % n) % 2 == 1:            # depărtare
+            z = f"(1+{args.zoom}*(1-{ease}))"
+        else:                                            # apropiere
+            z = f"(1+{args.zoom}*{ease})" if args.effects else f"(1+{args.zoom}*on/{frames})"
+        mx, my = f"W/2*(1-1/{z})", f"H/2*(1-1/{z})"
+        return (f",perspective=x0='{mx}':y0='{my}':x1='W-{mx}':y1='{my}':"
+                f"x2='{mx}':y2='H-{my}':x3='W-{mx}':y3='H-{my}':interpolation=cubic:eval=frame")
+
+    clips = []
+    for i, p in enumerate(seq):
+        c = clip_dir / f"clip_{i:02d}_{p.parent.name}_{p.stem}_{w}x{h}_{s}s_z{args.zoom}{'_fx' if args.effects else ''}{'_v' if args.vivid else ''}.mp4"
+        if not c.exists():
+            print(f"[clip {i + 1}/{len(seq)}] {p.name}")
+            run(["ffmpeg", "-y", "-v", "error", "-loop", "1", "-framerate", fps, "-t", s, "-i", p,
+                 "-vf", f"scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h},"
+                        f"setsar=1,format=yuv420p" + persp_for(i) + LOOK[0],
+                 "-c:v", "libx264", "-preset", "medium", "-crf", "16", "-pix_fmt", "yuv420p", c])
+        clips.append(c)
     inputs = []
-    for p in seq:
-        inputs += ["-i", p]
+    for c in clips:
+        inputs += ["-i", c]
     logo_idx = None
     if args.logo:
         inputs += ["-i", args.logo]
         logo_idx = len(seq)
 
-    parts = []
-    for i in range(len(seq)):
-        # zoom foarte lent spre centru; scalare mărită ca să nu tremure
-        parts.append(
-            f"[{i}:v]scale={w * 2}:{h * 2}:force_original_aspect_ratio=increase,"
-            f"crop={w * 2}:{h * 2},"
-            f"zoompan=z='1+0.12*on/{frames}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':"
-            f"d={frames}:s={w}x{h}:fps={fps},setsar=1,format=yuv420p[v{i}]"
-        )
+    parts = [f"[{i}:v]setpts=PTS-STARTPTS[v{i}]" for i in range(len(seq))]
     prev = "[v0]"
     for k in range(1, len(seq)):
         lab = f"[x{k}]"
         parts.append(
-            f"{prev}[v{k}]xfade=transition=fade:duration={t}:offset={k * (s - t)}{lab}"
+            f"{prev}[v{k}]xfade=transition={TRANSITIONS[k % n] if args.effects else 'fade'}:"
+            f"duration={t}:offset={k * (s - t)}{lab}"
         )
         prev = lab
     period = n * (s - t)
@@ -293,10 +314,45 @@ def build_video_cycle(args):
         last = "[vout]"
     out = WORK / "video_cycle.mp4"
     run(["ffmpeg", "-y", *inputs, "-filter_complex", ";".join(parts), "-map", last,
-         "-r", fps, "-c:v", "libx264", "-preset", "medium", "-crf", "24",
-         "-maxrate", "3M", "-bufsize", "6M", "-pix_fmt", "yuv420p", out])
+         "-r", fps, "-c:v", "libx264", "-preset", "medium", "-crf", CRF[0],
+         "-maxrate", MAXRATE[0], "-bufsize", MAXRATE[1], "-pix_fmt", "yuv420p", out])
     print(f"Ciclu video: {period / 60:.1f} min")
     return out
+
+
+LOOK = [""]                 # --vivid: culori mai vii și puțin mai clar
+CRF = ["24"]
+
+
+# treceri blânde, alternate când se folosește --effects
+TRANSITIONS_BASE = ["fade", "smoothleft", "circleopen", "fade", "smoothright", "fadeblack"]
+TRANSITIONS = TRANSITIONS_BASE * 20
+MAXRATE = ["3M", "6M"]      # schimbat de --maxrate
+
+
+def enc():
+    return ["-c:v", "libx264", "-preset", "medium", "-crf", CRF[0], "-maxrate", MAXRATE[0],
+            "-bufsize", MAXRATE[1], "-pix_fmt", "yuv420p"]
+
+
+def _overlay_variant(video, out, fps, length, cta=None, cta_windows=(), endcard=None, end_secs=25):
+    """Re-encodează (o parte din) ciclu cu butoanele afișate în ferestrele date (cu fade)."""
+    inputs = ["-i", video]
+    parts, last, idx = [], "[0:v]", 1
+    for (a, b) in cta_windows:
+        inputs += ["-loop", "1", "-framerate", fps, "-t", length, "-i", cta]
+        parts.append(f"[{idx}:v]format=rgba,fade=t=in:st={a}:d=1:alpha=1,"
+                     f"fade=t=out:st={b - 1}:d=1:alpha=1[o{idx}]")
+        parts.append(f"{last}[o{idx}]overlay=enable='between(t,{a},{b})'[c{idx}]")
+        last, idx = f"[c{idx}]", idx + 1
+    if endcard:
+        st = length - end_secs
+        inputs += ["-loop", "1", "-framerate", fps, "-t", length, "-i", endcard]
+        parts.append(f"[{idx}:v]format=rgba,fade=t=in:st={st}:d=3:alpha=1[o{idx}]")
+        parts.append(f"{last}[o{idx}]overlay=enable='gte(t,{st})'[c{idx}]")
+        last = f"[c{idx}]"
+    run(["ffmpeg", "-y", "-v", "error", *inputs, "-t", length, "-filter_complex", ";".join(parts),
+         "-map", last, "-r", fps, *enc(), out])
 
 
 def build(args):
@@ -306,12 +362,63 @@ def build(args):
     video = build_video_cycle(args)
     total = int(args.hours * 3600)
     out = Path(args.output)
-    run(["ffmpeg", "-y",
-         "-stream_loop", "-1", "-i", video,
-         "-stream_loop", "-1", "-i", audio,
-         "-t", total, "-map", "0:v", "-map", "1:a",
+    vin = ["-stream_loop", "-1", "-i", video]
+    if args.cta or args.endcard:
+        # butoane la început, la mijloc și la sfârșit + cadru de final:
+        # doar ciclurile care le conțin se re-encodează, restul se copiază
+        period = probe_duration(video)
+        n_full, rest = divmod(total, period)
+        n_full = int(n_full)
+        if rest < 60:                      # ultimul ciclu prea scurt -> îl lungim pe cel de dinainte
+            n_full, rest = n_full - 1, rest + period
+        assert n_full >= 2, "durata e prea scurtă pentru butoane la început/mijloc/sfârșit"
+        fps = args.fps
+        seg = WORK / "segments"
+        seg.mkdir(exist_ok=True)
+        cw = lambda t: (t, t + args.cta_seconds)
+        start_v = seg / "start.mp4"
+        _overlay_variant(video, start_v, fps, period, args.cta, [cw(args.cta_start)] if args.cta else [])
+        mid_t = total / 2
+        mid_k = min(int(mid_t // period), n_full - 1)
+        mid_v = seg / "mid.mp4"
+        if mid_k == 0:
+            mid_k = 1
+        _overlay_variant(video, mid_v, fps, period, args.cta,
+                         [cw(max(5, min(mid_t - mid_k * period, period - args.cta_seconds - 5)))]
+                         if args.cta else [])
+        end_v = seg / "end.mp4"
+        tail_src = video
+        if rest > period:                  # sfârșitul ține mai mult de un ciclu
+            tail_src = seg / "tail_src.mp4"
+            run(["ffmpeg", "-y", "-v", "error", "-stream_loop", "1", "-i", video, "-t", rest,
+                 "-c", "copy", tail_src])
+        end_cta = [cw(rest - args.end_seconds - args.cta_seconds - 30)] if args.cta else []
+        _overlay_variant(tail_src, end_v, fps, rest, args.cta, end_cta, args.endcard, args.end_seconds)
+        order = [start_v] + [video] * (mid_k - 1) + [mid_v] + [video] * (n_full - mid_k - 1) + [end_v]
+        lst = seg / "list.txt"
+        lst.write_text("".join(f"file '{Path(p).resolve()}'\n" for p in order))
+        vin = ["-f", "concat", "-safe", "0", "-i", lst]
+    fades = f"afade=t=in:d=3,afade=t=out:st={total - 8}:d=8"
+    if args.water:
+        # pârâu fin în fundal: zgomot roz filtrat (clipocit) + zgomot maro (murmur), sub muzică
+        g = args.water
+        water = [
+            "-f", "lavfi", "-i", "anoisesrc=color=pink:sample_rate=48000:seed=7",
+            "-f", "lavfi", "-i", "anoisesrc=color=brown:sample_rate=48000:seed=11",
+        ]
+        afilt = ["-filter_complex",
+                 f"[2:a]highpass=f=500,lowpass=f=4500,tremolo=f=0.13:d=0.35,volume={g}[w1];"
+                 f"[3:a]highpass=f=60,lowpass=f=900,volume={g * 0.6}[w2];"
+                 f"[w1][w2]amix=inputs=2:normalize=0,aformat=channel_layouts=stereo,"
+                 f"aecho=0.8:0.7:23|37:0.25|0.2[wt];"
+                 f"[1:a][wt]amix=inputs=2:normalize=0,{fades}[aout]",
+                 "-map", "0:v", "-map", "[aout]"]
+    else:
+        water, afilt = [], ["-map", "0:v", "-map", "1:a", "-af", fades]
+    run(["ffmpeg", "-y", *vin,
+         "-stream_loop", "-1", "-i", audio, *water,
+         "-t", total, *afilt,
          "-c:v", "copy",
-         "-af", f"afade=t=in:d=3,afade=t=out:st={total - 8}:d=8",
          "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", out])
     print(f"\nGata: {out}  ({probe_duration(out) / 3600:.2f} ore)")
 
@@ -329,10 +436,31 @@ def main():
     ap.add_argument("--audio-fade", type=int, default=4, help="secunde de dizolvare între piese")
     ap.add_argument("--music-dir", help="folder cu piesele tale (în loc de generare Lyria)")
     ap.add_argument("--logo", help="logo PNG pus în colțul stânga-jos (opțional)")
+    ap.add_argument("--cta", help="PNG transparent cu butoanele (tools/make_overlay.py)")
+    ap.add_argument("--cta-start", type=float, default=8, help="secunda la care apar prima dată")
+    ap.add_argument("--cta-seconds", type=float, default=15, help="cât timp stau pe ecran")
+    ap.add_argument("--endcard", help="PNG cu cadrul de final (tools/make_overlay.py --endcard)")
+    ap.add_argument("--end-seconds", type=float, default=25)
+    ap.add_argument("--maxrate", default="3M",
+                    help="debit video maxim (ex. 1.3M pentru un fișier de ~2 GB la 3 ore)")
+    ap.add_argument("--zoom", type=float, default=0,
+                    help="zoom lent pe fiecare imagine (0 = imagini nemișcate, ex. 0.1 = 10%%)")
+    ap.add_argument("--effects", action="store_true",
+                    help="efecte variate: zoom alternativ (apropiere/depărtare) și treceri diferite")
+    ap.add_argument("--water", type=float, default=0,
+                    help="sunet fin de apă curgătoare sub muzică (ex. 0.08; 0 = fără)")
+    ap.add_argument("--vivid", action="store_true", help="culori mai vii și imagine mai clară")
+    ap.add_argument("--crf", default="24", help="calitate compresie (mai mic = mai clar, ex. 18)")
+    ap.add_argument("--images-dir", help="folder cu imaginile (implicit work/images)")
     ap.add_argument("--size", default="1920x1080")
     ap.add_argument("--fps", type=int, default=24)
     ap.add_argument("--output", default="video_3_ore.mp4")
     args = ap.parse_args()
+    rate = float(args.maxrate.rstrip("Mm"))
+    MAXRATE[:] = [args.maxrate, f"{rate * 2:g}M"]
+    CRF[0] = args.crf
+    if args.vivid:
+        LOOK[0] = ",eq=saturation=1.15:contrast=1.04,unsharp=5:5:0.5:5:5:0.0"
 
     if args.step in ("images", "all"):
         make_images(args)
