@@ -288,6 +288,33 @@ def build_video_cycle(args):
                         f"setsar=1,format=yuv420p" + persp_for(i) + LOOK[0],
                  "-c:v", "libx264", "-preset", "medium", "-crf", "16", "-pix_fmt", "yuv420p", c])
         clips.append(c)
+    out = WORK / "video_cycle.mp4"
+    if os.environ.get("REUSE_CYCLE") and out.exists():
+        print("Refolosesc ciclul video existent")
+        return out
+    if not args.logo:
+        # bucată cu bucată (cel mult 2 intrări 4K deodată), ca să nu rămână fără memorie
+        pdir = WORK / "pieces"
+        shutil.rmtree(pdir, ignore_errors=True)
+        pdir.mkdir(parents=True)
+        pieces = []
+        venc = ["-r", fps, "-c:v", "libx264", "-preset", "medium", "-crf", CRF[0],
+                "-maxrate", MAXRATE[0], "-bufsize", MAXRATE[1], "-pix_fmt", "yuv420p"]
+        for k in range(n):
+            solo = pdir / f"p{k:02d}a.mp4"
+            run(["ffmpeg", "-y", "-v", "error", "-ss", t, "-t", s - 2 * t, "-i", clips[k], *venc, solo])
+            tr = pdir / f"p{k:02d}b.mp4"
+            trans = TRANSITIONS[(k + 1) % n] if args.effects else "fade"
+            run(["ffmpeg", "-y", "-v", "error", "-ss", s - t, "-t", t, "-i", clips[k], "-t", t, "-i", clips[k + 1],
+                 "-filter_complex", f"[0:v]setpts=PTS-STARTPTS[a];[1:v]setpts=PTS-STARTPTS[b];"
+                 f"[a][b]xfade=transition={trans}:duration={t}:offset=0", *venc, tr])
+            pieces += [solo, tr]
+        lst = pdir / "list.txt"
+        lst.write_text("".join(f"file '{p.resolve()}'\n" for p in pieces))
+        run(["ffmpeg", "-y", "-v", "error", "-f", "concat", "-safe", "0", "-i", lst, "-c", "copy", out])
+        period = n * (s - t)
+        print(f"Ciclu video: {period / 60:.1f} min")
+        return out
     inputs = []
     for c in clips:
         inputs += ["-i", c]
@@ -395,8 +422,13 @@ def _overlay_variant(video, out, fps, length, cta=None, cta_windows=(), endcard=
         parts.append(f"[{idx}:v]format=rgba,fade=t=in:st={st}:d=3:alpha=1[o{idx}]")
         parts.append(f"{last}[o{idx}]overlay=enable='gte(t,{st})'[c{idx}]")
         last = f"[c{idx}]"
+    out = Path(out)
+    if os.environ.get("REUSE_CYCLE") and out.exists():
+        return
+    tmp = out.with_name(out.stem + ".tmp.mp4")
     run(["ffmpeg", "-y", "-v", "error", *inputs, "-t", length, "-filter_complex", ";".join(parts),
-         "-map", last, "-r", fps, *enc(), out])
+         "-map", last, "-r", fps, *enc(), tmp])
+    tmp.rename(out)
 
 
 def build(args):
