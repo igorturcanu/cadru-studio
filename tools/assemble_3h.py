@@ -9,11 +9,13 @@ def run(c): print(" ".join(map(str,c))[:200], flush=True); subprocess.run([str(x
 def done(out, cmd):
     if out.exists(): return
     tmp = out.with_name(out.stem+'.tmp'+out.suffix); run(cmd+[tmp]); tmp.rename(out)
-cyc = [P/f"p{k:02d}{x}.mp4" for k in range(20) for x in "ab"]
+A.mkdir(exist_ok=True)
+cyc = sorted(P.glob("p[0-9][0-9][ab].mp4"))
+NC = len(cyc)
 D = {p: dur(p) for p in cyc}
 seq=[]; t=0; i=0
 while t < TOTAL:
-    p=cyc[i%40]; seq.append((p,t,D[p])); t+=D[p]; i+=1
+    p=cyc[i%NC]; seq.append((p,t,D[p])); t+=D[p]; i+=1
 def overlay(src, out, length, wins, endcard_at=None):
     inp=["-i",src]; parts=[]; last="[0:v]"; n=1
     for a,b in wins:
