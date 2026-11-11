@@ -233,6 +233,7 @@ td.w{color:var(--muted);white-space:nowrap}
         <option value="1:1">1:1 Instagram</option>
       </select>
     </label>
+    <button id="btnTheme" title="Schimbă tema: automată, luminoasă sau întunecată" style="min-width:44px">◐</button>
     <button id="btnSave" title="Salvează proiectul în acest browser">Salvează</button>
     <button class="rec" id="btnExport">● Exportă video</button>
   </div>
@@ -1664,6 +1665,13 @@ $('#sGo').onclick = () => { const d = $('#sDesc').value.trim(); if (!d){ toast('
     try { addJob('song', d, txt(await call('genereaza_melodie', input))); } catch(e){ toast(errMsg(e)); } }); };
 $('#aiUpload').onclick = () => $('#file').click();
 $('#scenes').addEventListener('click', e => { const b = e.target.closest('[data-ai]'); if (!b) return; $('#qText').value = b.dataset.ai; $('#qTip').value = 'imagine'; location.hash = 'ai'; });
+
+/* ---------- temă ---------- */
+const THEMES = ['', 'light', 'dark'], THEME_LBL = {'':'◐ Auto', light:'☀ Luminos', dark:'☾ Întunecat'};
+function applyTheme(t){ if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme; $('#btnTheme').textContent = THEME_LBL[t]; }
+applyTheme((() => { try { return localStorage.getItem('cadru-theme') || ''; } catch(e){ return ''; } })());
+$('#btnTheme').onclick = () => { const cur = document.documentElement.dataset.theme || ''; const t = THEMES[(THEMES.indexOf(cur) + 1) % 3];
+  applyTheme(t); try { t ? localStorage.setItem('cadru-theme', t) : localStorage.removeItem('cadru-theme'); } catch(e){} toast('Tema: ' + THEME_LBL[t].slice(2)); };
 
 /* ---------- routing ---------- */
 const VIEWS = ['creeaza','montaj','scenarii','miniaturi','proiecte','videoclipuri','publica','ai','ghid'];
