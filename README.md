@@ -14,9 +14,16 @@ Studio video în română care merge direct în browser. Faci video-uri pentru c
 
 Totul rulează local, în browser. Fișierele nu pleacă de pe dispozitiv.
 
-## Ce merge doar în varianta de pe claude.ai
+## AI pe site-ul tău (cheia Groq)
 
-Scrierea scenariilor cu Claude și conectorul AI Personal (poze, muzică) au nevoie de pagina deschisă în claude.ai. Pe GitHub Pages, aceste butoane spun că nu sunt disponibile.
+În tabul **Scenarii → 🔑 Cheia ta AI (Groq)** pui cheia ta Groq (`gsk_…`) și alegi modelul. Apoi „Scrie scenariul”, „5 idei de titlu” și „Împarte cu AI” merg direct pe GitHub Pages, fără claude.ai. Cheia se păstrează doar în browserul tău (localStorage) și se trimite doar la `api.groq.com`. Nu o pune niciodată în cod sau în repo.
+
+În claude.ai, aceleași butoane folosesc Claude. Bifa „Folosește Groq și în claude.ai” forțează Groq și acolo.
+
+## AI Personal: ce merge unde
+
+- **Pe orice site (gratuit):** căutare poze și muzică cu licență liberă (Openverse) și imagini AI rapide (Pollinations), cu buton „＋ În Materiale”.
+- **Doar în claude.ai, cu conectorul AI Personal:** imagini 8K și melodii generate (costă bani).
 
 ## Pași următori
 
