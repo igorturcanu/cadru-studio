@@ -9,7 +9,7 @@
 <title>Cadru Studio</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@500;700&family=Fraunces:opsz,wght@9..144,500..800&family=Manrope:wght@400;500;700&display=swap">
 <style>
 /* Layout: editor de montaj, dark-first: materiale | previzualizare | proprietăți, cu timeline pe toată lățimea dedesubt */
 :root{
@@ -26,24 +26,57 @@
 :root[data-theme="light"]{
   --bg:#eceef2; --panel:#ffffff; --panel2:#f4f5f8; --line:#d6d9e1; --fg:#1b1d24; --muted:#5b5f6d;
   --accent:#b8720a; --accent-ink:#ffffff; --rec:#c8323a; --ok:#23845a; --clip:#c9d3ea; --clip-card:#ddd0ea; --clip-img:#c6e0d8; color-scheme:light}
+/* ---- Teme (skin-uri). Fiecare redefinește culorile, fontul titlurilor, colțurile și umbrele ---- */
+:root{--accent2:var(--accent);--grad:var(--accent);--radius:10px;--shadow:none;--glow:transparent}
+html:root[data-skin="neon"]{
+  --bg:#0a0914; --panel:#14122a; --panel2:#1c1938; --line:#2c2852; --fg:#eeeaff; --muted:#a09bc9;
+  --accent:#8b6cff; --accent2:#22d3ee; --accent-ink:#ffffff; --rec:#ff3d81; --ok:#34e3a4; --clip:#2b2a63; --clip-card:#4b2a6b; --clip-img:#18485a;
+  --grad:linear-gradient(120deg,#8b6cff,#22d3ee); --radius:14px; --shadow:0 10px 30px -12px rgba(139,108,255,.45); --glow:rgba(139,108,255,.35);
+  --f-display:"Space Grotesk",system-ui,sans-serif; --f-body:"Manrope",system-ui,sans-serif; color-scheme:dark}
+html:root[data-skin="cinema"]{
+  --bg:#0b0b0c; --panel:#151517; --panel2:#1e1e21; --line:#2d2d31; --fg:#f4efe6; --muted:#a39e94;
+  --accent:#e0b04a; --accent2:#c8323a; --accent-ink:#1a1204; --rec:#d7263d; --ok:#5fbf8a; --clip:#2e2a22; --clip-card:#3d2226; --clip-img:#24302a;
+  --grad:linear-gradient(120deg,#f2c766,#c99227); --radius:4px; --shadow:0 1px 0 rgba(255,255,255,.04),0 14px 28px -18px #000; --glow:rgba(224,176,74,.25);
+  --f-display:"Fraunces",Georgia,serif; color-scheme:dark}
+html:root[data-skin="padure"]{
+  --bg:#efe9dc; --panel:#fbf7ee; --panel2:#f3ecdd; --line:#ddd2bc; --fg:#1f2a22; --muted:#66705f;
+  --accent:#2f6b4f; --accent2:#c4732d; --accent-ink:#ffffff; --rec:#c2502c; --ok:#3d8a5a; --clip:#cfe0d2; --clip-card:#ead9c2; --clip-img:#c9dccb;
+  --grad:linear-gradient(120deg,#2f6b4f,#4f8f5f); --radius:16px; --shadow:0 12px 26px -20px rgba(47,74,50,.55); --glow:rgba(47,107,79,.2);
+  --f-display:"Fraunces",Georgia,serif; --f-body:"Manrope",system-ui,sans-serif; color-scheme:light}
+html:root[data-skin="aurora"]{
+  --bg:#07131f; --panel:#0e2032; --panel2:#132a40; --line:#1f3b57; --fg:#e6f4f8; --muted:#8fb0c2;
+  --accent:#2dd4bf; --accent2:#f472b6; --accent-ink:#04201c; --rec:#fb7185; --ok:#4ade80; --clip:#1a3d5c; --clip-card:#4a2a52; --clip-img:#134a48;
+  --grad:linear-gradient(120deg,#2dd4bf,#60a5fa 55%,#f472b6); --radius:12px; --shadow:0 12px 30px -16px rgba(45,212,191,.35); --glow:rgba(45,212,191,.3);
+  color-scheme:dark}
+html:root[data-skin="minimal"]{
+  --bg:#f6f6f4; --panel:#ffffff; --panel2:#f1f1ee; --line:#e2e2dd; --fg:#111111; --muted:#6b6b66;
+  --accent:#2b4bff; --accent2:#111111; --accent-ink:#ffffff; --rec:#ff3b30; --ok:#16a34a; --clip:#dfe5ff; --clip-card:#ececec; --clip-img:#dcefe3;
+  --grad:#2b4bff; --radius:6px; --shadow:0 1px 2px rgba(0,0,0,.05); --glow:rgba(43,75,255,.15);
+  --f-display:"Space Grotesk",system-ui,sans-serif; --f-body:"Manrope",system-ui,sans-serif; color-scheme:light}
 *{box-sizing:border-box}
 input[type=range],input[type=checkbox]{accent-color:var(--accent)}
 body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:14px;line-height:1.45;margin:0}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--panel)}
 .wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--panel);border-bottom:1px solid var(--line)}
-header.top .wrap{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding-block:10px}
+header.top::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--grad);opacity:.85}
+header.top .wrap{display:flex;align-items:center;gap:10px;flex-wrap:nowrap;padding-block:10px}
+header.top nav.tabs{flex:0 1 auto;min-width:0}
+#theme{width:auto;max-width:150px}
+@media (max-width:1560px){header.top .logo small{display:none}header.top .lblfmt{font-size:0;gap:0}header.top .lblfmt select{font-size:13px}#theme{max-width:118px}#format{max-width:128px}}
+@media (max-width:1340px){header.top .wrap{flex-wrap:wrap}}
 .logo{font-family:var(--f-display);font-weight:700;font-size:18px;letter-spacing:.01em;display:flex;align-items:center;gap:8px}
 .logo i{display:inline-block;width:12px;height:12px;border-radius:50%;background:var(--rec);box-shadow:0 0 0 3px color-mix(in srgb,var(--rec) 30%,transparent)}
 .logo small{font-family:var(--f-body);font-weight:500;font-size:12px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
 nav.tabs{display:flex;gap:4px;overflow-x:auto;max-width:100%;scrollbar-width:none;background:var(--panel2);padding:3px;border-radius:9px;border:1px solid var(--line)}
 nav.tabs a{color:var(--muted);text-decoration:none;padding:6px 11px;border-radius:6px;font-weight:500;white-space:nowrap}
-nav.tabs a[aria-current="page"]{background:var(--accent);color:var(--accent-ink)}
+nav.tabs a[aria-current="page"]{background:var(--grad);color:var(--accent-ink);box-shadow:0 4px 14px -6px var(--glow)}
 .spacer{flex:1}
 button,.btn{font:inherit;font-weight:500;color:var(--fg);background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:7px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none;line-height:1.2}
 button:hover,.btn:hover{border-color:var(--muted)}
 button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button.primary{background:var(--grad);color:var(--accent-ink);border-color:transparent;box-shadow:0 6px 18px -10px var(--glow)}
+button.primary:hover{filter:brightness(1.08)}
 button.rec{background:var(--rec);color:#fff;border-color:var(--rec)}
 button.ghost{background:transparent}
 button.danger{color:var(--rec)}
@@ -57,7 +90,7 @@ h2{font-family:var(--f-display);font-weight:500;font-size:15px;margin:0;text-wra
 
 /* Montaj */
 .editor{display:grid;grid-template-columns:250px minmax(0,1fr) 290px;gap:12px;padding-block:12px}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:12px;display:flex;flex-direction:column;gap:10px;min-width:0}
 .drop{border:1.5px dashed var(--line);border-radius:9px;padding:14px;text-align:center;color:var(--muted);font-size:13px;display:grid;gap:8px;justify-items:center}
 .drop.over{border-color:var(--accent);color:var(--fg)}
 .mlist{display:grid;gap:6px;max-height:360px;overflow:auto}
@@ -151,10 +184,11 @@ details.sc[open] summary{margin-bottom:8px}
 .two{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:12px;padding-block:12px;align-items:start}
 .thumbwrap canvas{width:100%;aspect-ratio:16/9;border-radius:10px;display:block;background:#000;border:1px solid var(--line)}
 .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;padding-block:12px}
-.pcard{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;display:grid}
-.pcard .th{aspect-ratio:16/9;background:#000;display:grid;place-items:center;color:#777;font-size:12px}
-.pcard .th img{width:100%;height:100%;object-fit:cover}
-.pcard .bd{padding:10px;display:grid;gap:6px}
+.pcard{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;display:grid;grid-template-rows:auto 1fr;align-content:start;min-width:0;box-shadow:var(--shadow);transition:transform .15s,box-shadow .15s}
+.pcard:hover{transform:translateY(-2px);box-shadow:0 14px 30px -18px var(--glow)}
+.pcard .th{aspect-ratio:16/9;background:#000;display:grid;place-items:center;color:#777;font-size:12px;overflow:hidden;min-height:0}
+.pcard .th img{width:100%;height:100%;object-fit:cover;display:block}
+.pcard .bd{padding:10px;display:grid;gap:6px;min-width:0;align-content:start}
 .pcard .bd b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pnew{border:1.5px dashed var(--line);border-radius:10px;display:grid;place-items:center;min-height:180px;color:var(--muted);background:transparent;font-size:14px}
 .out{white-space:pre-wrap;min-height:220px}
@@ -226,16 +260,19 @@ td.w{color:var(--muted);white-space:nowrap}
       <a href="#ghid" data-view="ghid">Ghid</a>
     </nav>
     <div class="spacer"></div>
-    <label class="f" style="grid-auto-flow:column;align-items:center;gap:6px">Format
+    <label class="f lblfmt" style="grid-auto-flow:column;align-items:center;gap:6px">Format
       <select id="format" style="width:auto">
         <option value="16:9">16:9 YouTube</option>
         <option value="9:16">9:16 Shorts / TikTok</option>
         <option value="1:1">1:1 Instagram</option>
       </select>
     </label>
-    <button id="btnTheme" title="Schimbă tema: automată, luminoasă sau întunecată" style="min-width:44px">◐</button>
+    <select id="theme" title="Tema site-ului" aria-label="Tema site-ului">
+      <option value="">🎨 Studio (auto)</option><option value="light">Studio luminos</option><option value="dark">Studio întunecat</option>
+      <option value="neon">Neon</option><option value="cinema">Cinema</option><option value="padure">Pădure</option><option value="aurora">Aurora</option><option value="minimal">Minimal</option>
+    </select>
     <button id="btnSave" title="Salvează proiectul în acest browser">Salvează</button>
-    <button class="rec" id="btnExport">● Exportă video</button>
+    <button class="rec" id="btnExport" style="white-space:nowrap">● Exportă</button>
   </div>
 </header>
 
@@ -637,6 +674,7 @@ td.w{color:var(--muted);white-space:nowrap}
           <tr><td class="b">Export lung (peste 25 de minute)</td><td class="w">Butonul „Exportă video”</td><td>Pe calculator, în Chrome sau Edge, pe site-ul de pe GitHub: alegi unde se salvează fișierul și video-ul se scrie direct pe disc, oricât de lung (și 3 ore). Altfel îl salvează în părți de câte 20 de minute. Exportul durează cât video-ul: ține tab-ul vizibil și calculatorul la priză. Dacă ascunzi tab-ul, exportul pune pauză și continuă când revii.</td></tr>
           <tr><td class="b">Surse, pentru descrierea YouTube</td><td class="w">Creează, după generare</td><td>Lista autorilor și licențelor pentru imaginile și muzica folosite. Apasă „Copiază” și lipește-o în descrierea video-ului.</td></tr>
           <tr><td class="b">Generează video</td><td class="w">Creează, Rezumat</td><td>Construiește tot timeline-ul în Montaj din scenariu și alegerile tale. Înlocuiește ce era acolo.</td></tr>
+          <tr><td class="b">🎨 Tema</td><td class="w">Sus, în antet</td><td>Schimbi aspectul site-ului: Studio (automat, luminos sau întunecat), Neon, Cinema, Pădure, Aurora sau Minimal. Alegerea rămâne salvată în browser.</td></tr>
           <tr><td class="b">🔑 Cheia ta AI (Groq)</td><td class="w">Scenarii</td><td>Pui cheia ta Groq o singură dată. Apoi scenariile, titlurile și împărțirea în scene merg pe orice site, nu doar în claude.ai. Cheia rămâne doar în browserul tău.</td></tr>
           <tr><td class="b">✦ Scrie scenariul</td><td class="w">Scenarii</td><td>Claude scrie narațiunea după subiect, stil, limbă și lungime. O vezi cum se scrie și o poți edita.</td></tr>
           <tr><td class="b">✦ 5 idei de titlu</td><td class="w">Scenarii</td><td>Propune titluri. „Folosește” pune titlul în Creează și pe miniatură.</td></tr>
@@ -1667,11 +1705,13 @@ $('#aiUpload').onclick = () => $('#file').click();
 $('#scenes').addEventListener('click', e => { const b = e.target.closest('[data-ai]'); if (!b) return; $('#qText').value = b.dataset.ai; $('#qTip').value = 'imagine'; location.hash = 'ai'; });
 
 /* ---------- temă ---------- */
-const THEMES = ['', 'light', 'dark'], THEME_LBL = {'':'◐ Auto', light:'☀ Luminos', dark:'☾ Întunecat'};
-function applyTheme(t){ if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme; $('#btnTheme').textContent = THEME_LBL[t]; }
+const SKINS = ['neon', 'cinema', 'padure', 'aurora', 'minimal'];
+function applyTheme(t){ const r = document.documentElement; delete r.dataset.theme; delete r.dataset.skin;
+  if (t === 'light' || t === 'dark') r.dataset.theme = t; else if (SKINS.includes(t)) r.dataset.skin = t; else t = '';
+  $('#theme').value = t; if (typeof drawThumb === 'function' && !$('#v-miniaturi').hidden) drawThumb(); }
 applyTheme((() => { try { return localStorage.getItem('cadru-theme') || ''; } catch(e){ return ''; } })());
-$('#btnTheme').onclick = () => { const cur = document.documentElement.dataset.theme || ''; const t = THEMES[(THEMES.indexOf(cur) + 1) % 3];
-  applyTheme(t); try { t ? localStorage.setItem('cadru-theme', t) : localStorage.removeItem('cadru-theme'); } catch(e){} toast('Tema: ' + THEME_LBL[t].slice(2)); };
+$('#theme').onchange = e => { const t = e.target.value; applyTheme(t); try { t ? localStorage.setItem('cadru-theme', t) : localStorage.removeItem('cadru-theme'); } catch(err){}
+  toast('Tema: ' + e.target.selectedOptions[0].textContent.replace('🎨 ', '')); };
 
 /* ---------- routing ---------- */
 const VIEWS = ['creeaza','montaj','scenarii','miniaturi','proiecte','videoclipuri','publica','ai','ghid'];
