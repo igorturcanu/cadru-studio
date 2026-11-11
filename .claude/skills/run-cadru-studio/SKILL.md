@@ -24,7 +24,7 @@ Node and `require('playwright')` with its bundled Chromium. Both are already pre
 node .claude/skills/run-cadru-studio/driver.cjs all
 ```
 
-Flows: `smoke`, `create`, `export`, `publish`, `all`.
+Flows: `smoke`, `create`, `export`, `publish`, `themes`, `all`. `themes` screenshots Montaj, Creează, Videoclipuri and Scenarii in every theme (`theme-<name>-<view>.png`).
 
 - `smoke` loads all 8 tabs and takes a screenshot of each: `tab-<view>.png`.
 - `create` does the following:

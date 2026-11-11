@@ -62,6 +62,15 @@ const srv = http.createServer((q, r) => {
     await shot('export-done'); console.log('export:', await p.textContent('#mText'));
     await p.click('#mCancel');
   }
+  if (flow === 'themes') { // previews of every theme: Montaj (after a generated video), Creează, Videoclipuri
+    await go('creeaza');
+    await p.fill('#script', 'Delta Dunării este un loc magic. Păsările zboară peste ape. Pescarii pleacă dimineața. Seara totul devine liniștit.');
+    await p.click('#btnSplitLocal'); await p.click('#btnToEditor'); await p.waitForFunction(() => location.hash === '#montaj', null, { timeout: 30000 });
+    for (const t of ['', 'light', 'neon', 'cinema', 'padure', 'aurora', 'minimal']) {
+      await p.selectOption('#theme', t); const n = t || 'studio';
+      for (const v of ['montaj', 'creeaza', 'videoclipuri', 'scenarii']) { await p.evaluate(h => location.hash = h, v); await p.waitForSelector('#v-' + v + ':not([hidden])'); await p.waitForTimeout(v === 'videoclipuri' ? 900 : 350); await shot(`theme-${n}-${v}`); }
+    }
+  }
   if (flow === 'publish' || flow === 'all') {
     await go('publica');
     await p.fill('#ytClient', 'mock.apps.googleusercontent.com'); await p.dispatchEvent('#ytClient', 'change');
