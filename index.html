@@ -48,7 +48,7 @@ button.rec{background:var(--rec);color:#fff;border-color:var(--rec)}
 button.ghost{background:transparent}
 button.danger{color:var(--rec)}
 button:disabled{opacity:.45;cursor:not-allowed}
-select,input[type=number],input[type=text],textarea{font:inherit;color:var(--fg);background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:6px 8px;width:100%}
+select,input[type=number],input[type=text],input[type=password],textarea{font:inherit;color:var(--fg);background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:6px 8px;width:100%}
 textarea{resize:vertical;min-height:70px}
 label.f{display:grid;gap:4px;font-size:12px;color:var(--muted);font-weight:500}
 .lbl{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:600}
@@ -372,7 +372,7 @@ td.w{color:var(--muted);white-space:nowrap}
 <main class="view wrap" id="v-scenarii" hidden>
   <div class="two">
     <section class="panel">
-      <h2>Scrie un scenariu cu Claude</h2>
+      <h2>Scrie un scenariu cu AI</h2>
       <label class="f">Despre ce e video-ul<input type="text" id="wTopic" value="Cum s-a format Delta Dunării"></label>
       <div class="row2" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
         <label class="f">Stil<select id="wStyle">
@@ -386,6 +386,16 @@ td.w{color:var(--muted);white-space:nowrap}
         <button id="wTitles">✦ 5 idei de titlu</button>
       </div>
       <p class="note" id="wNote" style="margin:0"></p>
+      <details id="gBox" style="border:1px solid var(--line);border-radius:10px;padding:8px 10px">
+        <summary style="cursor:pointer;font-weight:600">🔑 Cheia ta AI (Groq) <span class="kind" id="gState"></span></summary>
+        <p class="note" style="margin:6px 0">Cu cheia ta Groq, „Scrie scenariul”, „5 idei de titlu” și „Împarte cu AI” merg pe orice site, nu doar în claude.ai. Cheia se păstrează doar în acest browser și pleacă doar spre api.groq.com. Iei o cheie gratuită de pe <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com/keys ↗</a>.</p>
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:8px">
+          <label class="f">Cheia (începe cu gsk_)<input type="password" id="gKey" autocomplete="off" placeholder="gsk_…"></label>
+          <label class="f">Model<select id="gModel"><option value="llama-3.3-70b-versatile">Llama 3.3 70B (recomandat)</option><option value="openai/gpt-oss-120b">GPT-OSS 120B</option><option value="llama-3.1-8b-instant">Llama 3.1 8B (foarte rapid)</option></select></label>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px"><button class="primary" id="gSave">Salvează</button><button id="gTest">Verifică cheia</button><button id="gDel">Șterge cheia</button><label style="display:flex;gap:6px;align-items:center;font-size:13px"><input type="checkbox" id="gPrefer"> Folosește Groq și în claude.ai</label></div>
+        <p class="note" id="gNote" style="margin:6px 0 0"></p>
+      </details>
     </section>
     <section class="panel">
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><h2>Rezultat</h2><div class="spacer"></div><button id="wUse" disabled>Folosește în Creează →</button></div>
@@ -626,6 +636,7 @@ td.w{color:var(--muted);white-space:nowrap}
           <tr><td class="b">Export lung (peste 25 de minute)</td><td class="w">Butonul „Exportă video”</td><td>Pe calculator, în Chrome sau Edge, pe site-ul de pe GitHub: alegi unde se salvează fișierul și video-ul se scrie direct pe disc, oricât de lung (și 3 ore). Altfel îl salvează în părți de câte 20 de minute. Exportul durează cât video-ul: ține tab-ul vizibil și calculatorul la priză. Dacă ascunzi tab-ul, exportul pune pauză și continuă când revii.</td></tr>
           <tr><td class="b">Surse, pentru descrierea YouTube</td><td class="w">Creează, după generare</td><td>Lista autorilor și licențelor pentru imaginile și muzica folosite. Apasă „Copiază” și lipește-o în descrierea video-ului.</td></tr>
           <tr><td class="b">Generează video</td><td class="w">Creează, Rezumat</td><td>Construiește tot timeline-ul în Montaj din scenariu și alegerile tale. Înlocuiește ce era acolo.</td></tr>
+          <tr><td class="b">🔑 Cheia ta AI (Groq)</td><td class="w">Scenarii</td><td>Pui cheia ta Groq o singură dată. Apoi scenariile, titlurile și împărțirea în scene merg pe orice site, nu doar în claude.ai. Cheia rămâne doar în browserul tău.</td></tr>
           <tr><td class="b">✦ Scrie scenariul</td><td class="w">Scenarii</td><td>Claude scrie narațiunea după subiect, stil, limbă și lungime. O vezi cum se scrie și o poți edita.</td></tr>
           <tr><td class="b">✦ 5 idei de titlu</td><td class="w">Scenarii</td><td>Propune titluri. „Folosește” pune titlul în Creează și pe miniatură.</td></tr>
           <tr><td class="b">Folosește în Creează →</td><td class="w">Scenarii</td><td>Mută scenariul scris în pagina Creează.</td></tr>
@@ -1209,9 +1220,51 @@ async function autoImages(list, topic, progress, credits){
   if (!anyOk) throw new Error('fetch');
   return out;
 }
-let sampleFn = null;
-(async () => { try { if (window.claude?.use){ sampleFn = await window.claude.use('sample'); } } catch(e){}
-  $('#btnSplitAI').hidden = !sampleFn; $('#wGo').disabled = $('#wTitles').disabled = !sampleFn; if (!sampleFn) $('#wNote').textContent = 'Scrierea cu Claude nu e disponibilă în această vizualizare. Deschide pagina în claude.ai.'; })();
+/* ---------- AI: Claude (în claude.ai) sau cheia ta Groq (oriunde) ---------- */
+let sampleFn = null, claudeSample = null;
+const GKEY = 'cadru-groq-key', GMOD = 'cadru-groq-model', GPREF = 'cadru-groq-prefer';
+const gGet = k => { try { return localStorage.getItem(k) || ''; } catch(e){ return ''; } };
+const gSet = (k, v) => { try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch(e){} };
+async function groqChat(prompt, {onText, json} = {}){
+  const key = gGet(GKEY); if (!key) throw Object.assign(new Error('Lipsește cheia Groq'), {code:'no_key'});
+  const body = {model:gGet(GMOD) || 'llama-3.3-70b-versatile', messages:[{role:'user', content:prompt}], temperature:json ? 0.2 : 0.8, max_tokens:8000, stream:!!onText};
+  const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {method:'POST', headers:{'Content-Type':'application/json', Authorization:'Bearer ' + key}, body:JSON.stringify(body)});
+  if (!r.ok){ let m = ''; try { m = (await r.json()).error?.message || ''; } catch(e){}
+    throw Object.assign(new Error(m || 'HTTP ' + r.status), {code:r.status === 429 ? 'rate_limited' : (r.status === 401 || r.status === 403) ? 'bad_key' : 'groq'}); }
+  if (!onText){ const d = await r.json(); const c = d.choices?.[0]; return {text:c?.message?.content || '', truncated:c?.finish_reason === 'length'}; }
+  const rd = r.body.getReader(), dec = new TextDecoder(); let buf = '', text = '', fin = '';
+  for (;;){ const {done, value} = await rd.read(); if (done) break; buf += dec.decode(value, {stream:true});
+    const lines = buf.split('\n'); buf = lines.pop();
+    for (const ln of lines){ const t = ln.trim(); if (!t.startsWith('data:')) continue; const d = t.slice(5).trim(); if (d === '[DONE]') continue;
+      try { const c = JSON.parse(d).choices?.[0]; if (c?.delta?.content){ text += c.delta.content; onText({text}); } if (c?.finish_reason) fin = c.finish_reason; } catch(e){} } }
+  return {text, truncated:fin === 'length'};
+}
+function parseJsonLoose(s){ s = String(s).replace(/```(?:json)?/gi, '').trim(); try { return JSON.parse(s); } catch(e){}
+  const i = [s.indexOf('['), s.indexOf('{')].filter(k => k >= 0).sort((a, b) => a - b)[0], j = Math.max(s.lastIndexOf(']'), s.lastIndexOf('}'));
+  if (i != null && j > i) return JSON.parse(s.slice(i, j + 1)); throw new Error('Răspunsul nu e JSON'); }
+const groqSample = (p, o = {}) => groqChat(p, {onText:o.onText});
+groqSample.json = async p => parseJsonLoose((await groqChat(p + '\n\nRăspunde strict cu JSON valid, fără niciun alt text.', {json:true})).text);
+const aiErr = (e, fb) => e?.code === 'rate_limited' ? 'Prea multe cereri. Încearcă peste un minut.' : e?.code === 'not_granted' ? 'Ai refuzat accesul la Claude pentru această pagină.' : e?.code === 'bad_key' ? 'Cheia Groq nu e bună. Verific-o în Scenarii → Cheia ta AI.' : e?.code === 'groq' ? 'Groq a răspuns cu o eroare: ' + e.message : fb;
+function aiReady(){
+  const hasKey = !!gGet(GKEY), prefer = gGet(GPREF) === '1';
+  sampleFn = (prefer && hasKey) ? groqSample : (claudeSample || (hasKey ? groqSample : null));
+  $('#btnSplitAI').hidden = !sampleFn; $('#wGo').disabled = $('#wTitles').disabled = !sampleFn;
+  $('#gState').textContent = hasKey ? 'cheie salvată' : 'nicio cheie';
+  $('#wNote').textContent = !sampleFn ? 'Pune cheia ta Groq mai jos ca să scrii scenarii pe orice site. În claude.ai merge și cu Claude.' : sampleFn === groqSample ? 'Scrie cu cheia ta Groq.' : 'Scrie cu Claude.';
+  if (!sampleFn) $('#gBox').open = true;
+}
+$('#gKey').value = gGet(GKEY); $('#gModel').value = gGet(GMOD) || 'llama-3.3-70b-versatile'; $('#gPrefer').checked = gGet(GPREF) === '1';
+$('#gSave').onclick = () => { const k = $('#gKey').value.trim(); if (k && !/^gsk_\w{20,}$/.test(k)){ $('#gNote').textContent = 'Cheia Groq începe cu gsk_. Verific-o.'; return; }
+  gSet(GKEY, k); gSet(GMOD, $('#gModel').value); gSet(GPREF, $('#gPrefer').checked ? '1' : ''); aiReady(); $('#gNote').textContent = k ? 'Salvat în acest browser.' : 'Cheia a fost ștearsă.'; };
+$('#gModel').onchange = () => { gSet(GMOD, $('#gModel').value); };
+$('#gPrefer').onchange = () => { gSet(GPREF, $('#gPrefer').checked ? '1' : ''); aiReady(); };
+$('#gDel').onclick = () => { gSet(GKEY, ''); $('#gKey').value = ''; aiReady(); $('#gNote').textContent = 'Cheia a fost ștearsă din acest browser.'; };
+$('#gTest').onclick = async () => { const k = $('#gKey').value.trim(); if (!k){ $('#gNote').textContent = 'Scrie întâi cheia.'; return; }
+  gSet(GKEY, k); gSet(GMOD, $('#gModel').value); aiReady(); $('#gNote').textContent = 'Se verifică…';
+  try { const r = await groqChat('Răspunde doar cu cuvântul: OK'); $('#gNote').textContent = r.text ? 'Cheia merge. Poți scrie scenarii.' : 'Groq nu a răspuns nimic.'; }
+  catch(e){ $('#gNote').textContent = e?.code === 'bad_key' ? 'Cheia nu e acceptată de Groq.' : aiErr(e, 'Nu am putut ajunge la Groq: ' + (e?.message || 'eroare de rețea')); } };
+aiReady();
+(async () => { try { if (window.claude?.use){ claudeSample = await window.claude.use('sample'); } } catch(e){} aiReady(); })();
 $('#btnSplitAI').onclick = async () => {
   const b = $('#btnSplitAI'); b.disabled = true; b.textContent = 'Se împarte…';
   try {
@@ -1219,7 +1272,7 @@ $('#btnSplitAI').onclick = async () => {
     const arr = Array.isArray(res) ? res : (res?.scenes || []);
     scenes = arr.filter(x => x && x.text).map(x => ({text:String(x.text), kw:String(x.kw || ''), dur:sceneDur(String(x.text))}));
     renderScenes(); $('#scDetails').open = true; if (!scenes.length) toast('AI-ul nu a întors scene. Folosește „Împarte în scene”.');
-  } catch(e){ if (e?.code === 'not_granted') b.hidden = true; toast(e?.code === 'rate_limited' ? 'Prea multe cereri. Încearcă din nou peste un minut.' : 'Împărțirea cu AI nu a mers. Folosește „Împarte în scene”.'); }
+  } catch(e){ if (e?.code === 'not_granted') b.hidden = true; toast(aiErr(e, 'Împărțirea cu AI nu a mers. Folosește „Împarte în scene”.')); }
   b.disabled = false; b.textContent = '✦ Împarte cu AI';
 };
 
@@ -1231,7 +1284,7 @@ $('#wGo').onclick = async () => {
   const prompt = `Scrie scenariul de narațiune pentru un video YouTube fără prezentator.\nSubiect: ${topic}\nStil: ${$('#wStyle').value}\nLimba: ${$('#wLang').value}\nLungime: aproximativ ${min * 150} de cuvinte (${min} minute citite cu voce tare).\n${$('#wVoice').value.trim() ? 'Cum vorbește canalul: ' + $('#wVoice').value.trim() + '\n' : ''}Reguli: începe cu un cârlig puternic în prima propoziție; propoziții clare, ușor de citit cu voce tare; fără titluri de secțiuni, fără indicații de regie, fără emoji; doar textul care va fi citit. Folosește fapte reale și nu inventa cifre sau date de care nu ești sigur.`;
   try { const r = await sampleFn(prompt, { onText: ({text}) => { $('#wOut').value = text; }, cache:false }); $('#wOut').value = r.text; $('#wUse').disabled = !r.text.trim();
     $('#wNote').textContent = r.truncated ? 'Scenariul a fost tăiat la limită. Cere o lungime mai mică.' : `Gata: ${words(r.text)} cuvinte, cam ${fmt(words(r.text) / 150 * 60)} citit.`; }
-  catch(e){ $('#wNote').textContent = e?.code === 'rate_limited' ? 'Prea multe cereri. Încearcă peste un minut.' : e?.code === 'not_granted' ? 'Ai refuzat accesul la Claude pentru această pagină.' : 'Scrierea nu a mers. Încearcă din nou.'; }
+  catch(e){ $('#wNote').textContent = aiErr(e, 'Scrierea nu a mers. Încearcă din nou.'); }
   b.disabled = false; b.textContent = '✦ Scrie scenariul';
 };
 $('#wTitles').onclick = async () => {
@@ -1240,7 +1293,7 @@ $('#wTitles').onclick = async () => {
   try { const res = await sampleFn.json(`Propune 5 titluri de video YouTube în ${$('#wLang').value} pentru subiectul: ${topic}. Stil: ${$('#wStyle').value}. Maxim 60 de caractere fiecare, curiozitate reală, fără clickbait mincinos, fără emoji. Răspunde doar cu JSON: array de 5 stringuri.`, {modelTier:'quick', cache:false});
     const arr = (Array.isArray(res) ? res : []).map(String).slice(0, 5);
     $('#wTitleRes').innerHTML = arr.map(t => `<div class="ritem" style="grid-template-columns:1fr auto;align-items:center"><span>${esc(t)}</span><button data-t="${esc(t)}" style="padding:3px 9px;font-size:12px">Folosește</button></div>`).join('') || '<p class="note">Niciun titlu primit.</p>';
-  } catch(e){ $('#wTitleRes').innerHTML = '<p class="note">Titlurile nu au mers. Încearcă din nou.</p>'; }
+  } catch(e){ $('#wTitleRes').innerHTML = `<p class="note">${esc(aiErr(e, 'Titlurile nu au mers. Încearcă din nou.'))}</p>`; }
   b.disabled = false;
 };
 $('#wTitleRes').addEventListener('click', e => { const b = e.target.closest('[data-t]'); if (!b) return; $('#vTitle').value = b.dataset.t; $('#tText').value = b.dataset.t.toUpperCase(); drawThumb(); renderSummary(); toast('Titlul e pus în Creează și pe miniatură.'); });
@@ -1532,8 +1585,25 @@ if (location.hash === '#publica') setTimeout(ytFill, 0);
 /* ---------- AI Personal ---------- */
 const AIS = 'AI Personal'; let mcp = null; let jobs = [];
 (async () => { try { mcp = window.claude?.use ? await window.claude.use('mcp') : null; } catch(e){ mcp = null; }
-  $('#aiState').textContent = mcp ? 'Conector disponibil' : 'Conector indisponibil aici';
-  if (!mcp) document.querySelectorAll('#v-ai button:not(#aiUpload)').forEach(b => b.disabled = true); })();
+  $('#aiState').textContent = mcp ? 'Conector disponibil' : 'Mod gratuit: căutare Openverse și imagini rapide';
+  if (!mcp){ ['#iPaid', '#sGo', '#sUseLen'].forEach(s => { $(s).disabled = true; $(s).title = 'Merge doar în claude.ai, cu conectorul AI Personal'; });
+    $('#sConfirm').innerHTML = '<p class="note">Melodiile și imaginile 8K merg doar cu conectorul AI Personal, în claude.ai. Pentru muzică gratuită folosește căutarea de mai sus (Muzică și sunete).</p>'; } })();
+let freeFound = [];
+async function freeSearch(){
+  const kind = $('#qTip').value === 'muzica' ? 'audio' : 'images';
+  const res = await ovSearch(kind, $('#qText').value.trim(), 12, 1, false); freeFound = res.map(r => ({...r, kind}));
+  $('#qRes').innerHTML = res.length ? res.map((r, i) => `<div class="ritem"><span class="t" title="${esc(r.title)}">${esc(r.title || 'Fără titlu')}</span><span class="src">Openverse · ${esc(r.creator || 'autor necunoscut')} · ${esc(licName(r))}${r.duration ? ' · ' + fmt(r.duration / 1000) : ''}</span><div class="links"><button class="primary" data-fadd="${i}" style="padding:3px 10px;font-size:12px">＋ În Materiale</button>${r.url ? linkHtml(r.url, 'Deschide fișierul') : ''}${r.foreign_landing_url ? linkHtml(r.foreign_landing_url, 'Pagina sursei') : ''}</div></div>`).join('')
+    : '<p class="note">Niciun rezultat. Încearcă alte cuvinte, în engleză.</p>';
+}
+$('#qRes').addEventListener('click', async e => { const b = e.target.closest('[data-fadd]'); if (!b) return; const r = freeFound[+b.dataset.fadd]; b.disabled = true; b.textContent = 'Se descarcă…';
+  const blob = await ovBlob(r, r.kind); if (!blob){ b.textContent = 'Nu se poate descărca'; return; }
+  const isA = r.kind === 'audio'; const m = makeMedia(blob.type ? blob : new Blob([blob], {type:isA ? 'audio/mpeg' : 'image/jpeg'}), isA ? 'audio' : 'image', (r.title || 'fisier').slice(0, 60) + (isA ? '.mp3' : '.jpg'));
+  m.credit = `„${r.title || 'fără titlu'}” de ${r.creator || 'autor necunoscut'}, ${licName(r)}${r.foreign_landing_url ? ' (' + r.foreign_landing_url + ')' : ''}`;
+  renderMedia(); refreshPickers(); b.textContent = '✓ În Materiale'; toast('Fișierul e în Materiale.'); });
+$('#iRes').addEventListener('click', async e => { const b = e.target.closest('[data-iadd]'); if (!b) return; b.disabled = true; b.textContent = 'Se descarcă…';
+  try { const x = await fetch(b.dataset.iadd); if (!x.ok) throw 0; const blob = await x.blob(); if (!/^image\//.test(blob.type)) throw 0;
+    makeMedia(blob, 'image', (b.dataset.name || 'imagine').slice(0, 50) + '.jpg'); renderMedia(); refreshPickers(); b.textContent = '✓ În Materiale'; toast('Imaginea e în Materiale.'); }
+  catch(err){ b.textContent = 'Nu s-a putut descărca'; } });
 const txt = r => { const p = r?.payload; if (typeof p === 'string') return p; if (p != null) return JSON.stringify(p); return (r?.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n'); };
 const errMsg = e => ({not_granted:'Ai refuzat accesul la AI Personal pentru această pagină.', consent_required:'Permite accesul la AI Personal când ți se cere.', server_not_connected:'Conectorul AI Personal nu e conectat în contul tău.', rate_limited:'Prea multe cereri. Încearcă peste un minut.', tool_error:'AI Personal a răspuns cu o eroare'}[e?.code] || 'Cererea nu a mers') + (e?.message && e.code === 'tool_error' ? ': ' + e.message : '.');
 const links = s => [...String(s).matchAll(/https?:\/\/[^\s)>\]]+/g)].map(m => m[0]);
@@ -1549,6 +1619,7 @@ function parseMedia(s){
 $('#qGo').onclick = async () => {
   const q = $('#qText').value.trim(); if (!q){ toast('Scrie ce cauți.'); return; }
   const b = $('#qGo'); b.disabled = true; b.textContent = 'Se caută…'; $('#qRes').innerHTML = '';
+  if (!mcp){ try { await freeSearch(); } catch(e){ $('#qRes').innerHTML = `<p class="note">${e?.message === 'limita' ? 'Prea multe căutări. Încearcă peste un minut.' : 'Căutarea nu a mers. Încearcă din nou.'}</p>`; } b.disabled = false; b.textContent = 'Caută'; return; }
   try { const r = await call('cauta_media_gratuita', {tip:$('#qTip').value, interogare:q, ...($('#qCom').checked ? {doar_comercial:true} : {})});
     const s = txt(r); const items = parseMedia(s);
     $('#qRes').innerHTML = items.length ? items.map(it => `<div class="ritem"><span class="t" title="${esc(it.title)}">${esc(it.title)}</span><span class="src">${esc(it.src)} · ${esc(it.autor)} · ${esc(it.lic)}</span><div class="links">${it.file ? linkHtml(it.file, 'Deschide fișierul') : ''}${it.page ? linkHtml(it.page, 'Pagina sursei') : ''}</div></div>`).join('')
@@ -1560,6 +1631,9 @@ $('#iFree').onclick = async () => {
   const d = $('#iDesc').value.trim(); if (!d){ toast('Descrie imaginea.'); return; }
   const [w, h] = {'16:9':[1280,720], '9:16':[720,1280], '1:1':[1024,1024]}[$('#iFmt').value];
   const b = $('#iFree'); b.disabled = true;
+  if (!mcp){ const u = `https://image.pollinations.ai/prompt/${encodeURIComponent(d + ($('#iNat').checked ? ', realistic photo' : ''))}?width=${w}&height=${h}&nologo=true&seed=${Math.floor(Math.random() * 1e6)}`;
+    $('#iRes').insertAdjacentHTML('afterbegin', `<div class="ritem"><span class="t">${esc(d)}</span><span class="src">gratuit · Pollinations · durează 10-30 de secunde</span><div class="links"><button class="primary" data-iadd="${esc(u)}" data-name="${esc(d)}" style="padding:3px 10px;font-size:12px">＋ În Materiale</button>${linkHtml(u, 'Deschide imaginea')}</div></div>`);
+    b.disabled = false; return; }
   try { const r = await call('imagine_gratuita', {descriere:d, latime:w, inaltime:h, aspect_natural:$('#iNat').checked}); const u = links(txt(r))[0];
     $('#iRes').insertAdjacentHTML('afterbegin', `<div class="ritem"><span class="t">${esc(d)}</span><span class="src">gratuit · se generează la prima deschidere</span><div class="links">${u ? linkHtml(u, 'Deschide imaginea') : esc(txt(r))}</div></div>`);
   } catch(e){ toast(errMsg(e)); }
