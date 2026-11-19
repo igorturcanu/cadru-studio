@@ -14,6 +14,7 @@ Exemple:
     python3 tools/ai_video_4k.py upscale lac.mp4 -o lac_4k.mp4                 # gratuit, ffmpeg
     python3 tools/ai_video_4k.py upscale --url https://.../clip.mp4 --ai -o clip_4k.mp4   # cu AI, costă
     python3 tools/ai_video_4k.py join a_4k.mp4 b_4k.mp4 c_4k.mp4 -o final_4k.mp4
+    python3 tools/ai_video_4k.py loop a.mp4 b.mp4 c.mp4 --music muzica.mp3 --hours 3 -o relax_3h_4k.mp4
 
 Doar biblioteca standard Python + ffmpeg. Parametrii exacți ai fiecărui model sunt pe pagina lui de pe fal.ai;
 cu --param cheie=valoare adaugi sau suprascrii orice parametru.
@@ -126,6 +127,11 @@ def main():
     j = sub.add_parser("join", help="lipește clipuri într-un video 4K")
     j.add_argument("clips", nargs="+")
     j.add_argument("-o", "--out", default="final_4k.mp4")
+    l = sub.add_parser("loop", help="video lung (ex. 3 ore) în 4K: clipurile în buclă + muzică în buclă")
+    l.add_argument("clips", nargs="+")
+    l.add_argument("--music", help="fișier audio pus în buclă (fără el rămâne sunetul clipurilor)")
+    l.add_argument("--hours", type=float, default=3.0)
+    l.add_argument("-o", "--out", default="video_lung_4k.mp4")
     a = ap.parse_args()
 
     if a.cmd == "gen":
@@ -157,7 +163,8 @@ def main():
             download(run(UPSCALER, {"video_url": src, "target_resolution": "4k"}), a.out)
         else:
             ffmpeg_4k(a.src or die("dă fișierul de crescut"), a.out)
-    elif a.cmd == "join":
+    elif a.cmd in ("join", "loop"):
+        out_join = a.out if a.cmd == "join" else os.path.join(tempfile.mkdtemp(), "segment_4k.mp4")
         d = tempfile.mkdtemp(); parts = []
         for i, c in enumerate(a.clips):  # aduce toate clipurile la același format 4K, apoi le lipește fără re-encodare
             p = os.path.join(d, f"{i:03}.mp4")
@@ -170,8 +177,18 @@ def main():
             parts.append(p)
         lst = os.path.join(d, "list.txt")
         with open(lst, "w") as f: f.writelines(f"file '{p}'\n" for p in parts)
-        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", lst, "-c", "copy", "-movflags", "+faststart", a.out], check=True)
-        print(f"Video final 4K: {a.out}")
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", lst, "-c", "copy", "-movflags", "+faststart", out_join], check=True)
+        if a.cmd == "join":
+            print(f"Video final 4K: {a.out}"); return
+        # Bucla: segmentul 4K se repetă fără re-encodare (durează minute, nu ore), muzica se repetă și ea.
+        secs = str(int(a.hours * 3600))
+        cmd = ["ffmpeg", "-y", "-loglevel", "error", "-stats", "-stream_loop", "-1", "-i", out_join]
+        if a.music:
+            cmd += ["-stream_loop", "-1", "-i", a.music, "-map", "0:v", "-map", "1:a", "-c:a", "aac", "-b:a", "256k"]
+        else:
+            cmd += ["-map", "0:v", "-map", "0:a", "-c:a", "copy"]
+        subprocess.run(cmd + ["-t", secs, "-c:v", "copy", "-movflags", "+faststart", a.out], check=True)
+        print(f"Video lung 4K gata: {a.out} ({a.hours:g} h, {os.path.getsize(a.out) / 1073741824:.2f} GB)")
 
 
 if __name__ == "__main__":
