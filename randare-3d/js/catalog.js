@@ -63,20 +63,27 @@ export const CATALOG = [
   { type: 'covor', name: 'Covor', cat: 'Living', icon: '🟫', w: 2.4, d: 1.7, h: 0.02, color: '#c9b79c' },
   { type: 'lampa', name: 'Lampă de podea', cat: 'Lumini', icon: '💡', w: 0.4, d: 0.4, h: 1.65, color: '#f2e6c9' },
   { type: 'lustra', name: 'Lustră', cat: 'Lumini', icon: '🔆', w: 0.6, d: 0.6, h: 0.5, color: '#f2e6c9', elev: 2.1 },
-  { type: 'pat', name: 'Pat dublu', cat: 'Dormitor', icon: '🛏️', w: 1.7, d: 2.1, h: 1.0, color: '#e9e4da' },
+  { type: 'pat', name: 'Pat dublu', cat: 'Dormitor', icon: '🛏️', w: 1.7, d: 2.1, h: 1.0, color: '#e9e4da', c2: WOOD, c1n: 'Lenjerie', c2n: 'Cadru' },
   { type: 'noptiera', name: 'Noptieră', cat: 'Dormitor', icon: '▫️', w: 0.5, d: 0.4, h: 0.5, color: WOOD },
   { type: 'dulap', name: 'Dulap', cat: 'Dormitor', icon: '🚪', w: 1.6, d: 0.6, h: 2.2, color: '#ece7df' },
-  { type: 'birou', name: 'Birou', cat: 'Dormitor', icon: '🖥️', w: 1.4, d: 0.7, h: 0.75, color: WOOD_LIGHT },
-  { type: 'masa', name: 'Masă de dining', cat: 'Bucătărie', icon: '🍽️', w: 1.8, d: 0.9, h: 0.76, color: WOOD },
-  { type: 'scaun', name: 'Scaun', cat: 'Bucătărie', icon: '🪑', w: 0.45, d: 0.5, h: 0.9, color: DARK },
-  { type: 'bucatarie', name: 'Corp bucătărie', cat: 'Bucătărie', icon: '🧑‍🍳', w: 2.4, d: 0.62, h: 0.9, color: '#e8e4dc' },
+  { type: 'birou', name: 'Birou', cat: 'Dormitor', icon: '🖥️', w: 1.4, d: 0.7, h: 0.75, color: WOOD_LIGHT, c2: DARK, c1n: 'Blat', c2n: 'Picioare' },
+  { type: 'masa', name: 'Masă de dining', cat: 'Bucătărie', icon: '🍽️', w: 1.8, d: 0.9, h: 0.76, color: WOOD, c2: WOOD, c1n: 'Blat', c2n: 'Picioare' },
+  { type: 'scaun', name: 'Scaun', cat: 'Bucătărie', icon: '🪑', w: 0.45, d: 0.5, h: 0.9, color: DARK, c2: WOOD_LIGHT, c1n: 'Șezut', c2n: 'Picioare' },
+  { type: 'bucatarie', name: 'Corp bucătărie', cat: 'Bucătărie', icon: '🧑‍🍳', w: 2.4, d: 0.62, h: 0.9, color: '#e8e4dc', c2: '#3a3a3a', c1n: 'Fronturi', c2n: 'Blat', kitchen: true },
+  { type: 'insula', name: 'Insulă bucătărie', cat: 'Bucătărie', icon: '🏝️', w: 1.8, d: 0.95, h: 0.92, color: '#e8e4dc', c2: '#ece9e3', c1n: 'Fronturi', c2n: 'Blat', kitchen: true },
+  { type: 'suspendat', name: 'Corp suspendat', cat: 'Bucătărie', icon: '🗄️', w: 1.2, d: 0.35, h: 0.72, color: '#e8e4dc', elev: 1.45, c1n: 'Fronturi', kitchen: true },
+  { type: 'coloana', name: 'Coloană cuptor', cat: 'Bucătărie', icon: '♨️', w: 0.6, d: 0.62, h: 2.2, color: '#e8e4dc', c1n: 'Fronturi', kitchen: true },
+  { type: 'hota', name: 'Hotă', cat: 'Bucătărie', icon: '🌫️', w: 0.9, d: 0.5, h: 0.9, color: '#b8bcc0', elev: 1.55 },
   { type: 'frigider', name: 'Frigider', cat: 'Bucătărie', icon: '🧊', w: 0.7, d: 0.68, h: 1.9, color: '#d8dcdf' },
   { type: 'cada', name: 'Cadă', cat: 'Baie', icon: '🛁', w: 1.7, d: 0.75, h: 0.58, color: WHITE },
   { type: 'dus', name: 'Cabină de duș', cat: 'Baie', icon: '🚿', w: 0.9, d: 0.9, h: 2.0, color: WHITE },
   { type: 'wc', name: 'Toaletă', cat: 'Baie', icon: '🚽', w: 0.4, d: 0.65, h: 0.8, color: WHITE },
-  { type: 'lavoar', name: 'Lavoar cu mobilier', cat: 'Baie', icon: '🚰', w: 0.8, d: 0.48, h: 0.85, color: WOOD_LIGHT },
+  { type: 'lavoar', name: 'Lavoar cu mobilier', cat: 'Baie', icon: '🚰', w: 0.8, d: 0.48, h: 0.85, color: WOOD_LIGHT, c2: WHITE, c1n: 'Mobilier', c2n: 'Blat' },
   { type: 'planta', name: 'Plantă', cat: 'Decor', icon: '🪴', w: 0.5, d: 0.5, h: 1.3, color: '#4f7d46' },
   { type: 'tablou', name: 'Tablou', cat: 'Decor', icon: '🖼️', w: 1.0, d: 0.04, h: 0.7, color: '#3c6e91', elev: 1.3 },
+  { type: 'scara', name: 'Scară interioară', cat: 'Construcție', icon: '🪜', w: 1.0, d: 3.2, h: 2.8, color: WOOD_LIGHT, c2: '#3a3a3a', c1n: 'Trepte', c2n: 'Balustradă' },
+  { type: 'semineu', name: 'Șemineu', cat: 'Construcție', icon: '🔥', w: 1.4, d: 0.5, h: 1.1, color: '#e8e4dc' },
+  { type: 'calorifer', name: 'Calorifer', cat: 'Construcție', icon: '♒', w: 1.0, d: 0.1, h: 0.6, color: '#f4f4f2', elev: 0.15 },
   { type: 'copac', name: 'Copac', cat: 'Exterior', icon: '🌳', w: 3, d: 3, h: 5.5, color: '#3f6b35' },
   { type: 'tufis', name: 'Tufiș', cat: 'Exterior', icon: '🌿', w: 1.0, d: 1.0, h: 0.8, color: '#4d7c3a' },
   { type: 'masina', name: 'Mașină', cat: 'Exterior', icon: '🚗', w: 1.8, d: 4.3, h: 1.45, color: '#a33b32' },
@@ -89,6 +96,8 @@ export function buildItem(it, lightsOn) {
   const g = new THREE.Group();
   const { w, d, h } = it;
   const c = mat(it.color);
+  const def = BY_TYPE[it.type] || {};
+  const c2 = mat(it.color2 || def.c2 || '#3a3a3a', { roughness: 0.35 });
   const wood = mat(WOOD), dark = mat(DARK), metal = mat(METAL, { metalness: 0.6, roughness: 0.35 }), white = mat(WHITE, { roughness: 0.3 });
   switch (it.type) {
     case 'canapea': {
@@ -180,11 +189,11 @@ export function buildItem(it, lightsOn) {
       break;
     }
     case 'pat': {
-      g.add(box(w, 0.3, d, wood, 0, 0.05, 0));
+      g.add(box(w, 0.3, d, c2, 0, 0.05, 0));
       legs(g, w, d, 0.05, 0.05, dark);
       g.add(rbox(w - 0.06, 0.22, d - 0.08, 0.05, mat('#f7f5f0'), 0, 0.33, 0.02));
       g.add(rbox(w - 0.02, 0.06, d * 0.62, 0.03, c, 0, 0.53, d * 0.18));
-      g.add(box(w + 0.06, h, 0.08, wood, 0, 0, -d / 2 + 0.04));
+      g.add(box(w + 0.06, h, 0.08, c2, 0, 0, -d / 2 + 0.04));
       const pw = (w - 0.2) / 2;
       g.add(rbox(pw, 0.14, 0.4, 0.06, mat('#ffffff'), -pw / 2 - 0.04, 0.55, -d / 2 + 0.35));
       g.add(rbox(pw, 0.14, 0.4, 0.06, mat('#ffffff'), pw / 2 + 0.04, 0.55, -d / 2 + 0.35));
@@ -211,7 +220,7 @@ export function buildItem(it, lightsOn) {
     }
     case 'birou': {
       g.add(box(w, 0.04, d, c, 0, h - 0.04, 0));
-      legs(g, w, d, h - 0.04, 0.04, dark);
+      legs(g, w, d, h - 0.04, 0.04, c2);
       g.add(box(0.55, 0.32, 0.02, dark, 0, h + 0.1, -d / 2 + 0.15));
       g.add(box(0.06, 0.12, 0.06, dark, 0, h, -d / 2 + 0.15));
       g.add(box(0.4, 0.015, 0.14, mat('#cfcfcf'), 0, h, 0.05));
@@ -219,7 +228,7 @@ export function buildItem(it, lightsOn) {
     }
     case 'masa': {
       g.add(box(w, 0.045, d, c, 0, h - 0.045, 0));
-      legs(g, w, d, h - 0.045, 0.06, c, 0.06);
+      legs(g, w, d, h - 0.045, 0.06, c2, 0.06);
       g.add(cyl(0.08, 0.06, 0.12, mat('#e9e3d6'), 0, h, 0));
       g.add(sphere(0.07, mat('#d9a441'), 0, h + 0.14, 0));
       break;
@@ -227,14 +236,14 @@ export function buildItem(it, lightsOn) {
     case 'scaun': {
       const seat = 0.46;
       g.add(rbox(w, 0.05, d, 0.015, c, 0, seat - 0.05, 0));
-      legs(g, w, d, seat - 0.05, 0.03, mat(WOOD_LIGHT), 0.02);
+      legs(g, w, d, seat - 0.05, 0.03, c2, 0.02);
       g.add(box(w, h - seat, 0.03, c, 0, seat, -d / 2 + 0.015));
       break;
     }
     case 'bucatarie': {
       g.add(box(w, 0.1, d - 0.05, dark, 0, 0, -0.025));
       g.add(box(w, h - 0.14, d - 0.02, c, 0, 0.1, -0.01));
-      g.add(box(w + 0.02, 0.04, d + 0.02, mat('#3a3a3a', { roughness: 0.3 }), 0, h - 0.04, 0));
+      g.add(box(w + 0.02, 0.04, d + 0.02, c2, 0, h - 0.04, 0));
       const n = Math.max(2, Math.round(w / 0.6));
       for (let i = 0; i < n; i++) {
         const dw = w / n;
@@ -278,7 +287,7 @@ export function buildItem(it, lightsOn) {
     }
     case 'lavoar': {
       g.add(box(w, 0.45, d, c, 0, 0.3, 0));
-      g.add(rbox(w, 0.1, d, 0.02, white, 0, h - 0.1, 0));
+      g.add(rbox(w, 0.1, d, 0.02, c2, 0, h - 0.1, 0));
       g.add(cyl(0.012, 0.012, 0.18, metal, 0, h, -d / 2 + 0.06, 8));
       g.add(box(w * 0.9, 0.7, 0.02, mat('#cfe3ea', { roughness: 0.05, metalness: 0.9 }), 0, h + 0.3, -d / 2 + 0.01));
       break;
@@ -336,6 +345,79 @@ export function buildItem(it, lightsOn) {
       g.add(box(w + 0.4, 0.06, d + 0.4, mat('#d9d4c7'), 0, 0, 0));
       const water = new THREE.Mesh(new THREE.BoxGeometry(w, 0.02, d), mat(it.color, { roughness: 0.05, metalness: 0.2 }));
       water.position.y = 0.065; water.receiveShadow = true; g.add(water);
+      break;
+    }
+    case 'insula': {
+      const ov = 0.25; // consola pentru scaune pe spate
+      g.add(box(w - 0.04, 0.1, d - ov - 0.04, dark, 0, 0, -ov / 2));
+      g.add(box(w, h - 0.14, d - ov, c, 0, 0.1, -ov / 2));
+      g.add(box(w + 0.04, 0.04, d + 0.02, c2, 0, h - 0.04, 0));
+      const n = Math.max(2, Math.round(w / 0.6));
+      for (let i = 0; i < n; i++) {
+        const dw = w / n;
+        g.add(box(dw - 0.006, h - 0.16, 0.01, c, -w / 2 + dw * (i + 0.5), 0.11, -d / 2 - 0.005 + 0.0));
+        g.add(box(dw * 0.5, 0.012, 0.02, metal, -w / 2 + dw * (i + 0.5), h - 0.14, -d / 2 - 0.012));
+      }
+      for (let i = 0; i < Math.max(2, Math.floor(w / 0.6)); i++) {
+        const x = -w / 2 + (i + 0.5) * w / Math.max(2, Math.floor(w / 0.6));
+        g.add(cyl(0.17, 0.17, 0.04, dark, x, 0.66, d / 2 + 0.12));
+        g.add(cyl(0.02, 0.02, 0.66, metal, x, 0, d / 2 + 0.12, 8));
+        g.add(cyl(0.16, 0.16, 0.015, metal, x, 0, d / 2 + 0.12));
+      }
+      break;
+    }
+    case 'suspendat': {
+      g.add(box(w, h, d, c));
+      const n = Math.max(1, Math.round(w / 0.6));
+      for (let i = 0; i < n; i++) {
+        const dw = w / n;
+        g.add(box(dw - 0.006, h - 0.01, 0.01, c, -w / 2 + dw * (i + 0.5), 0.005, d / 2 + 0.005));
+        g.add(box(dw * 0.5, 0.012, 0.02, metal, -w / 2 + dw * (i + 0.5), 0.04, d / 2 + 0.015));
+      }
+      break;
+    }
+    case 'coloana': {
+      g.add(box(w, h, d, c));
+      g.add(box(w - 0.04, 0.6, 0.012, c, 0, 0.1, d / 2 + 0.006));
+      g.add(box(w - 0.06, 0.48, 0.02, mat('#151515', { roughness: 0.15, metalness: 0.3 }), 0, 0.85, d / 2 + 0.01));
+      g.add(box(w - 0.06, 0.08, 0.02, metal, 0, 1.36, d / 2 + 0.01));
+      g.add(box(w - 0.04, h - 1.5, 0.012, c, 0, 1.47, d / 2 + 0.006));
+      break;
+    }
+    case 'hota': {
+      g.add(box(w, 0.06, d, mat(it.color, { metalness: 0.7, roughness: 0.3 }), 0, 0, 0));
+      g.add(cyl(0.12, w * 0.35, 0.25, mat(it.color, { metalness: 0.7, roughness: 0.3 }), 0, 0.06, -d / 2 + 0.2, 4));
+      g.add(box(0.26, h - 0.31, 0.26, mat(it.color, { metalness: 0.7, roughness: 0.3 }), 0, 0.31, -d / 2 + 0.14));
+      break;
+    }
+    case 'scara': {
+      const n = Math.max(3, Math.round(h / 0.18)), rise = h / n, run = d / n;
+      for (let i = 0; i < n; i++) {
+        g.add(box(w, 0.045, run + 0.03, c, 0, (i + 1) * rise - 0.045, d / 2 - (i + 0.5) * run));
+        g.add(box(w - 0.02, rise - 0.045, 0.02, mat('#f2f0ec'), 0, i * rise, d / 2 - i * run - 0.01));
+      }
+      // vang și balustradă
+      const len = Math.hypot(d, h), ang = Math.atan2(h, d);
+      const stringer = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.25, len), c2);
+      stringer.position.set(w / 2 + 0.025, h / 2 - 0.05, 0); stringer.rotation.x = ang; stringer.castShadow = true; g.add(stringer);
+      const rail = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, len), c2);
+      rail.position.set(w / 2 + 0.025, h / 2 + 0.9, 0); rail.rotation.x = ang; rail.castShadow = true; g.add(rail);
+      for (let i = 0; i <= n; i += 2) g.add(box(0.025, 0.9, 0.025, c2, w / 2 + 0.025, i * rise, d / 2 - i * run));
+      break;
+    }
+    case 'semineu': {
+      g.add(box(w, h, d, c));
+      g.add(box(w + 0.1, 0.06, d + 0.08, mat('#cfc8bd'), 0, h, 0.02));
+      g.add(box(w * 0.55, h * 0.5, 0.05, mat('#141414'), 0, 0.15, d / 2 - 0.02));
+      g.add(box(w * 0.45, 0.06, 0.06, mat('#5b4630'), 0, 0.17, d / 2 - 0.05));
+      const fire = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.25, 8), new THREE.MeshStandardMaterial({ color: '#ffb347', emissive: lightsOn ? '#ff8a1e' : '#000', emissiveIntensity: lightsOn ? 2 : 0 }));
+      fire.position.set(0, 0.35, d / 2 - 0.06); g.add(fire);
+      if (lightsOn) { const L = new THREE.PointLight('#ff9a40', 4, 5, 2); L.position.set(0, 0.4, d / 2 + 0.2); g.add(L); }
+      break;
+    }
+    case 'calorifer': {
+      const n = Math.max(4, Math.round(w / 0.08));
+      for (let i = 0; i < n; i++) g.add(box(w / n - 0.012, h, d, c, -w / 2 + (i + 0.5) * w / n, 0, 0));
       break;
     }
     default:
@@ -437,4 +519,112 @@ export function grassTexture() { return grassTex || (grassTex = grass(7)); }
 export const WALL_COLORS = [
   ['#f4f1ea', 'Alb cald'], ['#ffffff', 'Alb pur'], ['#e6ddd0', 'Bej'], ['#d7dfd6', 'Salvie'],
   ['#d5dde6', 'Albastru pal'], ['#c9c3bb', 'Gri piatră'], ['#a88f7a', 'Lut'], ['#3f4a55', 'Bleumarin'],
+];
+
+// ---------- Finisaje pentru pereți și învelitori ----------
+function bricks(seed, base = '#a4553a') {
+  return canvasTex(512, (g, s) => {
+    const r = rng(seed), rows = 16, bh = s / rows, bw = s / 4;
+    g.fillStyle = '#cfc6b8'; g.fillRect(0, 0, s, s);
+    for (let i = 0; i < rows; i++) for (let j = -1; j < 5; j++) {
+      const c = new THREE.Color(base); const hsl = {}; c.getHSL(hsl);
+      c.setHSL(hsl.h + (r() - 0.5) * 0.03, hsl.s, hsl.l + (r() - 0.5) * 0.14);
+      g.fillStyle = '#' + c.getHexString();
+      g.fillRect(j * bw + (i % 2) * bw / 2 + 2, i * bh + 2, bw - 4, bh - 4);
+    }
+  });
+}
+function stone(seed) {
+  return canvasTex(512, (g, s) => {
+    const r = rng(seed);
+    g.fillStyle = '#8d877d'; g.fillRect(0, 0, s, s);
+    let y = 0;
+    while (y < s) {
+      const h = 30 + r() * 40; let x = -r() * 40;
+      while (x < s) {
+        const w = 50 + r() * 90, c = 120 + r() * 70;
+        g.fillStyle = `rgb(${c},${c - 6 - r() * 10},${c - 16 - r() * 16})`;
+        g.beginPath(); g.ellipse(x + w / 2, y + h / 2, w / 2 - 3, h / 2 - 3, 0, 0, Math.PI * 2); g.fill();
+        x += w;
+      }
+      y += h;
+    }
+  });
+}
+function cladding(seed) {
+  return canvasTex(512, (g, s) => {
+    const r = rng(seed), n = 8, pw = s / n;
+    for (let i = 0; i < n; i++) {
+      const c = new THREE.Color('#c08a5a'); const hsl = {}; c.getHSL(hsl); c.setHSL(hsl.h, hsl.s, hsl.l + (r() - 0.5) * 0.12);
+      g.fillStyle = '#' + c.getHexString(); g.fillRect(i * pw, 0, pw, s);
+      g.globalAlpha = 0.1; for (let k = 0; k < 20; k++) { g.fillStyle = r() > 0.5 ? '#000' : '#fff'; g.fillRect(i * pw + r() * pw, 0, 1 + r() * 2, s); } g.globalAlpha = 1;
+      g.fillStyle = 'rgba(0,0,0,.4)'; g.fillRect(i * pw, 0, 2, s);
+    }
+  });
+}
+function smallTiles(seed) {
+  // faianță albă: se colorează cu culoarea peretelui
+  return canvasTex(512, (g, s) => {
+    const r = rng(seed), n = 8, t = s / n;
+    g.fillStyle = '#c9c9c9'; g.fillRect(0, 0, s, s);
+    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) { const v = 245 + (r() - 0.5) * 10; g.fillStyle = `rgb(${v},${v},${v})`; g.fillRect(i * t + 2, j * t + 2, t - 4, t - 4); }
+  });
+}
+function plaster(seed) {
+  return canvasTex(256, (g, s) => {
+    const r = rng(seed);
+    g.fillStyle = '#ffffff'; g.fillRect(0, 0, s, s);
+    for (let k = 0; k < 2500; k++) { g.fillStyle = `rgba(0,0,0,${r() * 0.035})`; g.fillRect(r() * s, r() * s, 1 + r() * 3, 1 + r() * 3); }
+  });
+}
+function roofTiles(seed) {
+  return canvasTex(512, (g, s) => {
+    const r = rng(seed), rows = 10, th = s / rows, cols = 8, tw = s / cols;
+    g.fillStyle = '#ffffff'; g.fillRect(0, 0, s, s);
+    for (let i = 0; i < rows; i++) for (let j = -1; j <= cols; j++) {
+      const v = 200 + (r() - 0.5) * 40, x = j * tw + (i % 2) * tw / 2;
+      const gr = g.createLinearGradient(0, i * th, 0, (i + 1) * th);
+      gr.addColorStop(0, `rgb(${v},${v},${v})`); gr.addColorStop(1, `rgb(${v * 0.7},${v * 0.7},${v * 0.7})`);
+      g.fillStyle = gr; g.beginPath(); g.roundRect ? g.roundRect(x + 1, i * th, tw - 2, th - 1, [0, 0, tw / 2, tw / 2]) : g.rect(x + 1, i * th, tw - 2, th - 1); g.fill();
+    }
+  });
+}
+
+// tint = true: culoarea aleasă colorează textura
+export const WALL_FINISHES = {
+  vopsea: { name: 'Vopsea lavabilă', size: 2, tint: true, make: () => plaster(3), rough: 0.92 },
+  faianta: { name: 'Faianță 15×15', size: 1.2, tint: true, make: () => smallTiles(5), rough: 0.25 },
+  caramida: { name: 'Cărămidă aparentă', size: 1.6, tint: false, make: () => bricks(8), rough: 0.9 },
+  piatra: { name: 'Piatră naturală', size: 2.2, tint: false, make: () => stone(12), rough: 0.95 },
+  lemn: { name: 'Lambriu din lemn', size: 1.6, tint: false, make: () => cladding(4), rough: 0.7 },
+  beton: { name: 'Beton aparent', size: 3, tint: false, make: () => concrete(9), rough: 0.85 },
+};
+const wfCache = {};
+export function finishTexture(id) { return wfCache[id] || (wfCache[id] = (WALL_FINISHES[id] || WALL_FINISHES.vopsea).make()); }
+let roofTex;
+export function roofTexture() { return roofTex || (roofTex = roofTiles(21)); }
+
+// Structura pereților: grosime tipică și cum se calculează cantitatea
+export const STRUCTURES = {
+  caramida: { name: 'Cărămidă plină', t: 0.25, unit: 'cărămizi', perM3: 400, note: '250×120×65 mm, cu mortar' },
+  ceramic: { name: 'Blocuri ceramice', t: 0.25, unit: 'blocuri', perM3: 44, note: '380×250×238 mm' },
+  bca: { name: 'BCA (beton celular)', t: 0.30, unit: 'blocuri', perM3: 22.2, note: '600×250×300 mm' },
+  beton: { name: 'Beton armat', t: 0.20, unit: 'm³ beton', perM3: 1, note: 'turnat în cofraj' },
+  lemn: { name: 'Structură din lemn', t: 0.18, unit: 'm³ lemn', perM3: 0.14, note: 'cadre 45×150 mm + izolație' },
+  sip: { name: 'Panouri SIP', t: 0.17, unit: 'm² panouri', perM2: 1, note: 'OSB + polistiren' },
+};
+export const PARTITIONS = {
+  bca10: { name: 'BCA 10 cm', t: 0.10, unit: 'blocuri', perM3: 26.7, note: '600×250×100 mm' },
+  gips: { name: 'Gips-carton', t: 0.10, unit: 'm² plăci', perM2: 2, note: 'profile 75 mm, câte o placă pe față' },
+  caramida12: { name: 'Cărămidă 12 cm', t: 0.12, unit: 'cărămizi', perM3: 400, note: '250×120×65 mm' },
+};
+export const KITCHEN_PALETTES = [
+  ['#f2f0eb', '#b98a5a', 'Alb + blat stejar'],
+  ['#3b3f45', '#ece9e3', 'Antracit + blat alb'],
+  ['#a9b8a0', '#d9c8ad', 'Verde salvie + lemn'],
+  ['#2f3e55', '#f1efea', 'Bleumarin + alb'],
+  ['#6e4a32', '#222222', 'Nuc + blat negru'],
+  ['#e6dccb', '#8e9093', 'Bej + blat gri'],
+  ['#c96b4b', '#efece6', 'Teracotă + alb'],
+  ['#ffffff', '#2b2b2b', 'Alb lucios + negru'],
 ];

@@ -167,6 +167,20 @@ footer .bottom { border-top: 1px solid #243140; margin-top: 30px; padding-top: 1
   .gallery, .who { grid-template-columns: 1fr; }
   .hero-art .pip { display: none; }
 }
+.vs { overflow-x: auto; }
+.vs table { width: 100%; max-width: 900px; margin: 0 auto; border-collapse: separate; border-spacing: 0; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; font-size: 15px; }
+.vs th, .vs td { padding: 14px 16px; text-align: left; border-bottom: 1px solid var(--line); }
+.vs thead th { background: var(--brand); color: #fff; font-size: 15px; }
+.vs tbody tr:last-child td { border-bottom: 0; }
+.vs td:first-child { font-weight: 600; }
+.vs td.yes { color: #1f7a4a; font-weight: 600; }
+.vs td.yes::before { content: "✓ "; }
+.tips { max-width: 820px; margin: 0 auto; padding-left: 22px; display: grid; gap: 14px; font-size: 16px; }
+.tips li { padding-left: 6px; color: var(--muted); }
+.tips b { color: var(--ink); }
+.lang { border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; background: #fff; font: inherit; font-size: 14px; }
+.gallery { grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 960px) { .lang { margin-left: auto; } .burger { margin-left: 8px; } }
 </style>
 </head>
 <body>
@@ -178,13 +192,14 @@ footer .bottom { border-top: 1px solid #243140; margin-top: 30px; padding-top: 1
       Planora 3D
     </a>
     <ul>
-      <li><a href="#creeaza-randari">Cum funcționează</a></li>
-      <li><a href="#functii">Funcții</a></li>
-      <li><a href="#galerie">Galerie</a></li>
-      <li><a href="#preturi">Prețuri</a></li>
-      <li><a href="#intrebari">Întrebări</a></li>
+      <li><a href="#creeaza-randari" data-i18n="nav.how">Cum funcționează</a></li>
+      <li><a href="#functii" data-i18n="nav.features">Funcții</a></li>
+      <li><a href="#galerie" data-i18n="nav.gallery">Galerie</a></li>
+      <li><a href="#preturi" data-i18n="nav.pricing">Prețuri</a></li>
+      <li><a href="#intrebari" data-i18n="nav.faq">Întrebări</a></li>
     </ul>
-    <a class="btn primary hide-m" href="./editor.html">Încearcă gratuit</a>
+    <select class="lang" id="langSel" aria-label="Language"></select>
+    <a class="btn primary hide-m" href="./editor.html" data-i18n="nav.cta">Încearcă gratuit</a>
     <button class="burger" id="burger" aria-label="Meniu">☰</button>
   </div>
 </nav>
@@ -192,129 +207,171 @@ footer .bottom { border-top: 1px solid #243140; margin-top: 30px; padding-top: 1
 <header class="hero">
   <div class="wrap">
     <div>
-      <span class="eyebrow">Randări 3D pentru case și apartamente</span>
-      <h1>Arată-le clienților casa înainte să fie construită</h1>
-      <p class="lead">Desenezi planul în 2D, alegi mobila și materialele, setezi ora zilei și apeși „Randare”. În câteva minute ai imagini 3D gata de trimis, plus o vedere 360° prin care te poți plimba.</p>
+      <span class="eyebrow" data-i18n="hero.eyebrow">Randări 3D pentru case și apartamente</span>
+      <h1 data-i18n="hero.title">Arată-le clienților casa înainte să fie construită</h1>
+      <p class="lead" data-i18n="hero.lead">Desenezi planul în 2D, alegi mobila și materialele, setezi ora zilei și apeși „Randare”. În câteva minute ai imagini 3D gata de trimis, plus o vedere 360° prin care te poți plimba.</p>
       <div class="ctas">
-        <a class="btn primary" href="./editor.html">Creează prima randare →</a>
-        <a class="btn ghost" href="#galerie">Vezi galeria</a>
+        <a class="btn primary" href="./editor.html" data-i18n="hero.cta1">Creează prima randare →</a>
+        <a class="btn ghost" href="#galerie" data-i18n="hero.cta2">Vezi galeria</a>
       </div>
-      <p class="note">Fără instalare și fără card. Merge direct în browser, pe calculator sau tabletă.</p>
+      <p class="note" data-i18n="hero.note">Fără instalare și fără card. Merge direct în browser, pe calculator sau tabletă.</p>
     </div>
     <div class="hero-art">
-      <img class="main" src="./galerie/living-seara.jpg" alt="Randare 3D a unui living cu bucătărie deschisă, seara, cu lămpile aprinse" width="1600" height="900">
-      <span class="badge">Randare făcută în Planora 3D</span>
-      <img class="pip" src="./galerie/apartament-de-sus.jpg" alt="Vedere 3D de sus a unui apartament cu două camere" width="1600" height="900">
+      <img class="main" src="./galerie/living-seara.jpg" alt="" width="1600" height="900">
+      <span class="badge" data-i18n="hero.badge">Randare făcută în Planora 3D</span>
+      <img class="pip" src="./galerie/apartament-de-sus.jpg" alt="" width="1600" height="900">
     </div>
   </div>
 </header>
 
 <div class="stats">
   <div class="wrap">
-    <div><b>~5 min</b><span>de la plan la prima randare</span></div>
-    <div><b>până la 4K</b><span>imagini 3840 px pentru prezentări</span></div>
-    <div><b>360°</b><span>panorame pentru tururi virtuale</span></div>
-    <div><b>100%</b><span>în browser, datele rămân la tine</span></div>
+    <div><b>~5 min</b><span data-i18n="stats.1">de la plan la prima randare</span></div>
+    <div><b data-i18n="stats.2b">până la 4K</b><span data-i18n="stats.2">imagini 3840 px pentru prezentări</span></div>
+    <div><b>360°</b><span data-i18n="stats.3">panorame pentru tururi virtuale</span></div>
+    <div><b>100%</b><span data-i18n="stats.4">în browser, datele rămân la tine</span></div>
   </div>
 </div>
 
-<section id="creeaza-randari">
+<section id="de-ce">
   <div class="wrap">
     <div class="sec-head">
-      <span class="eyebrow">Cum creezi randări</span>
-      <h2>Trei pași de la schiță la imagine foto</h2>
-      <p>Nu ai nevoie de experiență în modelare 3D. Planul și vederea 3D se actualizează împreună, în timp real.</p>
+      <span class="eyebrow" data-i18n="why.eyebrow">De ce randări 3D</span>
+      <h2 data-i18n="why.title">Clienții cumpără ce pot vedea</h2>
+      <p data-i18n="why.lead">Un plan pe hârtie cere imaginație. O randare arată lumina, materialele și spațiul exact cum vor fi, așa că deciziile se iau mai repede.</p>
+    </div>
+    <div class="grid3">
+      <div class="card"><div class="ic">🤝</div><h3 data-i18n="why.1t">Vinzi mai ușor</h3><p data-i18n="why.1p">Oferta cu imagini realiste se înțelege dintr-o privire și se deosebește de cele ale concurenților.</p></div>
+      <div class="card"><div class="ic">💬</div><h3 data-i18n="why.2t">Mai puține neînțelegeri</h3><p data-i18n="why.2p">Clientul vede culorile, finisajele și mobilierul înainte de șantier, nu după. Modificările costă mai puțin pe ecran decât pe zid.</p></div>
+      <div class="card"><div class="ic">⏱️</div><h3 data-i18n="why.3t">Fără să aștepți un studio</h3><p data-i18n="why.3p">Nu mai trimiți planuri la un birou de randare și nu mai aștepți zile. Schimbi o culoare și randezi din nou în câteva secunde.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="alt" id="creeaza-randari">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow" data-i18n="how.eyebrow">Cum creezi randări</span>
+      <h2 data-i18n="how.title">Trei pași de la schiță la imagine foto</h2>
+      <p data-i18n="how.lead">Nu ai nevoie de experiență în modelare 3D. Planul și vederea 3D se actualizează împreună, în timp real.</p>
     </div>
     <div class="steps">
       <div class="step">
         <div class="txt">
           <span class="num">1</span>
-          <h3>Desenează planul în 2D</h3>
-          <p>Trage dreptunghiuri pentru camere sau desenează pereții colț cu colț. Cotele apar singure, iar camerele lipite împart același perete.</p>
-          <ul><li>Uși și ferestre puse cu un clic pe perete</li><li>Suprafața fiecărei camere calculată automat</li><li>Pornești de la zero sau de la un șablon</li></ul>
+          <h3 data-i18n="how.1t">Desenează planul în 2D</h3>
+          <p data-i18n="how.1p">Trage dreptunghiuri pentru camere sau desenează pereții colț cu colț. Cotele apar singure, iar camerele lipite împart același perete.</p>
+          <ul><li data-i18n="how.1a">Uși simple, duble, glisante, ferestre și uși de balcon</li><li data-i18n="how.1b">Grosimea pereților după material: cărămidă, BCA, lemn, beton</li><li data-i18n="how.1c">Cote, etichete și suprafața fiecărei camere</li></ul>
         </div>
-        <img class="shot" src="./galerie/pas-1-plan.jpg" alt="Editorul Planora: plan 2D al unui apartament cu cote" loading="lazy" width="1200" height="760">
+        <img class="shot" src="./galerie/pas-1-plan.jpg" alt="" loading="lazy" width="1280" height="810">
       </div>
       <div class="step">
         <div class="txt">
           <span class="num">2</span>
-          <h3>Amenajează și alege materialele</h3>
-          <p>Adaugi mobilier din catalog și îl muți direct pe plan. Pentru fiecare cameră alegi pardoseala, iar pentru fiecare perete culoarea.</p>
-          <ul><li>Canapele, paturi, bucătării, băi, lumini și decor</li><li>Copaci, piscine și mașini pentru exterior</li><li>Dimensiuni, rotire și culori la fiecare obiect</li></ul>
+          <h3 data-i18n="how.2t">Amenajează și alege materialele</h3>
+          <p data-i18n="how.2p">Adaugi mobilier din catalog și îl muți direct pe plan. Alegi pardoseala fiecărei camere, finisajul și culoarea pereților, fronturile și blatul bucătăriei.</p>
+          <ul><li data-i18n="how.2a">Canapele, paturi, bucătării cu insulă, băi, lumini și decor</li><li data-i18n="how.2b">Vopsea în orice culoare, faianță, cărămidă, piatră, lemn, beton</li><li data-i18n="how.2c">Acoperiș în două sau patru ape, terasă, copaci și piscină</li></ul>
         </div>
-        <img class="shot" src="./galerie/pas-2-amenajare.jpg" alt="Editorul Planora cu planul 2D și vederea 3D una lângă alta" loading="lazy" width="1200" height="760">
+        <img class="shot" src="./galerie/pas-2-amenajare.jpg" alt="" loading="lazy" width="1280" height="810">
       </div>
       <div class="step">
         <div class="txt">
           <span class="num">3</span>
-          <h3>Setează lumina și apasă „Randare”</h3>
-          <p>Alegi ora zilei și orientarea casei, iar soarele și umbrele se mută după ele. Seara se aprind lămpile. Apoi alegi rezoluția și primești imaginea finală.</p>
-          <ul><li>Umbre moi și margini netede, calculate în mai multe treceri</li><li>Format peisaj, pătrat sau portret, până la 4K</li><li>Panoramă 360° din orice punct al casei</li></ul>
+          <h3 data-i18n="how.3t">Setează lumina și apasă „Randare”</h3>
+          <p data-i18n="how.3p">Alegi ora zilei și orientarea casei, iar soarele și umbrele se mută după ele. Seara se aprind lămpile. Apoi alegi rezoluția și primești imaginea finală.</p>
+          <ul><li data-i18n="how.3a">Umbre moi, umbre de contact și reflexii, calculate în mai multe treceri</li><li data-i18n="how.3b">Format peisaj, pătrat sau portret, până la 4K</li><li data-i18n="how.3c">Panoramă 360° din orice punct al casei</li></ul>
         </div>
-        <img class="shot" src="./galerie/pas-3-randare.jpg" alt="Fereastra de randare foto cu imaginea finală a unui living" loading="lazy" width="1200" height="760">
+        <img class="shot" src="./galerie/pas-3-randare.jpg" alt="" loading="lazy" width="1280" height="810">
       </div>
     </div>
   </div>
 </section>
 
-<section class="alt" id="functii">
+<section id="functii">
   <div class="wrap">
     <div class="sec-head">
-      <span class="eyebrow">Funcții</span>
-      <h2>Tot ce îți trebuie pentru o prezentare convingătoare</h2>
-      <p>Un singur instrument pentru plan, amenajare și imagini, gândit pentru constructori, renovări și vânzări.</p>
+      <span class="eyebrow" data-i18n="feat.eyebrow">Funcții</span>
+      <h2 data-i18n="feat.title">Tot ce îți trebuie pentru o prezentare convingătoare</h2>
+      <p data-i18n="feat.lead">Un singur instrument pentru plan, construcție, amenajare și imagini, gândit pentru constructori, renovări și vânzări.</p>
     </div>
     <div class="grid3">
-      <div class="card"><div class="ic">📐</div><h3>Plan 2D cu cote</h3><p>Pereți, camere, uși și ferestre, aliniate automat pe grilă. Exporți planul ca imagine PNG.</p></div>
-      <div class="card"><div class="ic">🧊</div><h3>3D în timp real</h3><p>Orice schimbare din plan apare imediat în 3D. Rotești, te apropii și intri în camere.</p></div>
-      <div class="card"><div class="ic">☀️</div><h3>Lumină după ora zilei</h3><p>Dimineață, după-amiază sau seară, cu soare, umbre și lumina lunii. Orientarea nord se reglează.</p></div>
-      <div class="card"><div class="ic">🪵</div><h3>Materiale și culori</h3><p>Parchet, gresie, marmură și beton pentru podele, plus o paletă de culori pentru pereți.</p></div>
-      <div class="card"><div class="ic">🛋️</div><h3>Catalog de obiecte</h3><p>Mobilier pentru living, dormitor, bucătărie și baie, lumini, decor și obiecte de exterior.</p></div>
-      <div class="card"><div class="ic">📷</div><h3>Randări foto până la 4K</h3><p>Imagini cu umbre moi, gata de pus în ofertă, pe sait sau în anunțul imobiliar.</p></div>
-      <div class="card"><div class="ic">🌐</div><h3>Vederi 360°</h3><p>Panorame echirectangulare pe care le răsfoiești în editor sau le urci pe orice platformă 360°.</p></div>
-      <div class="card"><div class="ic">✂️</div><h3>Pereți tăiați</h3><p>Coboară pereții la 1 m pentru o vedere de ansamblu în care se văd toate camerele.</p></div>
-      <div class="card"><div class="ic">💾</div><h3>Proiecte și galerie</h3><p>Proiectul se salvează singur. Îl exporți ca fișier, iar randările rămân în „Randările mele”.</p></div>
+      <div class="card"><div class="ic">📐</div><h3 data-i18n="feat.1t">Plan 2D cu cote</h3><p data-i18n="feat.1p">Pereți, camere, uși și ferestre, aliniate automat pe grilă. Cote și etichete pe plan, export PNG.</p></div>
+      <div class="card"><div class="ic">🧊</div><h3 data-i18n="feat.2t">3D în timp real</h3><p data-i18n="feat.2p">Orice schimbare din plan apare imediat în 3D. Rotești, te apropii și intri în camere.</p></div>
+      <div class="card"><div class="ic">🧱</div><h3 data-i18n="feat.3t">Structura și materialele casei</h3><p data-i18n="feat.3p">Alegi din ce se zidește casa: cărămidă, blocuri ceramice, BCA, beton, lemn sau panouri SIP. Grosimile se aplică pe plan, iar cantitățile se calculează singure.</p></div>
+      <div class="card"><div class="ic">🎨</div><h3 data-i18n="feat.4t">Finisaje și culori</h3><p data-i18n="feat.4p">Vopsea în orice culoare, faianță, cărămidă aparentă, piatră, lambriu și beton aparent, pe un perete, pe o cameră sau pe toată casa.</p></div>
+      <div class="card"><div class="ic">🍳</div><h3 data-i18n="feat.5t">Bucătării personalizate</h3><p data-i18n="feat.5p">Corpuri jos și suspendate, insulă, coloană pentru cuptor și hotă. Culori separate pentru fronturi și blat, cu palete gata făcute.</p></div>
+      <div class="card"><div class="ic">🏠</div><h3 data-i18n="feat.6t">Acoperiș</h3><p data-i18n="feat.6p">Acoperiș în două ape, în patru ape sau terasă, cu țiglă în mai multe culori. Se ascunde singur când intri în casă.</p></div>
+      <div class="card"><div class="ic">☀️</div><h3 data-i18n="feat.7t">Lumină după ora zilei</h3><p data-i18n="feat.7p">Dimineață, după-amiază sau seară, cu soare, umbre și lumina lunii. Orientarea nord se reglează.</p></div>
+      <div class="card"><div class="ic">📷</div><h3 data-i18n="feat.8t">Randări foto până la 4K</h3><p data-i18n="feat.8p">Umbre moi, umbre de contact și reflexii. Imagini gata de pus în ofertă, pe sait sau în anunț.</p></div>
+      <div class="card"><div class="ic">🌐</div><h3 data-i18n="feat.9t">Vederi 360°</h3><p data-i18n="feat.9p">Panorame pe care le răsfoiești în editor sau le urci pe orice platformă care acceptă imagini 360°.</p></div>
+      <div class="card"><div class="ic">🛋️</div><h3 data-i18n="feat.10t">Catalog de obiecte</h3><p data-i18n="feat.10p">Mobilier pentru living, dormitor, bucătărie și baie, scări, șemineu, calorifere, lumini, decor și exterior.</p></div>
+      <div class="card"><div class="ic">✂️</div><h3 data-i18n="feat.11t">Pereți tăiați</h3><p data-i18n="feat.11p">Coboară pereții la 1 m pentru o vedere de ansamblu în care se văd toate camerele.</p></div>
+      <div class="card"><div class="ic">🌍</div><h3 data-i18n="feat.12t">În limba ta</h3><p data-i18n="feat.12p">Saitul și editorul sunt în română, engleză, rusă, franceză și germană.</p></div>
     </div>
   </div>
 </section>
 
-<section>
+<section class="alt">
   <div class="wrap">
     <div class="sec-head">
-      <span class="eyebrow">Zi sau seară</span>
-      <h2>Aceeași cameră, altă atmosferă</h2>
-      <p>Trage de bară ca să compari. Schimbi ora dintr-un glisor și randezi din nou.</p>
+      <span class="eyebrow" data-i18n="cmp.eyebrow">Zi sau seară</span>
+      <h2 data-i18n="cmp.title">Aceeași cameră, altă atmosferă</h2>
+      <p data-i18n="cmp.lead">Trage de bară ca să compari. Schimbi ora dintr-un glisor și randezi din nou.</p>
     </div>
     <div class="compare" id="compare">
-      <img src="./galerie/living-seara.jpg" alt="Livingul seara" loading="lazy">
-      <img class="top" src="./galerie/living-zi.jpg" alt="Livingul ziua" loading="lazy">
+      <img src="./galerie/living-seara.jpg" alt="" loading="lazy">
+      <img class="top" src="./galerie/living-zi.jpg" alt="" loading="lazy">
       <div class="bar"></div>
-      <span class="lbl" style="left:12px">Ziua, 10:30</span><span class="lbl" style="right:12px">Seara, 20:45</span>
-      <input type="range" min="0" max="100" value="50" aria-label="Compară ziua cu seara">
+      <span class="lbl" style="left:12px" data-i18n="cmp.day">Ziua, 10:30</span><span class="lbl" style="right:12px" data-i18n="cmp.night">Seara, 20:45</span>
+      <input type="range" min="0" max="100" value="50" aria-label="Compare">
     </div>
   </div>
 </section>
 
-<section class="alt" id="galerie">
+<section id="galerie">
   <div class="wrap">
     <div class="sec-head">
-      <span class="eyebrow">Galerie</span>
-      <h2>Randări făcute cu editorul Planora</h2>
-      <p>Toate imaginile de mai jos sunt generate direct în browser, din șabloanele incluse.</p>
+      <span class="eyebrow" data-i18n="gal.eyebrow">Galerie</span>
+      <h2 data-i18n="gal.title">Randări făcute cu editorul Planora</h2>
+      <p data-i18n="gal.lead">Toate imaginile de mai jos sunt generate direct în browser, din șabloanele incluse.</p>
     </div>
     <div class="filters" id="filters">
-      <button class="on" data-f="toate">Toate</button>
-      <button data-f="interior">Interior</button>
-      <button data-f="exterior">Exterior</button>
-      <button data-f="plan">Vederi de ansamblu</button>
+      <button class="on" data-f="toate" data-i18n="gal.all">Toate</button>
+      <button data-f="interior" data-i18n="gal.int">Interior</button>
+      <button data-f="exterior" data-i18n="gal.ext">Exterior</button>
+      <button data-f="plan" data-i18n="gal.plan">Vederi de ansamblu</button>
     </div>
     <div class="gallery" id="gallery">
-      <figure data-c="interior"><img src="./galerie/living-zi.jpg" alt="Living cu bucătărie deschisă, ziua" loading="lazy"><figcaption>Living cu bucătărie, ziua</figcaption></figure>
-      <figure data-c="interior"><img src="./galerie/living-seara.jpg" alt="Living cu bucătărie deschisă, seara" loading="lazy"><figcaption>Living cu bucătărie, seara</figcaption></figure>
-      <figure data-c="interior"><img src="./galerie/dormitor.jpg" alt="Dormitor cu pat dublu și fereastră mare" loading="lazy"><figcaption>Dormitor matrimonial</figcaption></figure>
-      <figure data-c="plan"><img src="./galerie/apartament-de-sus.jpg" alt="Vedere 3D de sus a apartamentului" loading="lazy"><figcaption>Apartament 2 camere, plan 3D</figcaption></figure>
-      <figure data-c="exterior"><img src="./galerie/casa-exterior.jpg" alt="Casă pe un nivel cu piscină, după-amiaza" loading="lazy"><figcaption>Casă cu piscină, după-amiaza</figcaption></figure>
-      <figure data-c="exterior"><img src="./galerie/casa-apus.jpg" alt="Casă cu piscină, seara, cu luminile aprinse" loading="lazy"><figcaption>Casă cu piscină, seara</figcaption></figure>
+      <figure data-c="interior"><img src="./galerie/living-zi.jpg" alt="" loading="lazy"><figcaption data-i18n="gal.c1">Living cu bucătărie, ziua</figcaption></figure>
+      <figure data-c="interior"><img src="./galerie/living-seara.jpg" alt="" loading="lazy"><figcaption data-i18n="gal.c2">Living cu bucătărie, seara</figcaption></figure>
+      <figure data-c="interior"><img src="./galerie/dormitor.jpg" alt="" loading="lazy"><figcaption data-i18n="gal.c3">Dormitor matrimonial</figcaption></figure>
+      <figure data-c="interior"><img src="./galerie/bucatarie.jpg" alt="" loading="lazy"><figcaption data-i18n="gal.c7">Bucătărie cu insulă</figcaption></figure>
+      <figure data-c="plan"><img src="./galerie/apartament-de-sus.jpg" alt="" loading="lazy"><figcaption data-i18n="gal.c4">Apartament 2 camere, plan 3D</figcaption></figure>
+      <figure data-c="exterior"><img src="./galerie/casa-exterior.jpg" alt="" loading="lazy"><figcaption data-i18n="gal.c5">Casă cu piscină, după-amiaza</figcaption></figure>
+      <figure data-c="exterior"><img src="./galerie/casa-apus.jpg" alt="" loading="lazy"><figcaption data-i18n="gal.c6">Casă cu piscină, seara</figcaption></figure>
+      <figure data-c="exterior"><img src="./galerie/casa-caramida.jpg" alt="" loading="lazy"><figcaption data-i18n="gal.c8">Fațadă din cărămidă, acoperiș în patru ape</figcaption></figure>
+      <figure data-c="plan"><img src="./galerie/casa-de-sus.jpg" alt="" loading="lazy"><figcaption data-i18n="gal.c9">Casă cu grădină, vedere de ansamblu</figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<section class="alt" id="comparatie">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow" data-i18n="vs.eyebrow">Randezi singur sau externalizezi?</span>
+      <h2 data-i18n="vs.title">Planora 3D față de un studio de randare</h2>
+    </div>
+    <div class="vs">
+      <table>
+        <thead><tr><th></th><th data-i18n="vs.us">Planora 3D</th><th data-i18n="vs.them">Studio de randare</th></tr></thead>
+        <tbody>
+          <tr><td data-i18n="vs.r1">Timp până la prima imagine</td><td class="yes" data-i18n="vs.r1a">câteva minute</td><td data-i18n="vs.r1b">câteva zile</td></tr>
+          <tr><td data-i18n="vs.r2">Cost pe imagine</td><td class="yes" data-i18n="vs.r2a">inclus în abonament</td><td data-i18n="vs.r2b">plătit pentru fiecare imagine</td></tr>
+          <tr><td data-i18n="vs.r3">O modificare de culoare sau mobilier</td><td class="yes" data-i18n="vs.r3a">o faci singur, pe loc</td><td data-i18n="vs.r3b">o nouă comandă și o nouă așteptare</td></tr>
+          <tr><td data-i18n="vs.r4">Plan 2D, cantități de materiale și vederi 360°</td><td class="yes" data-i18n="vs.r4a">din același proiect</td><td data-i18n="vs.r4b">de obicei separat</td></tr>
+          <tr><td data-i18n="vs.r5">Realism fotografic de top</td><td data-i18n="vs.r5a">bun, calculat în browser</td><td class="yes" data-i18n="vs.r5b">foarte ridicat</td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </section>
@@ -322,70 +379,89 @@ footer .bottom { border-top: 1px solid #243140; margin-top: 30px; padding-top: 1
 <section>
   <div class="wrap">
     <div class="sec-head">
-      <span class="eyebrow">Pentru cine</span>
-      <h2>Făcut pentru cei care vând sau construiesc case</h2>
+      <span class="eyebrow" data-i18n="who.eyebrow">Pentru cine</span>
+      <h2 data-i18n="who.title">Făcut pentru cei care vând sau construiesc case</h2>
     </div>
     <div class="who">
-      <div class="card"><div class="ic">🏗️</div><h3>Constructori</h3><p>Prezinți proiectele înainte de șantier și închei mai repede contractele.</p></div>
-      <div class="card"><div class="ic">🔨</div><h3>Renovări</h3><p>Arăți „înainte și după” cu materialele alese de client.</p></div>
-      <div class="card"><div class="ic">🏡</div><h3>Agenți imobiliari</h3><p>Planuri clare și imagini atractive pentru anunțuri, chiar și pentru proprietăți goale.</p></div>
-      <div class="card"><div class="ic">🎨</div><h3>Designeri de interior</h3><p>Testezi variante de culori și mobilier în câteva minute.</p></div>
+      <div class="card"><div class="ic">🏗️</div><h3 data-i18n="who.1t">Constructori</h3><p data-i18n="who.1p">Prezinți proiectele înainte de șantier și știi din start câte materiale îți trebuie.</p></div>
+      <div class="card"><div class="ic">🔨</div><h3 data-i18n="who.2t">Renovări</h3><p data-i18n="who.2p">Arăți „înainte și după” cu materialele alese de client.</p></div>
+      <div class="card"><div class="ic">🏡</div><h3 data-i18n="who.3t">Agenți imobiliari</h3><p data-i18n="who.3p">Planuri clare și imagini atractive pentru anunțuri, chiar și pentru proprietăți goale.</p></div>
+      <div class="card"><div class="ic">🎨</div><h3 data-i18n="who.4t">Designeri de interior</h3><p data-i18n="who.4p">Testezi variante de culori, finisaje și mobilier în câteva minute.</p></div>
     </div>
   </div>
 </section>
 
-<section class="alt" id="preturi">
+<section class="alt" id="sfaturi">
   <div class="wrap">
     <div class="sec-head">
-      <span class="eyebrow">Prețuri</span>
-      <h2>Începi gratuit, treci la Pro când ai nevoie</h2>
-      <p>Toate planurile includ planul 2D, vederea 3D și randările foto.</p>
-      <div class="toggle" id="billing"><button class="on" data-b="luna">Lunar</button><button data-b="an">Anual (−20%)</button></div>
+      <span class="eyebrow" data-i18n="tips.eyebrow">Sfaturi</span>
+      <h2 data-i18n="tips.title">Cinci trucuri pentru randări mai frumoase</h2>
+    </div>
+    <ol class="tips">
+      <li><b data-i18n="tips.1t">Alege ora potrivită.</b> <span data-i18n="tips.1p">Lumina de după-amiază (16–18) dă umbre lungi și calde. Pentru interioare, dimineața face camerele luminoase.</span></li>
+      <li><b data-i18n="tips.2t">Coboară camera la nivelul ochilor.</b> <span data-i18n="tips.2p">Cu butonul „Interior” camera stă la 1,55 m, ca un om în cameră. Imaginile par mai reale decât din colțul tavanului.</span></li>
+      <li><b data-i18n="tips.3t">Folosește contrastul.</b> <span data-i18n="tips.3p">Un perete de accent sau un front de bucătărie colorat pe fond deschis atrage privirea.</span></li>
+      <li><b data-i18n="tips.4t">Aprinde lămpile seara.</b> <span data-i18n="tips.4p">După ora 18:30 lămpile se aprind singure. O randare de seară arată cât de primitoare e casa.</span></li>
+      <li><b data-i18n="tips.5t">Randează la calitate maximă doar la final.</b> <span data-i18n="tips.5p">Lucrează cu „Rapidă”, iar pentru imaginea pe care o trimiți alege „Maximă” și 4K.</span></li>
+    </ol>
+  </div>
+</section>
+
+<section id="preturi">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow" data-i18n="price.eyebrow">Prețuri</span>
+      <h2 data-i18n="price.title">Începi gratuit, treci la Pro când ai nevoie</h2>
+      <p data-i18n="price.lead">Toate planurile includ planul 2D, vederea 3D și randările foto.</p>
+      <div class="toggle" id="billing"><button class="on" data-b="luna" data-i18n="price.monthly">Lunar</button><button data-b="an" data-i18n="price.yearly">Anual (−20%)</button></div>
     </div>
     <div class="plans">
       <div class="plan">
-        <h3>Gratuit</h3><p class="for">Pentru a testa și proiecte personale</p>
-        <div class="price">0 lei</div><div class="per">pentru totdeauna</div>
-        <ul><li>Proiecte nelimitate în browser</li><li>Randări Full HD</li><li>Plan 2D exportat PNG</li><li class="no">Randări 4K</li><li class="no">Vederi 360°</li></ul>
-        <a class="btn outline" href="./editor.html">Începe gratuit</a>
+        <h3 data-i18n="price.free">Gratuit</h3><p class="for" data-i18n="price.freeFor">Pentru a testa și proiecte personale</p>
+        <div class="price">0 <span class="cur" data-i18n="price.cur">lei</span></div><div class="per" data-i18n="price.forever">pentru totdeauna</div>
+        <ul><li data-i18n="price.f1">Proiecte nelimitate în browser</li><li data-i18n="price.f2">Randări Full HD</li><li data-i18n="price.f3">Plan 2D exportat PNG</li><li class="no" data-i18n="price.f4">Randări 4K</li><li class="no" data-i18n="price.f5">Vederi 360°</li></ul>
+        <a class="btn outline" href="./editor.html" data-i18n="price.freeCta">Începe gratuit</a>
       </div>
-      <div class="plan pop">
-        <h3>Pro</h3><p class="for">Pentru profesioniști independenți</p>
-        <div class="price" data-m="149" data-y="119">149 lei <small>/lună</small></div><div class="per" data-per>facturat lunar</div>
-        <ul><li>Tot ce e în Gratuit</li><li>Randări 4K, calitate maximă</li><li>Vederi 360° nelimitate</li><li>Proiecte în cloud și pe mai multe dispozitive</li><li>Suport prin e-mail</li></ul>
-        <a class="btn primary" href="./editor.html">Încearcă Pro 14 zile</a>
+      <div class="plan pop" data-pop>
+        <h3>Pro</h3><p class="for" data-i18n="price.proFor">Pentru profesioniști independenți</p>
+        <div class="price"><span data-m="149" data-y="119">149</span> <span class="cur" data-i18n="price.cur">lei</span> <small data-i18n="price.mo">/lună</small></div><div class="per" data-per="1"></div>
+        <ul><li data-i18n="price.p1">Tot ce e în Gratuit</li><li data-i18n="price.p2">Randări 4K, calitate maximă</li><li data-i18n="price.p3">Vederi 360° nelimitate</li><li data-i18n="price.p4">Calculul materialelor exportat</li><li data-i18n="price.p5">Proiecte în cloud și pe mai multe dispozitive</li><li data-i18n="price.p6">Suport prin e-mail</li></ul>
+        <a class="btn primary" href="./editor.html" data-i18n="price.proCta">Încearcă Pro 14 zile</a>
       </div>
       <div class="plan">
-        <h3>Echipă</h3><p class="for">Pentru firme cu mai mulți utilizatori</p>
-        <div class="price" data-m="399" data-y="319">399 lei <small>/lună</small></div><div class="per" data-per>facturat lunar, până la 5 utilizatori</div>
-        <ul><li>Tot ce e în Pro</li><li>Bibliotecă comună de proiecte</li><li>Logo-ul firmei pe randări</li><li>Instruire pentru echipă</li><li>Suport prioritar</li></ul>
-        <a class="btn outline" href="#contact">Cere o ofertă</a>
+        <h3 data-i18n="price.team">Echipă</h3><p class="for" data-i18n="price.teamFor">Pentru firme cu mai mulți utilizatori</p>
+        <div class="price"><span data-m="399" data-y="319">399</span> <span class="cur" data-i18n="price.cur">lei</span> <small data-i18n="price.mo">/lună</small></div><div class="per" data-per="2"></div>
+        <ul><li data-i18n="price.t1">Tot ce e în Pro</li><li data-i18n="price.t2">Bibliotecă comună de proiecte</li><li data-i18n="price.t3">Logo-ul firmei pe randări</li><li data-i18n="price.t4">Instruire pentru echipă</li><li data-i18n="price.t5">Suport prioritar</li></ul>
+        <a class="btn outline" href="#contact" data-i18n="price.teamCta">Cere o ofertă</a>
       </div>
     </div>
-    <p class="fine">Prețurile sunt orientative. Plățile online și contul în cloud nu sunt încă activate, iar acum toate funcțiile editorului sunt deschise gratuit.</p>
+    <p class="fine" data-i18n="price.fine">Prețurile sunt orientative. Plățile online și contul în cloud nu sunt încă activate, iar acum toate funcțiile editorului sunt deschise gratuit.</p>
   </div>
 </section>
 
-<section id="intrebari">
+<section class="alt" id="intrebari">
   <div class="wrap">
-    <div class="sec-head"><span class="eyebrow">Întrebări frecvente</span><h2>Ce întreabă lumea</h2></div>
+    <div class="sec-head"><span class="eyebrow" data-i18n="faq.eyebrow">Întrebări frecvente</span><h2 data-i18n="faq.title">Ce întreabă lumea</h2></div>
     <div class="faq">
-      <details open><summary>Trebuie să instalez ceva?</summary><p>Nu. Planora 3D merge în orice browser modern (Chrome, Edge, Firefox, Safari) pe calculator sau tabletă. Pe telefon poți vedea proiectele, dar desenatul e mai comod pe ecran mare.</p></details>
-      <details><summary>Cât durează o randare?</summary><p>Pe un laptop obișnuit, o imagine Full HD în calitate „Bună” durează câteva secunde, iar o imagine 4K în calitate maximă poate dura un minut sau două. Totul se calculează pe placa video a calculatorului tău.</p></details>
-      <details><summary>Unde se salvează proiectele?</summary><p>Proiectul curent se salvează automat în browser. Îl poți exporta oricând ca fișier .json și îl deschizi pe alt calculator. Randările stau în „Randările mele” și le descarci ca PNG.</p></details>
-      <details><summary>Pot folosi imaginile în anunțuri și oferte?</summary><p>Da. Imaginile pe care le generezi îți aparțin și le poți folosi oriunde: în oferte, pe sait, pe rețele sociale sau în anunțuri imobiliare.</p></details>
-      <details><summary>Ce este o vedere 360°?</summary><p>O panoramă care cuprinde tot ce se vede din jurul unui punct. În editor o rotești cu mouse-ul, iar fișierul descărcat (4096×2048) merge în orice vizualizator sau platformă care acceptă imagini 360°.</p></details>
-      <details><summary>Pot importa un plan făcut în altă aplicație?</summary><p>Momentan deschizi doar proiecte Planora (.json). Importul din imagini și din formate CAD e pe lista de funcții viitoare.</p></details>
+      <details open><summary data-i18n="faq.q0">Ce este o randare 3D?</summary><p data-i18n="faq.a0">O imagine calculată de calculator dintr-un model 3D al casei, cu lumină, umbre și materiale, care arată ca o fotografie. Se folosește ca să prezinți o casă care încă nu există sau o renovare.</p></details>
+      <details><summary data-i18n="faq.q1">Trebuie să instalez ceva?</summary><p data-i18n="faq.a1">Nu. Planora 3D merge în orice browser modern (Chrome, Edge, Firefox, Safari) pe calculator sau tabletă. Pe telefon poți vedea proiectele, dar desenatul e mai comod pe ecran mare.</p></details>
+      <details><summary data-i18n="faq.q2">Cât durează o randare?</summary><p data-i18n="faq.a2">Pe un laptop obișnuit, o imagine Full HD în calitate „Bună” durează câteva secunde, iar o imagine 4K în calitate maximă poate dura un minut sau două. Totul se calculează pe placa video a calculatorului tău.</p></details>
+      <details><summary data-i18n="faq.q3">Cum calculează materialele?</summary><p data-i18n="faq.a3">Editorul măsoară pereții exteriori și interiori, scade golurile ușilor și ferestrelor și înmulțește volumul cu numărul de blocuri pe metru cub al materialului ales. Primești și suprafețele de pardoseală pe tipuri, vopseaua necesară și suprafața acoperișului. Sunt estimări pentru ofertă, nu înlocuiesc proiectul tehnic.</p></details>
+      <details><summary data-i18n="faq.q4">Unde se salvează proiectele?</summary><p data-i18n="faq.a4">Proiectul curent se salvează automat în browser. Îl poți exporta oricând ca fișier .json și îl deschizi pe alt calculator. Randările stau în „Randările mele” și le descarci ca PNG.</p></details>
+      <details><summary data-i18n="faq.q5">Pot folosi imaginile în anunțuri și oferte?</summary><p data-i18n="faq.a5">Da. Imaginile pe care le generezi îți aparțin și le poți folosi oriunde: în oferte, pe sait, pe rețele sociale sau în anunțuri imobiliare.</p></details>
+      <details><summary data-i18n="faq.q6">Ce este o vedere 360°?</summary><p data-i18n="faq.a6">O panoramă care cuprinde tot ce se vede din jurul unui punct. În editor o rotești cu mouse-ul, iar fișierul descărcat (4096×2048) merge în orice vizualizator sau platformă care acceptă imagini 360°.</p></details>
+      <details><summary data-i18n="faq.q7">În ce limbi e disponibil?</summary><p data-i18n="faq.a7">Română, engleză, rusă, franceză și germană. Schimbi limba din colțul de sus al paginii sau al editorului.</p></details>
+      <details><summary data-i18n="faq.q8">Pot importa un plan făcut în altă aplicație?</summary><p data-i18n="faq.a8">Momentan deschizi doar proiecte Planora (.json). Importul din imagini și din formate CAD e pe lista de funcții viitoare.</p></details>
     </div>
   </div>
 </section>
 
-<section style="padding-top:0" id="contact">
+<section style="padding-top:64px" id="contact">
   <div class="wrap">
     <div class="final">
-      <h2>Prima ta randare e la cinci minute distanță</h2>
-      <p>Deschide editorul, alege șablonul „Apartament 2 camere” și apasă „📷 Randare”.</p>
-      <a class="btn primary" href="./editor.html">Deschide editorul →</a>
+      <h2 data-i18n="final.title">Prima ta randare e la cinci minute distanță</h2>
+      <p data-i18n="final.lead">Deschide editorul, alege șablonul „Apartament 2 camere” și apasă „📷 Randare”.</p>
+      <a class="btn primary" href="./editor.html" data-i18n="final.cta">Deschide editorul →</a>
     </div>
   </div>
 </section>
@@ -395,45 +471,55 @@ footer .bottom { border-top: 1px solid #243140; margin-top: 30px; padding-top: 1
     <div class="cols">
       <div>
         <a class="logo" href="#"><svg viewBox="0 0 32 32" width="28" height="28"><rect width="32" height="32" rx="7" fill="#2b4f7e"/><path d="M6 17 16 8l10 9v8H6z" fill="none" stroke="#f2a541" stroke-width="3" stroke-linejoin="round"/></svg>Planora 3D</a>
-        <p>Plan 2D, amenajare 3D și randări pentru case, direct în browser.</p>
+        <p data-i18n="foot.tag">Plan 2D, amenajare 3D și randări pentru case, direct în browser.</p>
       </div>
-      <div><h4>Produs</h4><ul><li><a href="./editor.html">Editor</a></li><li><a href="#functii">Funcții</a></li><li><a href="#galerie">Galerie</a></li><li><a href="#preturi">Prețuri</a></li></ul></div>
-      <div><h4>Șabloane</h4><ul><li><a href="./editor.html?sablon=apartament">Apartament 2 camere</a></li><li><a href="./editor.html?sablon=casa">Casă cu grădină</a></li><li><a href="./editor.html?sablon=gol">Plan gol</a></li></ul></div>
-      <div><h4>Ajutor</h4><ul><li><a href="#creeaza-randari">Cum funcționează</a></li><li><a href="#intrebari">Întrebări frecvente</a></li></ul></div>
+      <div><h4 data-i18n="foot.product">Produs</h4><ul><li><a href="./editor.html" data-i18n="foot.editor">Editor</a></li><li><a href="#functii" data-i18n="nav.features">Funcții</a></li><li><a href="#galerie" data-i18n="nav.gallery">Galerie</a></li><li><a href="#preturi" data-i18n="nav.pricing">Prețuri</a></li></ul></div>
+      <div><h4 data-i18n="foot.templates">Șabloane</h4><ul><li><a href="./editor.html?sablon=apartament" data-i18n="foot.t1">Apartament 2 camere</a></li><li><a href="./editor.html?sablon=casa" data-i18n="foot.t2">Casă cu grădină</a></li><li><a href="./editor.html?sablon=gol" data-i18n="foot.t3">Plan gol</a></li></ul></div>
+      <div><h4 data-i18n="foot.help">Ajutor</h4><ul><li><a href="#creeaza-randari" data-i18n="nav.how">Cum funcționează</a></li><li><a href="#sfaturi" data-i18n="tips.eyebrow">Sfaturi</a></li><li><a href="#intrebari" data-i18n="faq.eyebrow">Întrebări frecvente</a></li></ul></div>
     </div>
-    <div class="bottom"><span>© <span id="yr">2026</span> Planora 3D. Proiect demonstrativ.</span><span>Motor 3D: three.js (licență MIT)</span></div>
+    <div class="bottom"><span>© <span id="yr">2026</span> Planora 3D. <span data-i18n="foot.demo">Proiect demonstrativ.</span></span><span data-i18n="foot.engine">Motor 3D: three.js (licență MIT)</span></div>
   </div>
 </footer>
 
-<div class="lightbox" id="lightbox"><button aria-label="Închide">×</button><img alt=""></div>
+<div class="lightbox" id="lightbox"><button aria-label="×">×</button><img alt=""></div>
 
+<script src="./js/i18n-dict.js"></script>
+<script src="./js/i18n.js"></script>
 <script>
+const T = (k, ro) => (window.PLANORA_DICT[I18N.LANG] || {})[k] || ro;
+I18N.apply(document);
+I18N.mountSelector(document.getElementById('langSel'));
+// textul alternativ al imaginilor = legenda lor
+document.querySelectorAll('#gallery figure').forEach(f => { f.querySelector('img').alt = f.querySelector('figcaption').textContent; });
+document.querySelector('.hero-art .main').alt = T('gal.c2', 'Living cu bucătărie, seara');
+document.querySelector('.hero-art .pip').alt = T('gal.c4', 'Apartament 2 camere, plan 3D');
 document.getElementById('yr').textContent = new Date().getFullYear();
 document.getElementById('burger').addEventListener('click', () => document.getElementById('nav').classList.toggle('open'));
 document.querySelectorAll('#nav ul a').forEach(a => a.addEventListener('click', () => document.getElementById('nav').classList.remove('open')));
-// comparație zi / seară
 const cmp = document.getElementById('compare');
 cmp.querySelector('input').addEventListener('input', e => {
   const v = e.target.value;
   cmp.querySelector('.top').style.clipPath = `inset(0 ${100 - v}% 0 0)`;
   cmp.querySelector('.bar').style.left = v + '%';
 });
-// filtre galerie
 document.querySelectorAll('#filters button').forEach(b => b.addEventListener('click', () => {
   document.querySelectorAll('#filters button').forEach(x => x.classList.toggle('on', x === b));
   document.querySelectorAll('#gallery figure').forEach(f => { f.style.display = b.dataset.f === 'toate' || f.dataset.c === b.dataset.f ? '' : 'none'; });
 }));
-// lightbox
 const lb = document.getElementById('lightbox');
 document.querySelectorAll('#gallery figure').forEach(f => f.addEventListener('click', () => { lb.querySelector('img').src = f.querySelector('img').src; lb.querySelector('img').alt = f.querySelector('img').alt; lb.classList.add('open'); }));
 lb.addEventListener('click', () => lb.classList.remove('open'));
 document.addEventListener('keydown', e => { if (e.key === 'Escape') lb.classList.remove('open'); });
 // facturare lunară / anuală
+function billing(year) {
+  document.querySelectorAll('[data-m]').forEach(p => { p.textContent = year ? p.dataset.y : p.dataset.m; });
+  document.querySelector('[data-per="1"]').textContent = year ? T('price.billY', 'facturat anual') : T('price.billM', 'facturat lunar');
+  document.querySelector('[data-per="2"]').textContent = (year ? T('price.billY', 'facturat anual') : T('price.billM', 'facturat lunar')) + T('price.users', ', până la 5 utilizatori');
+}
+billing(false);
 document.querySelectorAll('#billing button').forEach(b => b.addEventListener('click', () => {
   document.querySelectorAll('#billing button').forEach(x => x.classList.toggle('on', x === b));
-  const year = b.dataset.b === 'an';
-  document.querySelectorAll('.price[data-m]').forEach(p => { p.innerHTML = `${year ? p.dataset.y : p.dataset.m} lei <small>/lună</small>`; });
-  document.querySelectorAll('[data-per]').forEach((p, i) => { p.textContent = (year ? 'facturat anual' : 'facturat lunar') + (i === 1 ? ', până la 5 utilizatori' : ''); });
+  billing(b.dataset.b === 'an');
 }));
 </script>
 </body>
