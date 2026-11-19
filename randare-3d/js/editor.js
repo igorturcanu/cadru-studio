@@ -2,10 +2,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import { CATALOG, BY_TYPE, buildItem, FLOORS, floorTexture, grassTexture, WALL_COLORS, mat, WALL_FINISHES, finishTexture, roofTexture, STRUCTURES, PARTITIONS, KITCHEN_PALETTES } from './catalog.js';
-import { EffectComposer } from '../vendor/jsm/postprocessing/EffectComposer.js';
-import { RenderPass } from '../vendor/jsm/postprocessing/RenderPass.js';
-import { GTAOPass } from '../vendor/jsm/postprocessing/GTAOPass.js';
-import { OutputPass } from '../vendor/jsm/postprocessing/OutputPass.js';
 import { RoomEnvironment } from '../vendor/jsm/environments/RoomEnvironment.js';
 
 const { t, LANG } = window.I18N;
@@ -226,6 +222,7 @@ function commit() {
   if (history.length > 120) history.shift();
   hIndex = history.length - 1;
   try { localStorage.setItem(STORE_KEY, s); } catch (e) { /* stocare indisponibilă */ }
+  scheduleStore();
   updateUndo();
 }
 function restore(s) { P = normalize(JSON.parse(s)); sel = null; refreshAll(); }
@@ -713,7 +710,7 @@ function lightsOn() {
 }
 
 let sceneCenter = new THREE.Vector3(5, 0, 3), sceneRadius = 10;
-function applyEnv() {
+function applyEnv() { invalidate();
   const { el, az, day } = sunState();
   const dir = new THREE.Vector3(Math.cos(el) * Math.sin(az), Math.sin(el), Math.cos(el) * Math.cos(az));
   sun.position.copy(sceneCenter).addScaledVector(dir, sceneRadius * 2.5);
@@ -763,7 +760,7 @@ function applyInterior(force) {
 
 function disposeGroup(g) { g.traverse((o) => { if (o.geometry) o.geometry.dispose(); }); }
 
-function rebuild3D() {
+function rebuild3D() { invalidate();
   scene.remove(world); disposeGroup(world);
   world = new THREE.Group(); scene.add(world); itemObjs.clear();
   lastLights = lightsOn();
@@ -963,7 +960,7 @@ function moveItem3D(it) {
   draw2D(); highlight3D();
 }
 
-function highlight3D() {
+function highlight3D() { invalidate();
   if (selBox) { scene.remove(selBox); selBox.geometry.dispose(); selBox = null; }
   if (sel && sel.kind === 'item' && itemObjs.get(sel.id)) {
     selBox = new THREE.BoxHelper(itemObjs.get(sel.id), 0x2a7de1); scene.add(selBox);
@@ -989,15 +986,26 @@ function cameraInside(cam = camera) {
 }
 function updateCeiling(force) { applyInterior(force); }
 
-function resize3D() {
+function resize3D() { invalidate();
   const r = host3.getBoundingClientRect();
   if (r.width < 2 || r.height < 2) return;
   renderer.setSize(r.width, r.height, false);
   camera.aspect = r.width / r.height; camera.updateProjectionMatrix();
 }
 
+// Modulele pentru umbrele de contact se descarcă doar când e nevoie de ele
+// (la „Calitate înaltă” sau la randare), ca editorul să pornească mai repede.
+let PP = null, ppLoading = null;
+function loadPP() {
+  if (!ppLoading) ppLoading = Promise.all([
+    import('../vendor/jsm/postprocessing/EffectComposer.js'), import('../vendor/jsm/postprocessing/RenderPass.js'),
+    import('../vendor/jsm/postprocessing/GTAOPass.js'), import('../vendor/jsm/postprocessing/OutputPass.js'),
+  ]).then(([a, b, c, d]) => { PP = { ...a, ...b, ...c, ...d }; invalidate(); return PP; });
+  return ppLoading;
+}
 // randare cu umbre de contact (ambient occlusion)
 function makeComposer(cam, w, h) {
+  const { EffectComposer, RenderPass, GTAOPass, OutputPass } = PP;
   const comp = new EffectComposer(renderer);
   comp.setPixelRatio(renderer.getPixelRatio()); comp.setSize(w, h);
   comp.addPass(new RenderPass(scene, cam));
@@ -1020,14 +1028,28 @@ function liveComposer() {
 }
 
 let rendering = false;
+// Vederea 3D se desenează doar când se schimbă ceva (camera, proiectul, selecția, lumina),
+// nu de 60 de ori pe secundă. În modul „Calitate înaltă” umbrele de contact se calculează
+// când camera stă pe loc, iar în timpul mișcării se folosește desenarea rapidă.
+let dirty = true, lastChange = 0, aoDone = false, lastDraw = 0;
+function invalidate() { dirty = true; lastChange = performance.now(); aoDone = false; }
+window.__frames = 0;
 function loop() {
   requestAnimationFrame(loop);
   if (rendering) return;
-  controls.update();
+  if (controls.update()) invalidate();
+  const now = performance.now();
+  if (P.env.hq && !PP) loadPP();
+  const wantAO = P.env.hq && PP && !aoDone && now - lastChange > 160;
+  if (!dirty && !wantAO && now - lastDraw < 2000) return;
+  if (host3.offsetWidth <= 2) return;
   updateCeiling();
   if (selBox) selBox.update();
-  if (host3.offsetWidth > 2) { if (P.env.hq) liveComposer().render(); else renderer.render(scene, camera); }
+  if (wantAO) { liveComposer().render(); aoDone = true; } else renderer.render(scene, camera);
+  dirty = false; lastDraw = now; window.__frames++;
 }
+controls.addEventListener('change', invalidate);
+for (const ev of ['pointerdown', 'pointermove', 'pointerup', 'wheel', 'keydown', 'input', 'change', 'click']) window.addEventListener(ev, () => { dirty = true; }, { passive: true, capture: true });
 
 function setCam(kind) {
   $$('#camBtns .chip').forEach((b) => b.classList.toggle('on', b.dataset.cam === kind));
@@ -1169,14 +1191,25 @@ function qty(def, part) {
   return def.perM3 >= 5 ? `~${Math.ceil(part.vol * def.perM3).toLocaleString(LANG)} ${t(def.unit)}` : `${fmt(part.vol * def.perM3, 2)} ${t(def.unit)}`;
 }
 function materialsHTML() {
-  const e = P.env, q = quantities(), S = STRUCTURES[e.structure] || STRUCTURES.caramida, Pt = PARTITIONS[e.partition] || PARTITIONS.bca10;
-  let roofArea = 0;
-  if (e.roof !== 'fara' && P.walls.length) { const b = bounds(); const A = (b.x2 - b.x1 + 0.9) * (b.y2 - b.y1 + 0.9); roofArea = e.roof === 'plat' ? A : A / Math.cos(32 * DEG); }
+  const e = P.env;
   return `<div class="sec"><h3>${t('Din ce se construiește casa')}</h3>
     <div class="field"><label>${t('Pereți exteriori')}</label><select data-env="structure">${Object.entries(STRUCTURES).map(([id, d]) => `<option value="${id}" ${e.structure === id ? 'selected' : ''}>${t(d.name)} · ${Math.round(d.t * 100)} cm</option>`).join('')}</select></div>
     <div class="field"><label>${t('Pereți interiori')}</label><select data-env="partition">${Object.entries(PARTITIONS).map(([id, d]) => `<option value="${id}" ${e.partition === id ? 'selected' : ''}>${t(d.name)}</option>`).join('')}</select></div>
     <div class="row" style="margin-top:2px"><button class="btn primary" data-act="applyT">${t('Aplică grosimile pe plan')}</button></div>
-    <table class="qty">
+    ${qtyTable('qty')}
+    <p class="hint">${t('Cantitățile sunt estimative, fără pierderi și fără fundație. Golurile ușilor și ferestrelor sunt scăzute.')}</p>
+  </div>`;
+}
+function roofAreaOf() {
+  const e = P.env;
+  if (e.roof === 'fara' || !P.walls.length) return 0;
+  const b = bounds(); const A = (b.x2 - b.x1 + 0.9) * (b.y2 - b.y1 + 0.9);
+  return e.roof === 'plat' ? A : A / Math.cos(32 * DEG);
+}
+function qtyTable(cls) {
+  const e = P.env, q = quantities(), S = STRUCTURES[e.structure] || STRUCTURES.caramida, Pt = PARTITIONS[e.partition] || PARTITIONS.bca10;
+  const roofArea = roofAreaOf();
+  return `<table class="${cls}">
       <tr><th colspan="2">${t('Pereți exteriori')} · ${t(S.name)}</th></tr>
       <tr><td>${t('Lungime / suprafață')}</td><td>${fmt(q.ext.len)} m · ${fmt(q.ext.area)} m²</td></tr>
       <tr><td>${t('Volum zidărie')}</td><td>${fmt(q.ext.vol, 2)} m³</td></tr>
@@ -1188,9 +1221,7 @@ function materialsHTML() {
       ${Object.entries(q.floors).map(([f, a]) => `<tr><td>${t(FLOORS[f] ? FLOORS[f].name : f)}</td><td>${fmt(a)} m² <small>(+10%: ${fmt(a * 1.1)})</small></td></tr>`).join('')}
       <tr><td>${t('Vopsea lavabilă')} <small>(${t('2 straturi')})</small></td><td>~${Math.ceil(q.paint * 2 * 0.12)} L</td></tr>
       ${roofArea ? `<tr><td>${t('Acoperiș')}</td><td>${fmt(roofArea)} m²</td></tr>` : ''}
-    </table>
-    <p class="hint">${t('Cantitățile sunt estimative, fără pierderi și fără fundație. Golurile ușilor și ferestrelor sunt scăzute.')}</p>
-  </div>`;
+    </table>`;
 }
 
 function renderEnvPanel() {
@@ -1349,6 +1380,7 @@ async function renderPhoto(width, height, samples, onProgress, ao = true) {
   const acc = new Float32Array(width * height * 4);
   const basePos = sun.position.clone();
   const { el } = sunState(); const jitterR = sceneRadius * 0.06 * (el > 0 ? 1 : 0);
+  if (ao) await loadPP();
   const comp = ao ? makeComposer(cam, width, height) : null;
   if (comp) comp.setPixelRatio(1);
   try {
@@ -1523,11 +1555,11 @@ $('#projName').addEventListener('change', (e) => { P.name = e.target.value || t(
 $('#template').addEventListener('change', (e) => {
   const v = e.target.value; e.target.value = '';
   if (!v) return;
-  if (P.walls.length && !confirm(t('Înlocuiești proiectul curent cu șablonul? Poți reveni cu „Anulează”.'))) return;
-  loadTemplate(v);
+  storeProject(true); loadTemplate(v);
 });
 function loadTemplate(v) {
   if (v === 'apartament') templateApartament(); else if (v === 'casa') templateCasa(); else { P = emptyProject(); }
+  delete P.id; history = []; hIndex = -1; freshLoad = true;
   sel = null; refreshAll(); zoomFit(); setCam(v === 'casa' ? 'exterior' : 'persp'); commit();
 }
 $('#btnExport').addEventListener('click', () => {
@@ -1541,12 +1573,13 @@ $('#fileIn').addEventListener('change', async (e) => {
   try {
     const d = JSON.parse(await f.text());
     if (!Array.isArray(d.walls) || !Array.isArray(d.items)) throw new Error(t('fișierul nu e un proiect Planora'));
-    P = normalize(d);
-    sel = null; refreshAll(); zoomFit(); commit(); toast(t('Proiect deschis.'));
+    storeProject(true);
+    P = normalize(d); delete P.id; history = []; hIndex = -1;
+    sel = null; refreshAll(); zoomFit(); commit(); storeProject(true); renderProjects(); toast(t('Proiect deschis.'));
   } catch (err) { toast(t('Nu pot deschide fișierul') + ': ' + err.message); }
   e.target.value = '';
 });
-$('#btnPlan').addEventListener('click', () => {
+function planCanvas() {
   const prev = { ...view }, prevSel = sel; sel = null;
   const b = bounds(), s = 80, pad = 1.2;
   const W = Math.round((b.x2 - b.x1 + pad * 2) * s), H = Math.round((b.y2 - b.y1 + pad * 2) * s);
@@ -1560,7 +1593,10 @@ $('#btnPlan').addEventListener('click', () => {
   draw2D();
   cv.getContext('2d').drawImage(c2d, 0, 0);
   c2d.getBoundingClientRect = r; Object.assign(view, prev); sel = prevSel; dpr = oldDpr; c2d.width = oldW; c2d.height = oldH; draw2D();
-  const a = document.createElement('a'); a.href = cv.toDataURL('image/png'); a.download = fileName('plan-2d', 'png'); a.click();
+  return cv;
+}
+$('#btnPlan').addEventListener('click', () => {
+  const a = document.createElement('a'); a.href = planCanvas().toDataURL('image/png'); a.download = fileName('plan-2d', 'png'); a.click();
 });
 $('#zoomFit').addEventListener('click', zoomFit);
 $$('#viewBtns .chip').forEach((b) => b.addEventListener('click', () => {
@@ -1587,11 +1623,124 @@ function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.ad
 
 new ResizeObserver(() => { resize2D(); resize3D(); }).observe($('#stage'));
 
+// ================= Proiectele mele =================
+// Fiecare proiect se păstrează separat în browser; lista ține numele, data și o miniatură.
+const LIST_KEY = 'planora-proiecte-v1', PKEY = (id) => 'planora-p-' + id;
+const lsGet = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } };
+const lsDel = (k) => { try { localStorage.removeItem(k); } catch (e) { } };
+function projList() { try { return JSON.parse(lsGet(LIST_KEY) || '[]'); } catch (e) { return []; } }
+let storeT = 0, freshLoad = false;
+function scheduleStore() {
+  // un șablon deschis și neatins nu se adaugă în listă
+  if (freshLoad) { freshLoad = false; return; }
+  clearTimeout(storeT); storeT = setTimeout(() => storeProject(false), 600);
+}
+function thumb3D() {
+  const src = renderer.domElement; if (!src.width || !src.height || host3.offsetWidth < 3) return null;
+  renderer.render(scene, camera);
+  const c = document.createElement('canvas'); c.width = 320; c.height = 180;
+  const k = Math.max(320 / src.width, 180 / src.height), w = src.width * k, h = src.height * k;
+  c.getContext('2d').drawImage(src, (320 - w) / 2, (180 - h) / 2, w, h);
+  return c.toDataURL('image/jpeg', 0.72);
+}
+function storeProject(withThumb) {
+  clearTimeout(storeT);
+  if (!P.walls.length && !P.items.length && !P.id) return;
+  if (!P.id) P.id = uid('p');
+  lsSet(PKEY(P.id), snapshot()); lsSet(STORE_KEY, snapshot());
+  const list = projList(), old = list.find((x) => x.id === P.id);
+  const entry = { id: P.id, name: P.name, updated: Date.now(), area: P.rooms.reduce((a, r) => a + polyArea(r.pts), 0), thumb: (withThumb && thumb3D()) || (old && old.thumb) || null };
+  const next = [entry, ...list.filter((x) => x.id !== P.id)];
+  if (!lsSet(LIST_KEY, JSON.stringify(next))) { entry.thumb = null; lsSet(LIST_KEY, JSON.stringify(next.map((x) => ({ ...x, thumb: null })))); }
+}
+function openProject(id) {
+  const raw = lsGet(PKEY(id)); if (!raw) return;
+  storeProject(true);
+  P = normalize(JSON.parse(raw)); P.id = id; history = []; hIndex = -1;
+  sel = null; refreshAll(); zoomFit(); setCam('persp'); commit(); lsSet(STORE_KEY, snapshot());
+  $('#mProj').classList.remove('open'); toast(t('Proiect deschis.'));
+}
+function renderProjects() {
+  const list = projList(), when = (ms) => new Date(ms).toLocaleString(LANG, { dateStyle: 'medium', timeStyle: 'short' });
+  $('#pjList').innerHTML = list.map((p) => `<figure data-id="${p.id}">
+    ${p.thumb ? `<img src="${p.thumb}" alt="" data-open="${p.id}">` : `<div class="ph" data-open="${p.id}">🏠</div>`}
+    ${p.id === P.id ? `<span class="cur">${t('Deschis acum')}</span>` : ''}
+    <figcaption><b>${esc(p.name || t('Proiect'))}</b><small>${fmt(p.area || 0)} m² · ${when(p.updated)}</small></figcaption>
+    <div class="acts">${p.id !== P.id ? `<button class="btn sm" data-open="${p.id}">${t('Deschide')}</button>` : ''}<button class="btn sm" data-dup="${p.id}">${t('Dublează')}</button><button class="btn sm danger" data-del="${p.id}">${t('Șterge')}</button></div>
+  </figure>`).join('');
+}
+$('#pjList').classList.add('pj');
+$('#btnProj').addEventListener('click', () => { storeProject(true); renderProjects(); openModal('#mProj'); });
+$('#pjList').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-open],[data-dup],[data-del]'); if (!b) return;
+  if (b.dataset.open) { if (b.dataset.open !== P.id) openProject(b.dataset.open); return; }
+  if (b.dataset.dup) {
+    const raw = lsGet(PKEY(b.dataset.dup)); if (!raw) return;
+    const d = JSON.parse(raw), id = uid('p'), src = projList().find((x) => x.id === b.dataset.dup) || {};
+    d.id = id; d.name = (d.name || t('Proiect')) + ' · ' + t('Copie');
+    lsSet(PKEY(id), JSON.stringify(d));
+    lsSet(LIST_KEY, JSON.stringify([{ ...src, id, name: d.name, updated: Date.now() }, ...projList()]));
+    renderProjects(); return;
+  }
+  if (b.dataset.del) {
+    const it = projList().find((x) => x.id === b.dataset.del);
+    if (!confirm(t('Ștergi proiectul') + ` „${it ? it.name : ''}”?`)) return;
+    lsDel(PKEY(b.dataset.del)); lsSet(LIST_KEY, JSON.stringify(projList().filter((x) => x.id !== b.dataset.del)));
+    if (b.dataset.del === P.id) delete P.id;
+    renderProjects();
+  }
+});
+$('#pjNew').addEventListener('click', () => { storeProject(true); loadTemplate('gol'); $('#mProj').classList.remove('open'); });
+$('#pjCopy').addEventListener('click', () => {
+  storeProject(true);
+  P.id = uid('p'); P.name = P.name + ' · ' + t('Copie'); $('#projName').value = P.name;
+  storeProject(true); renderProjects(); toast(t('Proiect salvat.'));
+});
+
+// ================= Fișa pentru client =================
+// O pagină de prezentare a proiectului: randare 3D, plan, camere și cantități. Se tipărește sau se salvează ca PDF.
+$('#btnSheet').addEventListener('click', async () => {
+  openModal('#mSheet');
+  const sh = $('#sheet'); sh.innerHTML = ''; $('#shStatus').textContent = t('Pregătesc fișa…'); $('#shPrint').disabled = true;
+  await new Promise((r) => setTimeout(r, 30));
+  try {
+    const plan = planCanvas().toDataURL('image/png');
+    // dacă nu ești în interior, imaginea folosește o vedere de ansamblu bine încadrată, apoi camera revine unde era
+    const keep = { pos: camera.position.clone(), tgt: controls.target.clone(), fov: camera.fov, aspect: camera.aspect, chip: $('#camBtns .chip.on') };
+    if (!cameraInside()) { camera.aspect = 16 / 9; setCam('persp'); camera.position.lerp(controls.target, 0.1); controls.update(); }
+    let img;
+    try { img = (await renderPhoto(1600, 900, 12, null, true)).toDataURL('image/jpeg', 0.9); }
+    finally {
+      camera.position.copy(keep.pos); controls.target.copy(keep.tgt); camera.fov = keep.fov; camera.aspect = keep.aspect; camera.updateProjectionMatrix(); controls.update();
+      $$('#camBtns .chip').forEach((x) => x.classList.toggle('on', x === keep.chip)); invalidate();
+    }
+    const area = P.rooms.reduce((a, r) => a + polyArea(r.pts), 0);
+    const date = new Date().toLocaleDateString(LANG, { dateStyle: 'long' });
+    sh.innerHTML = `<div class="sh-head"><div><div class="brand">Planora 3D</div><h1>${esc(P.name)}</h1></div><div>${date}</div></div>
+      <div class="meta"><span>${t('Client')}</span><div contenteditable="true" data-ph="1"></div><span>${t('Observații')}</span><div contenteditable="true"></div></div>
+      <img src="${img}" alt="">
+      <div class="two">
+        <div><h3>${t('Plan 2D')}</h3><img src="${plan}" alt="" style="background:#fff;border:1px solid var(--line)"></div>
+        <div><h3>${t('Camere')}</h3><table><tr><th>${t('Cameră')}</th><th>${t('Pardoseală')}</th><th>${t('Suprafață')}</th></tr>
+          ${P.rooms.map((r) => `<tr><td>${esc(r.name)}</td><td>${t(FLOORS[r.floor] ? FLOORS[r.floor].name : r.floor)}</td><td>${fmt(polyArea(r.pts))} m²</td></tr>`).join('')}
+          <tr><th>${t('Total')}</th><th></th><th>${fmt(area)} m²</th></tr></table>
+          <h3>${t('Materiale estimate')}</h3>${qtyTable('')}</div>
+      </div>
+      <p class="foot">${t('Cantitățile sunt estimative, fără pierderi și fără fundație. Golurile ușilor și ferestrelor sunt scăzute.')}</p>`;
+    $('#shStatus').textContent = '';
+  } catch (e) { console.error(e); $('#shStatus').textContent = t('Nu a reușit') + ': ' + e.message; }
+  $('#shPrint').disabled = false;
+});
+$('#shPrint').addEventListener('click', () => window.print());
+
 // ================= Pornire =================
 window.I18N.apply(document); window.I18N.mountSelector($('#langSel'));
 renderCatalog(); setTool('select');
 let saved = null;
 try { saved = localStorage.getItem(STORE_KEY); } catch (e) { }
+// proiectul salvat înainte de lista de proiecte intră automat în listă
+if (saved && !projList().length) { try { const d = JSON.parse(saved); if (!d.id) { d.id = uid('p'); saved = JSON.stringify(d); } lsSet(PKEY(d.id), saved); lsSet(LIST_KEY, JSON.stringify([{ id: d.id, name: d.name, updated: Date.now(), area: 0, thumb: null }])); } catch (e) { } }
 const qp = new URLSearchParams(location.search).get('sablon');
 if (qp) loadTemplate(qp);
 else if (saved) { try { P = normalize(JSON.parse(saved)); refreshAll(); setTimeout(() => { zoomFit(); setCam('persp'); }, 0); commit(); } catch (e) { loadTemplate('apartament'); } }

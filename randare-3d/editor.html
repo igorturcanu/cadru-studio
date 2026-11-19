@@ -120,6 +120,35 @@ table.qty th { text-align: left; font-size: 11px; color: var(--brand); padding: 
 table.qty td { padding: 3px 0; vertical-align: top; } table.qty td:last-child { text-align: right; white-space: nowrap; padding-left: 6px; }
 table.qty small { color: var(--muted); }
 #langSel { max-width: 70px; }
+.pj figure { position: relative; }
+.pj .ph { width: 100%; aspect-ratio: 16/9; background: linear-gradient(135deg, #e9eef4, #f7f4ee); display: grid; place-items: center; font-size: 28px; }
+.pj img { cursor: pointer; }
+.pj .cur { position: absolute; top: 6px; left: 6px; background: var(--brand); color: #fff; font-size: 11px; border-radius: 5px; padding: 2px 6px; }
+.pj .acts { display: flex; gap: 4px; padding: 0 8px 8px; }
+.pj figcaption { display: block; } .pj figcaption b { display: block; font-size: 13px; } .pj figcaption small { color: var(--muted); }
+.dialog.wide { width: min(1000px, 100%); }
+.sheet { color: #1d2733; font-size: 13px; }
+.sheet .sh-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; border-bottom: 2px solid var(--brand); padding-bottom: 10px; margin-bottom: 14px; }
+.sheet h1 { font-size: 22px; margin: 0; } .sheet .brand { color: var(--brand); font-weight: 700; }
+.sheet .meta { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; margin-bottom: 14px; }
+.sheet .meta div[contenteditable] { border-bottom: 1px dashed var(--line); min-height: 18px; outline: none; }
+.sheet img { width: 100%; border-radius: 8px; display: block; }
+.sheet .two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 14px; }
+.sheet h3 { font-size: 13px; color: var(--brand); margin: 16px 0 6px; text-transform: uppercase; letter-spacing: .05em; }
+.sheet table { width: 100%; border-collapse: collapse; } .sheet td, .sheet th { padding: 4px 6px; border-bottom: 1px solid var(--line); text-align: left; } .sheet td:last-child, .sheet th:last-child { text-align: right; }
+.sheet th[colspan] { text-align: left; padding-top: 10px; color: var(--brand); }
+.sheet .foot { margin-top: 16px; color: var(--muted); font-size: 11px; }
+@media (max-width: 700px) { .sheet .two { grid-template-columns: 1fr; } }
+@media print {
+  @page { margin: 12mm; }
+  .app, .modal:not(#mSheet), .toast, .noprint, #mSheet header { display: none !important; }
+  html, body { height: auto; overflow: visible; background: #fff; }
+  #mSheet { position: static; display: block; background: none; padding: 0; }
+  #mSheet .dialog { max-height: none; overflow: visible; box-shadow: none; width: 100%; border-radius: 0; }
+  #mSheet .body { padding: 0; }
+  .sheet .meta div[contenteditable] { border: 0; }
+  .sheet .two, .sheet table { break-inside: avoid; }
+}
 @media (max-width: 1000px) {
   .main { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
   aside.left, aside.right { display: none; position: fixed; top: 52px; bottom: 52px; width: min(320px, 88vw); z-index: 20; box-shadow: 0 10px 40px rgba(0,0,0,.25); }
@@ -133,6 +162,14 @@ table.qty small { color: var(--muted); }
   .top input.name { width: 110px; }
   .opts { grid-template-columns: 1fr; }
 }
+@media (max-width: 600px) {
+  .top { gap: 6px; padding-left: 8px; padding-right: 8px; }
+  .top .hide-s { display: none; }
+  .top input.name { width: 96px; }
+  #langSel { max-width: 58px; }
+  #camBtns, #viewBtns { flex-wrap: wrap; }
+  #v3d .overlay.br { bottom: 50px; }
+}
 </style>
 <script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js" } }</script>
 </head>
@@ -144,7 +181,7 @@ table.qty small { color: var(--muted); }
       <span class="hide-m">Planora 3D</span>
     </a>
     <input class="name" id="projName" value="Proiect nou" aria-label="Numele proiectului">
-    <div class="grp">
+    <div class="grp hide-s">
       <button class="tbtn" id="undo" title="Anulează (Ctrl+Z)">↶</button>
       <button class="tbtn" id="redo" title="Refă (Ctrl+Y)">↷</button>
     </div>
@@ -154,17 +191,17 @@ table.qty small { color: var(--muted); }
       <option value="casa" data-i18n>Casă cu grădină</option>
       <option value="gol" data-i18n>Plan gol</option>
     </select>
-    <div class="grp hide-m">
-      <button class="tbtn" id="btnImport" data-i18n>Deschide</button>
-      <button class="tbtn" id="btnExport" data-i18n>Salvează fișier</button>
-      <button class="tbtn" id="btnPlan" data-i18n>Plan PNG</button>
+    <div class="grp">
+      <button class="tbtn" id="btnProj">📁<span class="hide-m"> <span data-i18n>Proiecte</span></span></button>
+      <button class="tbtn hide-s" id="btnSheet">📄<span class="hide-m"> <span data-i18n>Fișă client</span></span></button>
+      <button class="tbtn hide-m" id="btnPlan" data-i18n>Plan PNG</button>
     </div>
     <div class="sp"></div>
     <div class="grp">
       <select id="langSel" aria-label="Limba"></select>
-      <button class="tbtn" id="btnGallery">🖼<span class="hide-m" data-i18n> Randările mele</span></button>
+      <button class="tbtn hide-s" id="btnGallery">🖼<span class="hide-m" data-i18n> Randările mele</span></button>
       <button class="tbtn" id="btn360">🌐<span class="hide-m"> 360°</span></button>
-      <button class="tbtn primary" id="btnRender">📷 <span data-i18n>Randare</span></button>
+      <button class="tbtn primary" id="btnRender">📷<span class="hide-s"> <span data-i18n>Randare</span></span></button>
     </div>
     <input type="file" id="fileIn" accept=".json,application/json" hidden>
   </header>
@@ -293,8 +330,36 @@ table.qty small { color: var(--muted); }
   </div>
 </div>
 
+<!-- Proiectele mele -->
+<div class="modal" id="mProj" role="dialog" aria-modal="true" aria-labelledby="mProjT">
+  <div class="dialog">
+    <header><h2 id="mProjT" data-i18n>Proiectele mele</h2><button class="x" data-close>×</button></header>
+    <div class="body">
+      <div class="row" style="margin:0 0 14px">
+        <button class="btn primary" id="pjNew">＋ <span data-i18n>Proiect nou</span></button>
+        <button class="btn" id="pjCopy" data-i18n>Salvează o copie</button>
+        <button class="btn" id="btnImport" data-i18n>Deschide fișier</button>
+        <button class="btn" id="btnExport" data-i18n>Salvează fișier</button>
+      </div>
+      <div class="gal" id="pjList"></div>
+      <p class="hint" data-i18n>Proiectele se salvează automat în acest browser. Pentru alt calculator, folosește „Salvează fișier”.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Fișa pentru client -->
+<div class="modal" id="mSheet" role="dialog" aria-modal="true" aria-labelledby="mSheetT">
+  <div class="dialog wide">
+    <header><h2 id="mSheetT" data-i18n>Fișă client</h2><button class="x" data-close>×</button></header>
+    <div class="body">
+      <div class="row noprint" style="margin:0 0 14px"><button class="btn primary" id="shPrint">🖨 <span data-i18n>Tipărește / Salvează PDF</span></button><span class="hint" id="shStatus"></span></div>
+      <div class="sheet" id="sheet"></div>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
-<script src="./js/i18n-dict.js"></script>
+<link rel="modulepreload" href="./vendor/three.module.min.js"><link rel="modulepreload" href="./vendor/OrbitControls.js"><link rel="modulepreload" href="./js/catalog.js"><link rel="modulepreload" href="./vendor/jsm/environments/RoomEnvironment.js">
 <script src="./js/i18n.js"></script>
 <script type="module" src="./js/editor.js"></script>
 </body>
