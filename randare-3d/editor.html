@@ -103,6 +103,23 @@ aside.right { border-right: 0; border-left: 1px solid var(--line); }
 .toast { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); background: #1d2733; color: #fff; padding: 9px 16px; border-radius: 9px; font-size: 13px; opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 60; }
 .toast.show { opacity: 1; }
 .mobile-tabs { display: none; }
+.colrow { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.colrow input[type=color] { width: 44px; flex: none; }
+.finishes { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; margin-bottom: 6px; }
+.finishes button { border: 1px solid var(--line); border-radius: 7px; background: #fff; padding: 3px; font-size: 10.5px; line-height: 1.2; display: flex; flex-direction: column; gap: 3px; }
+.finishes button canvas { width: 100%; height: 26px; border-radius: 4px; display: block; }
+.finishes button.on { border-color: var(--sel); box-shadow: 0 0 0 1px var(--sel); }
+.palettes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.palettes button { display: flex; height: 30px; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; padding: 0; }
+.palettes button span { flex: 1; } .palettes button span:last-child { flex: .45; }
+.palettes button:hover { box-shadow: 0 0 0 2px var(--sel); }
+.chk { display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--muted); margin-top: 8px; }
+.btn.sm { padding: 3px 7px; font-size: 11.5px; }
+table.qty { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
+table.qty th { text-align: left; font-size: 11px; color: var(--brand); padding: 8px 0 3px; border-bottom: 1px solid var(--line); }
+table.qty td { padding: 3px 0; vertical-align: top; } table.qty td:last-child { text-align: right; white-space: nowrap; padding-left: 6px; }
+table.qty small { color: var(--muted); }
+#langSel { max-width: 70px; }
 @media (max-width: 1000px) {
   .main { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
   aside.left, aside.right { display: none; position: fixed; top: 52px; bottom: 52px; width: min(320px, 88vw); z-index: 20; box-shadow: 0 10px 40px rgba(0,0,0,.25); }
@@ -132,21 +149,22 @@ aside.right { border-right: 0; border-left: 1px solid var(--line); }
       <button class="tbtn" id="redo" title="Refă (Ctrl+Y)">↷</button>
     </div>
     <select id="template" class="hide-m" aria-label="Șabloane">
-      <option value="">Șabloane…</option>
-      <option value="apartament">Apartament 2 camere</option>
-      <option value="casa">Casă cu grădină</option>
-      <option value="gol">Plan gol</option>
+      <option value="" data-i18n>Șabloane…</option>
+      <option value="apartament" data-i18n>Apartament 2 camere</option>
+      <option value="casa" data-i18n>Casă cu grădină</option>
+      <option value="gol" data-i18n>Plan gol</option>
     </select>
     <div class="grp hide-m">
-      <button class="tbtn" id="btnImport" title="Deschide un proiect .json">Deschide</button>
-      <button class="tbtn" id="btnExport" title="Salvează proiectul ca fișier .json">Salvează fișier</button>
-      <button class="tbtn" id="btnPlan" title="Exportă planul 2D ca imagine PNG">Plan PNG</button>
+      <button class="tbtn" id="btnImport" data-i18n>Deschide</button>
+      <button class="tbtn" id="btnExport" data-i18n>Salvează fișier</button>
+      <button class="tbtn" id="btnPlan" data-i18n>Plan PNG</button>
     </div>
     <div class="sp"></div>
     <div class="grp">
-      <button class="tbtn" id="btnGallery" title="Randările mele">🖼<span class="hide-m"> Randările mele</span></button>
-      <button class="tbtn" id="btn360" title="Vedere 360°">🌐<span class="hide-m"> 360°</span></button>
-      <button class="tbtn primary" id="btnRender">📷 Randare</button>
+      <select id="langSel" aria-label="Limba"></select>
+      <button class="tbtn" id="btnGallery">🖼<span class="hide-m" data-i18n> Randările mele</span></button>
+      <button class="tbtn" id="btn360">🌐<span class="hide-m"> 360°</span></button>
+      <button class="tbtn primary" id="btnRender">📷 <span data-i18n>Randare</span></button>
     </div>
     <input type="file" id="fileIn" accept=".json,application/json" hidden>
   </header>
@@ -154,47 +172,59 @@ aside.right { border-right: 0; border-left: 1px solid var(--line); }
   <div class="main">
     <aside class="left" id="left">
       <div class="sec">
-        <h3>Desenează</h3>
+        <h3 data-i18n>Desenează</h3>
         <div class="tools" id="tools">
-          <button class="tool on" data-tool="select"><span class="ic">↖</span>Selectează</button>
-          <button class="tool" data-tool="room"><span class="ic">▭</span>Cameră</button>
-          <button class="tool" data-tool="wall"><span class="ic">╱</span>Perete</button>
-          <button class="tool" data-tool="door"><span class="ic">🚪</span>Ușă</button>
-          <button class="tool" data-tool="window"><span class="ic">🪟</span>Fereastră</button>
-          <button class="tool" data-tool="measure"><span class="ic">📏</span>Măsoară</button>
+          <button class="tool on" data-tool="select"><span class="ic">↖</span><span data-i18n>Selectează</span></button>
+          <button class="tool" data-tool="room"><span class="ic">▭</span><span data-i18n>Cameră</span></button>
+          <button class="tool" data-tool="wall"><span class="ic">╱</span><span data-i18n>Perete</span></button>
+          <button class="tool" data-tool="measure"><span class="ic">📏</span><span data-i18n>Măsoară</span></button>
         </div>
-        <p class="hint" id="toolHint">Clic pe un obiect ca să-l selectezi. Trage de el ca să-l muți. Trage pe fundal ca să muți planul.</p>
+        <h3 style="margin-top:12px" data-i18n>Uși și ferestre</h3>
+        <div class="tools">
+          <button class="tool" data-tool="door"><span class="ic">🚪</span><span data-i18n>Ușă</span></button>
+          <button class="tool" data-tool="door2"><span class="ic">🚪</span><span data-i18n>Ușă dublă</span></button>
+          <button class="tool" data-tool="slide"><span class="ic">⇆</span><span data-i18n>Glisantă</span></button>
+          <button class="tool" data-tool="window"><span class="ic">🪟</span><span data-i18n>Fereastră</span></button>
+          <button class="tool" data-tool="balcony"><span class="ic">▯</span><span data-i18n>Ușă balcon</span></button>
+        </div>
+        <h3 style="margin-top:12px" data-i18n>Adnotări</h3>
+        <div class="tools">
+          <button class="tool" data-tool="dim"><span class="ic">↔</span><span data-i18n>Cotă</span></button>
+          <button class="tool" data-tool="text"><span class="ic">T</span><span data-i18n>Etichetă</span></button>
+        </div>
+        <p class="hint" id="toolHint"></p>
       </div>
       <div class="sec">
-        <h3>Mobilier și decor</h3>
+        <h3 data-i18n>Mobilier și decor</h3>
         <div class="cat-tabs" id="catTabs"></div>
         <div class="items" id="items"></div>
-        <p class="hint">Clic pe un obiect îl adaugă în mijlocul planului. Apoi îl muți cu mouse-ul.</p>
+        <p class="hint" data-i18n>Clic pe un obiect îl adaugă în mijlocul planului. Apoi îl muți cu mouse-ul.</p>
       </div>
       <div class="sec kbd">
-        <span>R</span> rotește 90° · <span>Del</span> șterge · <span>Ctrl+D</span> dublează<br>
-        <span>Esc</span> termină peretele · rotița = zoom · <span>Shift</span> fără aliniere
+        <span>R</span> <i data-i18n>rotește 90°</i> · <span>Del</span> <i data-i18n>șterge</i> · <span>Ctrl+D</span> <i data-i18n>dublează</i><br>
+        <span>Esc</span> <i data-i18n>termină peretele</i> · <i data-i18n>rotița = zoom</i> · <span>Shift</span> <i data-i18n>fără aliniere</i>
       </div>
     </aside>
 
     <section class="stage split" id="stage">
       <div class="view" id="v2d">
         <canvas id="c2d"></canvas>
-        <div class="overlay tl"><span class="vlabel">Plan 2D</span></div>
+        <div class="overlay tl"><span class="vlabel" data-i18n>Plan 2D</span></div>
         <div class="overlay tr">
-          <button class="chip" id="zoomFit" title="Încadrează planul">⤢ Încadrează</button>
+          <button class="chip" id="zoomFit">⤢ <span data-i18n>Încadrează</span></button>
         </div>
       </div>
       <div class="view" id="v3d">
-        <div class="overlay tl"><span class="vlabel">Vedere 3D</span></div>
+        <div class="overlay tl"><span class="vlabel" data-i18n>Vedere 3D</span></div>
         <div class="overlay tr" id="camBtns">
-          <button class="chip on" data-cam="persp">Perspectivă</button>
-          <button class="chip" data-cam="top">De sus</button>
-          <button class="chip" data-cam="interior">Interior</button>
-          <button class="chip" data-cam="exterior">Exterior</button>
+          <button class="chip on" data-cam="persp" data-i18n>Perspectivă</button>
+          <button class="chip" data-cam="top" data-i18n>De sus</button>
+          <button class="chip" data-cam="interior" data-i18n>Interior</button>
+          <button class="chip" data-cam="exterior" data-i18n>Exterior</button>
         </div>
         <div class="overlay br">
-          <button class="chip" id="cutBtn" title="Pereți tăiați la 1 m, ca să vezi în camere">✂ Pereți tăiați</button>
+          <button class="chip" id="hqBtn">✨ <span data-i18n>Calitate înaltă</span></button>
+          <button class="chip" id="cutBtn">✂ <span data-i18n>Pereți tăiați</span></button>
         </div>
       </div>
       <div class="overlay" style="left:50%;transform:translateX(-50%);bottom:10px" id="viewBtns">
@@ -208,8 +238,8 @@ aside.right { border-right: 0; border-left: 1px solid var(--line); }
       <div id="props"></div>
     </aside>
     <div class="mobile-tabs">
-      <button class="btn" id="mLeft">＋ Unelte și mobilier</button>
-      <button class="btn" id="mRight">⚙ Proprietăți</button>
+      <button class="btn" id="mLeft">＋ <span data-i18n>Unelte și mobilier</span></button>
+      <button class="btn" id="mRight">⚙ <span data-i18n>Proprietăți</span></button>
     </div>
   </div>
 </div>
@@ -217,22 +247,23 @@ aside.right { border-right: 0; border-left: 1px solid var(--line); }
 <!-- Randare foto -->
 <div class="modal" id="mRender" role="dialog" aria-modal="true" aria-labelledby="mRenderT">
   <div class="dialog">
-    <header><h2 id="mRenderT">Randare foto</h2><button class="x" data-close>×</button></header>
+    <header><h2 id="mRenderT" data-i18n>Randare foto</h2><button class="x" data-close>×</button></header>
     <div class="body">
-      <p class="hint" style="margin-top:0">Randarea pornește din unghiul vederii 3D curente. Pentru umbre moi și margini netede, imaginea se calculează de mai multe ori și se face media.</p>
+      <p class="hint" style="margin-top:0" data-i18n>Randarea pornește din unghiul vederii 3D curente. Pentru umbre moi și margini netede, imaginea se calculează de mai multe ori și se face media.</p>
       <div class="opts">
-        <div class="field"><label>Rezoluție</label>
+        <div class="field"><label data-i18n>Rezoluție</label>
           <select id="rRes"><option value="1280">HD (1280 px)</option><option value="1920" selected>Full HD (1920 px)</option><option value="3840">4K (3840 px)</option></select></div>
-        <div class="field"><label>Format</label>
-          <select id="rRatio"><option value="1.7778" selected>16:9 peisaj</option><option value="1.3333">4:3</option><option value="1">1:1 pătrat</option><option value="0.8">4:5 portret</option></select></div>
-        <div class="field"><label>Calitate</label>
-          <select id="rQual"><option value="8">Rapidă (8 treceri)</option><option value="24" selected>Bună (24 treceri)</option><option value="64">Maximă (64 treceri)</option></select></div>
+        <div class="field"><label data-i18n>Format</label>
+          <select id="rRatio"><option value="1.7778" selected data-i18n>16:9 peisaj</option><option value="1.3333">4:3</option><option value="1" data-i18n>1:1 pătrat</option><option value="0.8" data-i18n>4:5 portret</option></select></div>
+        <div class="field"><label data-i18n>Calitate</label>
+          <select id="rQual"><option value="8" data-i18n>Rapidă (8 treceri)</option><option value="24" selected data-i18n>Bună (24 treceri)</option><option value="64" data-i18n>Maximă (64 treceri)</option></select></div>
       </div>
-      <div class="row"><button class="btn primary" id="rGo">Randează</button><span class="hint" id="rStatus"></span></div>
+      <label class="chk" style="margin-top:12px"><input type="checkbox" id="rAO" checked> <span data-i18n>Umbre de contact (ambient occlusion) pentru un aspect mai realist</span></label>
+      <div class="row"><button class="btn primary" id="rGo" data-i18n>Randează</button><span class="hint" id="rStatus"></span></div>
       <div class="progress"><div id="rBar"></div></div>
       <div class="result" id="rResult" hidden>
         <img id="rImg" alt="Randarea generată">
-        <div class="row"><a class="btn primary" id="rDl" download>⬇ Descarcă PNG</a><span class="hint">Salvată automat în „Randările mele”.</span></div>
+        <div class="row"><a class="btn primary" id="rDl" download>⬇ <span data-i18n>Descarcă PNG</span></a><span class="hint" data-i18n>Salvată automat în „Randările mele”.</span></div>
       </div>
     </div>
   </div>
@@ -241,12 +272,12 @@ aside.right { border-right: 0; border-left: 1px solid var(--line); }
 <!-- Vedere 360 -->
 <div class="modal" id="m360" role="dialog" aria-modal="true" aria-labelledby="m360T">
   <div class="dialog">
-    <header><h2 id="m360T">Vedere 360°</h2><button class="x" data-close>×</button></header>
+    <header><h2 id="m360T" data-i18n>Vedere 360°</h2><button class="x" data-close>×</button></header>
     <div class="body">
-      <p class="hint" style="margin-top:0">Panorama se face din poziția camerei 3D curente. Pentru cel mai bun rezultat alege „Interior” și pune camera în mijlocul camerei. Trage cu mouse-ul în imagine ca să te uiți în jur.</p>
-      <div class="row" style="margin:0 0 12px"><button class="btn primary" id="pGo">Generează panorama 360°</button><span class="hint" id="pStatus"></span></div>
+      <p class="hint" style="margin-top:0" data-i18n>Panorama se face din poziția camerei 3D curente. Pentru cel mai bun rezultat alege „Interior” și pune camera în mijlocul camerei. Trage cu mouse-ul în imagine ca să te uiți în jur.</p>
+      <div class="row" style="margin:0 0 12px"><button class="btn primary" id="pGo" data-i18n>Generează panorama 360°</button><span class="hint" id="pStatus"></span></div>
       <div class="pano" id="panoBox" hidden></div>
-      <div class="row" id="pRow" hidden><a class="btn primary" id="pDl" download>⬇ Descarcă panorama (4096×2048)</a><span class="hint">Format echirectangular, merge în orice vizualizator 360°.</span></div>
+      <div class="row" id="pRow" hidden><a class="btn primary" id="pDl" download>⬇ <span data-i18n>Descarcă panorama (4096×2048)</span></a><span class="hint" data-i18n>Format echirectangular, merge în orice vizualizator 360°.</span></div>
     </div>
   </div>
 </div>
@@ -254,15 +285,17 @@ aside.right { border-right: 0; border-left: 1px solid var(--line); }
 <!-- Galerie -->
 <div class="modal" id="mGal" role="dialog" aria-modal="true" aria-labelledby="mGalT">
   <div class="dialog">
-    <header><h2 id="mGalT">Randările mele</h2><button class="x" data-close>×</button></header>
+    <header><h2 id="mGalT" data-i18n>Randările mele</h2><button class="x" data-close>×</button></header>
     <div class="body">
       <div class="gal" id="galList"></div>
-      <p class="hint" id="galEmpty">Încă nu ai randări. Apasă „📷 Randare”.</p>
+      <p class="hint" id="galEmpty" data-i18n>Încă nu ai randări. Apasă „📷 Randare”.</p>
     </div>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
+<script src="./js/i18n-dict.js"></script>
+<script src="./js/i18n.js"></script>
 <script type="module" src="./js/editor.js"></script>
 </body>
 </html>
