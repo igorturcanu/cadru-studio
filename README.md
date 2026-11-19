@@ -38,6 +38,7 @@ Fila **Video AI 4K** generează clipuri AI și le pune direct în Materiale. Toa
 - **Costă bani:** generarea (per secundă, plătită la fal.ai) și „4K cu AI” (`fal-ai/bytedance-upscaler/upscale/video`, `target_resolution: 4k`).
 - **Gratuit:** „4K local” (redesenare la 3840×2160 în browser), exportul din Montaj la 4K (selectorul „Export 4K” din antet) și „Fă promptul mai bun” cu cheia Groq.
 - Opțiunile (durată, format, rezoluție) se citesc live din schema modelului pe fal.ai când browserul o poate încărca; altfel se folosesc valorile de mai sus. În „Avansat” poți schimba endpointul și adăuga parametri JSON.
+- **Regizor AI (gratuit cu Groq):** scrii câteva fraze, primești 3–10 scene cu prompt complet și mișcare de cameră. Le generezi aici sau copiezi prompturile în site-uri cu credite gratuite (ex. Digen AI, care nu are API) și încarci clipurile înapoi.
 - Pe calculator: `tools/ai_video_4k.py` (`gen`, `upscale`, `join`), cu `FAL_KEY` în mediu.
 
 ## AI Personal: ce merge unde

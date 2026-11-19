@@ -570,7 +570,7 @@ td.w{color:var(--muted);white-space:nowrap}
   <div class="aigrid">
     <section class="panel wide">
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><h2>Video AI 4K</h2><span class="kind" id="xState">nicio cheie</span><span class="cost">costă bani</span></div>
-      <p class="note" style="margin:0">Generezi clipuri cu Gemini Omni Flash, Kling 3.0, Seedance 2.5 sau Veo 3.1, le crești la 4K și le pui direct în Materiale. Toate modelele merg printr-un singur cont fal.ai, cu cheia ta. Plătești doar ce generezi, direct la fal.ai.</p>
+      <p class="note" style="margin:0">Generezi clipuri cu Gemini Omni Flash, Kling 3.0, Seedance 2.5 sau Veo 3.1 (sau doar scrii scenele cu Regizorul AI și le faci în orice site gratuit), le crești la 4K și le pui direct în Materiale. Toate modelele merg printr-un singur cont fal.ai, cu cheia ta. Plătești doar ce generezi, direct la fal.ai.</p>
       <div class="howto">
         <div><b>1</b>Pui cheia fal.ai mai jos (o singură dată).</div>
         <div><b>2</b>Alegi modelul, scrii ce vrei să se vadă și apeși „Generează clipul”.</div>
@@ -623,6 +623,20 @@ td.w{color:var(--muted);white-space:nowrap}
     </section>
 
     <section class="panel wide">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><h2>Regizor AI: din câteva fraze, un film pe scene</h2><span class="free">gratuit cu Groq</span></div>
+      <p class="note" style="margin:0">Scrii simplu, ca unui om, ce film vrei. Regizorul îl împarte în scene și scrie pentru fiecare promptul complet, cu mișcarea camerei (dronă, apropiere, travling, orbită) și unghiul. Apoi generezi scenele aici cu fal.ai sau copiezi prompturile în orice site cu credite gratuite (Digen AI, Kling, Hailuo), descarci clipurile și le încarci înapoi.</p>
+      <label class="f">Ce film vrei (cu cuvintele tale, în orice limbă)<textarea id="dIdea" style="min-height:70px">Un tânăr magician găsește într-o pădure veche o poartă de piatră care se aprinde. Trece prin ea și ajunge într-un oraș plutitor deasupra norilor, cu dragoni.</textarea></label>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px">
+        <label class="f">Stil<select id="dStyle"><option>Fantasy epic, ca un film mare</option><option>Cinematic realist</option><option>Natură și relaxare, fără oameni</option><option>Documentar</option><option>Animație 3D în stil Pixar</option><option>Anime</option></select></label>
+        <label class="f">Câte scene<select id="dN"><option>3</option><option selected>5</option><option>6</option><option>8</option><option>10</option></select></label>
+        <label class="f" style="align-content:end"><span style="display:flex;gap:6px;align-items:center;color:var(--fg)"><input type="checkbox" id="dSame" checked> Același personaj în toate</span></label>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button class="primary" id="dGo">✦ Fă scenele</button><button id="dAll" hidden>Generează toate scenele (fal.ai)</button><button id="dCopyAll" hidden>Copiază toate prompturile</button><a class="btn" href="https://digen.ai" target="_blank" rel="noopener">Deschide Digen AI ↗</a><button id="dUpload">＋ Încarcă clipurile descărcate</button><input type="file" id="dFile" multiple accept="video/*" hidden></div>
+      <p class="note" id="dNote" style="margin:0"></p>
+      <div class="res" id="dScenes"></div>
+    </section>
+
+    <section class="panel wide">
       <div style="display:flex;gap:8px;align-items:center"><h2>Clipurile tale AI</h2><div class="spacer"></div><button id="xToMontaj">Mergi în Montaj →</button></div>
       <div class="res" id="xJobs"><p class="empty">Niciun clip încă. Clipurile generate apar aici și în Materiale.</p></div>
     </section>
@@ -648,6 +662,7 @@ td.w{color:var(--muted);white-space:nowrap}
       </ul>
       <p><b>Ce e gratuit și ce costă.</b> Generarea clipurilor costă mereu bani: plătești direct la fal.ai, per secundă de video. „4K cu AI” (ByteDance Upscaler) costă și el. Sunt gratuite: „4K local” (browserul redesenează clipul la 3840×2160), exportul 4K din Montaj (sus: „Export 4K”) și „Fă promptul mai bun” cu cheia Groq gratuită.</p>
       <p><b>Ce înseamnă 4K local.</b> Nu inventează detalii noi, doar mărește curat clipul. YouTube dă însă video-urilor urcate în 4K un bitrate mult mai mare, deci și clipurile de 720p/1080p arată vizibil mai bine pe canal.</p>
+      <p><b>Regizor AI.</b> Scrii în câteva fraze ce film vrei. Regizorul (gratuit, cu cheia Groq) îl împarte în scene și scrie pentru fiecare promptul complet, cu mișcarea camerei. Generezi scenele cu fal.ai sau copiezi prompturile în site-uri cu credite gratuite, de exemplu Digen AI, apoi încarci clipurile descărcate.</p>
       <p><b>Pe calculator.</b> Unealta <code>tools/ai_video_4k.py</code> face același lucru din linia de comandă, plus 4K cu ffmpeg și lipirea mai multor clipuri într-un singur video 4K.</p>
     </div>
 
@@ -1926,6 +1941,37 @@ $('#xBetter').onclick = async () => { if (!sampleFn){ $('#xBetterNote').textCont
   $('#xBetter').disabled = false; };
 $('#xToMontaj').onclick = () => { location.hash = 'montaj'; };
 $('#quality').value = xGet(XQUAL) || '1080'; $('#quality').onchange = () => { xSet(XQUAL, $('#quality').value); toast('Exportul iese la ' + ($('#quality').value === '2160' ? '4K' : $('#quality').value + 'p') + '.'); };
+/* Regizor AI: transformă câteva fraze într-o listă de scene cu prompturi și mișcări de cameră (Groq gratuit sau Claude). */
+let dScenes = [];
+function renderDScenes(){ const el = $('#dScenes'); $('#dAll').hidden = $('#dCopyAll').hidden = !dScenes.length;
+  el.innerHTML = dScenes.map((d, i) => `<div class="step" style="gap:6px"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b>Scena ${i + 1}${d.title ? ': ' + xEsc(d.title) : ''}</b><span class="kind">🎥 ${xEsc(d.camera || '')}</span><span class="kind">${xEsc(d.duration || '')} s</span></div>
+    <textarea data-dp="${i}" style="min-height:70px">${xEsc(d.prompt)}</textarea>
+    <div style="display:flex;gap:6px;flex-wrap:wrap"><button data-dgen="${i}">Generează (fal.ai)</button><button data-dcopy="${i}">Copiază promptul</button></div></div>`).join(''); }
+$('#dScenes').oninput = e => { const i = e.target.dataset.dp; if (i != null) dScenes[+i].prompt = e.target.value; };
+async function dCopy(t){ try { await navigator.clipboard.writeText(t); toast('Copiat. Lipește-l în site-ul de video.'); } catch(e){ toast('Nu am putut copia. Selectează textul manual.'); } }
+function dGen(i){ if (!xGet(XKEY)){ $('#xKeyBox').open = true; $('#xKeyBox').scrollIntoView({behavior:'smooth'}); toast('Pune întâi cheia fal.ai sus. Sau copiază promptul într-un site gratuit.'); return false; }
+  const d = dScenes[i]; $('#xPrompt').value = d.prompt; let body; try { body = xBody(); } catch(e){ toast(e.message); return false; }
+  const m = xModel(); if (d.duration){ const opts = [...$('#xDur').options].map(o => o.value); const near = opts.reduce((a, b) => Math.abs(parseInt(b) - d.duration) < Math.abs(parseInt(a) - d.duration) ? b : a, opts[0]); if (near && 'duration' in body) body.duration = near; }
+  xNewJob($('#xEndpoint').value.trim() || xEndpointDef(), body, `Scena ${i + 1} · ${m.name.split(' (')[0]}`); return true; }
+$('#dScenes').onclick = e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.dcopy) dCopy(dScenes[+b.dataset.dcopy].prompt); if (b.dataset.dgen && dGen(+b.dataset.dgen)) toast('Scena ' + (+b.dataset.dgen + 1) + ' trimisă. O vezi în „Clipurile tale AI”.'); };
+$('#dAll').onclick = () => { let n = 0; for (let i = 0; i < dScenes.length; i++){ if (!dGen(i)) return; n++; } toast(n + ' scene trimise la ' + xModel().name.split(' (')[0] + '.'); };
+$('#dCopyAll').onclick = () => dCopy(dScenes.map((d, i) => `Scena ${i + 1}: ${d.prompt}`).join('\n\n'));
+$('#dUpload').onclick = () => $('#dFile').click();
+$('#dFile').onchange = () => { const f = [...$('#dFile').files]; if (f.length){ addFiles(f); toast(f.length + ' clipuri în Materiale. Le pui pe timeline din Montaj.'); } $('#dFile').value = ''; };
+$('#dGo').onclick = async () => {
+  if (!sampleFn){ $('#dNote').textContent = 'Pune cheia ta Groq (gratuită) în Scenarii → Cheia ta AI, sau deschide Cadru în claude.ai.'; return; }
+  const idea = $('#dIdea').value.trim(); if (idea.length < 10){ $('#dNote').textContent = 'Scrie în câteva fraze ce film vrei.'; return; }
+  $('#dGo').disabled = true; $('#dNote').textContent = 'Regizorul scrie scenele…';
+  try { const n = +$('#dN').value;
+    const res = await sampleFn.json(`You are a film director and cinematographer writing shots for an AI video model (${xModel().name}). Turn the idea below into exactly ${n} consecutive scenes that tell it as a short film with a beginning, a turn and an ending. Style: ${$('#dStyle').value}.
+For each scene write one self-contained English prompt of 60-100 words: subject and action, setting, ONE clear camera movement (e.g. slow drone fly-over, dolly-in close-up, tracking shot, low-angle orbit, crane up reveal, handheld follow), lens and framing, lighting, colour grade, atmosphere and ambient sound. Vary shot sizes and camera moves between scenes like a real film crew. No on-screen text, no logos, no subtitles.${$('#dSame').checked ? ' Keep the same main character with an identical, explicitly repeated description (age, face, hair, clothes) in every prompt.' : ''}
+Reply only with JSON: an array of ${n} objects {"title": short Romanian scene title, "camera": short Romanian name of the camera move, "duration": seconds 5-10, "prompt": English prompt}.
+
+IDEA: ${idea}`, {cache:false});
+    const arr = Array.isArray(res) ? res : (res?.scenes || []); dScenes = arr.filter(x => x && x.prompt).map(x => ({ title:String(x.title || ''), camera:String(x.camera || ''), duration:Math.max(3, Math.min(15, parseInt(x.duration) || 5)), prompt:String(x.prompt).trim() }));
+    $('#dNote').textContent = dScenes.length ? `${dScenes.length} scene gata. Le poți edita, apoi le generezi aici sau le copiezi în alt site.` : 'Nu au venit scene. Încearcă din nou.'; renderDScenes(); }
+  catch(e){ $('#dNote').textContent = aiErr(e, 'Nu a mers acum. Încearcă din nou.'); }
+  $('#dGo').disabled = false; };
 xModelUI(); xKeyUI(); for (const j of xJobs){ if (j.done && j.remoteUrl && !j.media) j.state = 'Gata. Apasă „Adu în Materiale” (linkurile fal.ai expiră după câteva zile).'; else if (!j.done && j.status_url && !j.err) j.state = 'Întrerupt de reîncărcarea paginii.'; } renderXJobs();
 
 /* ---------- routing ---------- */

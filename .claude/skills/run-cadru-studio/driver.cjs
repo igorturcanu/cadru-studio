@@ -96,7 +96,13 @@ const srv = http.createServer((q, r) => {
       if (u.includes('/status')) return r.fulfill({ headers: CORS, json: { status: 'COMPLETED' } });
       return r.fulfill({ headers: CORS, json: { video: { url: 'https://vid.mock/clip.mp4' } } }); });
     await p.route('https://vid.mock/**', r => r.fulfill({ headers: CORS, contentType: 'video/mp4', body: fs.readFileSync(clip) }));
-    await go('videoai'); await shot('videoai');
+    await p.route('https://api.groq.com/**', r => { if (r.request().method() === 'OPTIONS') return r.fulfill({ status: 204, headers: CORS });
+      const scenes = [1, 2, 3].map(i => ({ title: 'Scena test ' + i, camera: 'dronă lentă', duration: 6, prompt: 'A young wizard in a green cloak walks through an ancient forest, slow drone fly-over, shot ' + i }));
+      return r.fulfill({ headers: CORS, json: { choices: [{ message: { content: JSON.stringify(scenes) }, finish_reason: 'stop' }] } }); });
+    await go('videoai'); await p.evaluate(() => localStorage.setItem('cadru-groq-key', 'gsk_' + 'x'.repeat(30))); await p.reload(); await p.waitForSelector('#v-videoai:not([hidden])');
+    await shot('videoai');
+    await p.selectOption('#dN', '3'); await p.click('#dGo'); await p.waitForSelector('[data-dgen="2"]', { timeout: 10000 });
+    console.log('director:', await p.textContent('#dNote')); await p.locator('#dScenes').scrollIntoViewIfNeeded(); await shot('videoai-director');
     await p.fill('#xKey', 'test-key-1234567890abcdef:secret'); await p.click('#xKeySave');
     await p.selectOption('#xModel', 'kling'); await p.waitForTimeout(500);
     console.log('kling durations (from mocked schema):', await p.$$eval('#xDur option', o => o.map(x => x.value)));
@@ -107,8 +113,11 @@ const srv = http.createServer((q, r) => {
     await p.click('#xGo');
     await p.waitForSelector('[data-xtl="0"]', { timeout: 20000 });
     console.log('sent:', JSON.stringify(sent.map(s => ({ ep: s.ep, keys: Object.keys(s.body), duration: s.body.duration, img: (s.body.start_image_url || '').slice(0, 22) }))));
+    await p.click('[data-dgen="0"]'); await p.waitForFunction(() => /Scena 1/.test(document.querySelector('#xJobs').textContent), null, { timeout: 20000 });
+    console.log('director scene sent:', JSON.stringify({ ep: sent[1].ep, duration: sent[1].body.duration, prompt: sent[1].body.prompt.slice(0, 40) }));
+    await p.waitForSelector('[data-xai="0"]', { timeout: 20000 });
     await p.click('[data-xai="0"]'); await p.waitForFunction(() => document.querySelectorAll('[data-xtl]').length >= 2, null, { timeout: 20000 });
-    console.log('upscale body:', JSON.stringify(sent[1]));
+    console.log('upscale body:', JSON.stringify(sent[2]));
     await p.click('[data-xup="1"]'); await p.waitForFunction(() => /Gata: 3840×2160/.test(document.querySelector("#xJobs").textContent), null, { timeout: 30000 });
     await shot('videoai-jobs'); console.log('jobs:', await p.$$eval('#xJobs .step .note', e => e.map(x => x.textContent).filter(t => /Gata|Eroare|4K/.test(t))));
     await p.click('[data-xtl="0"]');
