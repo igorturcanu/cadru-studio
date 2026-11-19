@@ -1,6 +1,6 @@
 // Cadru Studio driver: serves index.html locally, drives it with headless Chromium,
 // mocks the external APIs (Openverse, Google sign-in, YouTube upload) and saves screenshots.
-// Usage (from repo root): node .claude/skills/run-cadru-studio/driver.cjs [smoke|create|export|publish|all]
+// Usage (from repo root): node .claude/skills/run-cadru-studio/driver.cjs [smoke|create|export|publish|videos|videoai|all]
 const http = require('http'), fs = require('fs'), path = require('path');
 const { chromium } = require('playwright');
 const ROOT = path.resolve(__dirname, '../../..');
@@ -45,7 +45,7 @@ const srv = http.createServer((q, r) => {
   const go = async h => { await p.goto(URL0 + '#' + h); await p.waitForSelector('#v-' + h + ':not([hidden])'); await p.waitForTimeout(400); };
 
   if (flow === 'smoke' || flow === 'all') {
-    for (const v of ['creeaza', 'montaj', 'scenarii', 'miniaturi', 'proiecte', 'publica', 'ai', 'ghid']) { await go(v); await shot('tab-' + v); }
+    for (const v of ['creeaza', 'montaj', 'scenarii', 'miniaturi', 'proiecte', 'publica', 'videoai', 'ai', 'ghid']) { await go(v); await shot('tab-' + v); }
   }
   if (flow === 'create' || flow === 'export' || flow === 'all') {
     await go('creeaza');
@@ -78,6 +78,45 @@ const srv = http.createServer((q, r) => {
     await p.waitForSelector('#vidStudio .pcard'); await p.waitForTimeout(500); await shot('videos');
     console.log('videos:', await p.$$eval('#vidGrid .pcard b, #vidStudio .pcard b', e => e.map(x => x.textContent)));
     await p.click('[data-splay="0"]'); await p.waitForTimeout(1500); await shot('videos-player'); await p.click('#vpClose');
+  }
+  if (flow === 'videoai' || flow === 'all') {
+    // Video AI 4K: mocks the fal.ai queue (submit -> status -> result) and the result CDN; uses a 3 s test clip.
+    const clip = path.join(OUT, 'xai-clip.mp4');
+    if (!fs.existsSync(clip)) require('child_process').execSync(`ffmpeg -y -loglevel error -f lavfi -i testsrc2=size=1280x720:rate=30 -f lavfi -i sine=f=440 -t 3 -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest "${clip}"`);
+    const sent = [];
+    await p.route('https://fal.ai/api/openapi/**', r => { const ep = new URL(r.request().url()).searchParams.get('endpoint_id');
+      if (!ep.includes('kling')) return r.fulfill({ status: 404, headers: CORS, body: '' });
+      return r.fulfill({ headers: CORS, json: { paths: { ['/' + ep]: { post: { requestBody: { content: { 'application/json': { schema: { $ref: '#/components/schemas/KIn' } } } } } } },
+        components: { schemas: { KIn: { properties: { prompt: {}, duration: { enum: ['3', '5', '8', '10', '15'], default: '5' }, aspect_ratio: { enum: ['16:9', '9:16', '1:1'] }, generate_audio: {}, start_image_url: {} } } } } } }); });
+    await p.route('https://queue.fal.run/**', r => { const q = r.request(), u = q.url();
+      if (q.method() === 'OPTIONS') return r.fulfill({ status: 204, headers: CORS });
+      if (q.headers()['authorization'] !== 'Key test-key-1234567890abcdef:secret') return r.fulfill({ status: 401, headers: CORS, json: { detail: 'bad key' } });
+      if (q.method() === 'POST') { const ep = u.replace('https://queue.fal.run/', ''); sent.push({ ep, body: q.postDataJSON() }); const id = 'req' + sent.length;
+        return r.fulfill({ headers: CORS, json: { request_id: id, status_url: `https://queue.fal.run/${ep}/requests/${id}/status`, response_url: `https://queue.fal.run/${ep}/requests/${id}` } }); }
+      if (u.includes('/status')) return r.fulfill({ headers: CORS, json: { status: 'COMPLETED' } });
+      return r.fulfill({ headers: CORS, json: { video: { url: 'https://vid.mock/clip.mp4' } } }); });
+    await p.route('https://vid.mock/**', r => r.fulfill({ headers: CORS, contentType: 'video/mp4', body: fs.readFileSync(clip) }));
+    await go('videoai'); await shot('videoai');
+    await p.fill('#xKey', 'test-key-1234567890abcdef:secret'); await p.click('#xKeySave');
+    await p.selectOption('#xModel', 'kling'); await p.waitForTimeout(500);
+    console.log('kling durations (from mocked schema):', await p.$$eval('#xDur option', o => o.map(x => x.value)));
+    const still = path.join(OUT, 'xai-still.jpg');
+    if (!fs.existsSync(still)) require('child_process').execSync(`ffmpeg -y -loglevel error -f lavfi -i testsrc2=size=640x360 -frames:v 1 "${still}"`);
+    await p.setInputFiles('#xImg', still); await p.waitForFunction(() => /640×360/.test(document.querySelector('#xImgName').textContent));
+    console.log('endpoint with image:', await p.inputValue('#xEndpoint'));
+    await p.click('#xGo');
+    await p.waitForSelector('[data-xtl="0"]', { timeout: 20000 });
+    console.log('sent:', JSON.stringify(sent.map(s => ({ ep: s.ep, keys: Object.keys(s.body), duration: s.body.duration, img: (s.body.start_image_url || '').slice(0, 22) }))));
+    await p.click('[data-xai="0"]'); await p.waitForFunction(() => document.querySelectorAll('[data-xtl]').length >= 2, null, { timeout: 20000 });
+    console.log('upscale body:', JSON.stringify(sent[1]));
+    await p.click('[data-xup="1"]'); await p.waitForFunction(() => /Gata: 3840×2160/.test(document.querySelector("#xJobs").textContent), null, { timeout: 30000 });
+    await shot('videoai-jobs'); console.log('jobs:', await p.$$eval('#xJobs .step .note', e => e.map(x => x.textContent).filter(t => /Gata|Eroare|4K/.test(t))));
+    await p.click('[data-xtl="0"]');
+    await p.selectOption('#quality', '2160'); await go('montaj'); console.log('quality:', await p.inputValue('#quality'), await p.inputValue('#format'));
+    await p.click('#btnExport'); await p.waitForFunction(() => document.querySelector('#mTitle').textContent !== 'Video gata');
+    await p.waitForFunction(() => document.querySelector('#mTitle').textContent === 'Video gata', null, { timeout: 120000 });
+    await p.waitForTimeout(1500); const vdim = await p.evaluate(() => new Promise(res => { const v = document.querySelector('#mVideo'); const f = () => res(v.videoWidth + 'x' + v.videoHeight); v.readyState >= 1 ? f() : v.addEventListener('loadedmetadata', f); }));
+    console.log('4K export:', vdim, await p.textContent('#mText')); await shot('videoai-export'); await p.click('#mCancel');
   }
   console.log('downloads:', downloads); console.log('page errors:', errs.length ? errs : 'none');
   await b.close(); srv.close(); process.exit(errs.length ? 1 : 0);
