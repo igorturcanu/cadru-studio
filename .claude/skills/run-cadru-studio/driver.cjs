@@ -98,12 +98,52 @@ const srv = http.createServer((q, r) => {
     await p.route('https://vid.mock/**', r => r.fulfill({ headers: CORS, contentType: 'video/mp4', body: fs.readFileSync(clip) }));
     await p.route('https://api.groq.com/**', r => { if (r.request().method() === 'OPTIONS') return r.fulfill({ status: 204, headers: CORS });
       const scenes = [1, 2, 3].map(i => ({ title: 'Scena test ' + i, camera: 'dronă lentă', duration: 6, prompt: 'A young wizard in a green cloak walks through an ancient forest, slow drone fly-over, shot ' + i }));
-      return r.fulfill({ headers: CORS, json: { choices: [{ message: { content: JSON.stringify(scenes) }, finish_reason: 'stop' }] } }); });
+      const meta = { title: 'Poarta de piatră și orașul dragonilor', description: 'Un film scurt făcut cu AI.', tags: ['ai', 'fantasy'] };
+      const isMeta = (r.request().postData() || '').includes('YouTube metadata');
+      return r.fulfill({ headers: CORS, json: { choices: [{ message: { content: JSON.stringify(isMeta ? meta : scenes) }, finish_reason: 'stop' }] } }); });
     await go('videoai'); await p.evaluate(() => localStorage.setItem('cadru-groq-key', 'gsk_' + 'x'.repeat(30))); await p.reload(); await p.waitForSelector('#v-videoai:not([hidden])');
     await shot('videoai');
-    await p.selectOption('#dN', '3'); await p.click('#dGo'); await p.waitForSelector('[data-dgen="2"]', { timeout: 10000 });
-    console.log('director:', await p.textContent('#dNote')); await p.locator('#dScenes').scrollIntoViewIfNeeded(); await shot('videoai-director');
     await p.fill('#xKey', 'test-key-1234567890abcdef:secret'); await p.click('#xKeySave');
+    // Totul automat: idee -> 3 scene -> 3 clipuri -> timeline -> muzică -> titlu -> export 4K pornit singur
+    await p.selectOption('#aN', '3'); await p.click('#aGo');
+    await p.waitForFunction(() => location.hash === '#montaj', null, { timeout: 60000 });
+    await p.waitForFunction(() => document.querySelector('#mTitle').textContent === 'Video gata', null, { timeout: 120000 }); await p.waitForTimeout(1500);
+    const adim = await p.evaluate(() => { const v = document.querySelector('#mVideo'); return v.videoWidth + 'x' + v.videoHeight + ' ' + v.duration.toFixed(1) + 's'; });
+    console.log('auto export:', adim, '| title:', await p.inputValue('#vTitle'), '| sent:', sent.map(x => x.ep.split('/').pop()).join(','));
+    await shot('auto-export'); await p.click('#mCancel'); await go('videoai'); await p.locator('#aSteps').scrollIntoViewIfNeeded(); await shot('auto-steps');
+    console.log('auto steps:', (await p.textContent('#aSteps')).replace(/\s+/g, ' '));
+    // 10 minute în buclă, fără export automat
+    await p.selectOption('#aLen', '600'); await p.uncheck('#aExport'); await p.selectOption('#aMusic', ''); await p.click('#aGo');
+    await p.waitForFunction(() => /Export 4K/.test(document.querySelector('#aSteps').textContent) && !document.querySelector('#aGo').disabled, null, { timeout: 60000 });
+    console.log('auto 10 min:', (await p.textContent('#aSteps')).match(/repetate[^✓○–✕]*/)?.[0]);
+    sent.length = 0;
+    await p.selectOption('#dN', '3'); await p.click('#dGo'); await p.waitForFunction(() => /scene gata/.test(document.querySelector('#dNote').textContent), null, { timeout: 10000 });
+    console.log('director:', await p.textContent('#dNote')); await p.locator('#dScenes').scrollIntoViewIfNeeded(); await shot('videoai-director');
+    // ComfyUI local (MiniMax H3 / Wan): workflow API cu {{PROMPT}}, mock pe 127.0.0.1:8188
+    let comfyBody = null, musicBody = null;
+    await p.route('http://127.0.0.1:8188/**', r => { const q = r.request(), u = new URL(q.url());
+      if (q.method() === 'OPTIONS') return r.fulfill({ status: 204, headers: CORS });
+      if (u.pathname === '/system_stats') return r.fulfill({ headers: CORS, json: { system: { comfyui_version: '0.31.0' }, devices: [{ name: 'RTX 4090', vram_total: 25757220864 }] } });
+      if (u.pathname === '/prompt') { const b = q.postDataJSON(); if (JSON.stringify(b).includes('SaveAudio')) { musicBody = b; return r.fulfill({ headers: CORS, json: { prompt_id: 'm1' } }); } comfyBody = b; return r.fulfill({ headers: CORS, json: { prompt_id: 'p1' } }); }
+      if (u.pathname === '/history/m1') return r.fulfill({ headers: CORS, json: { m1: { outputs: { 5: { audio: [{ filename: 'ace_00001.mp3', subfolder: 'audio', type: 'output' }] } }, status: { completed: true, status_str: 'success' } } } });
+      if (u.pathname === '/view' && u.searchParams.get('filename').endsWith('.mp3')) return r.fulfill({ headers: CORS, contentType: 'audio/mpeg', body: Buffer.alloc(6000, 1) });
+      if (u.pathname === '/history/p1') return r.fulfill({ headers: CORS, json: { p1: { outputs: { 9: { gifs: [{ filename: 'h3_00001.mp4', subfolder: '', type: 'output' }] } }, status: { completed: true, status_str: 'success' } } } });
+      if (u.pathname === '/view') return r.fulfill({ headers: CORS, contentType: 'video/mp4', body: fs.readFileSync(clip) });
+      r.fulfill({ status: 404, headers: CORS }); });
+    await p.selectOption('#xModel', 'comfy'); await p.click('#cTest'); await p.waitForFunction(() => /Legătura merge/.test(document.querySelector('#cNote').textContent));
+    console.log('comfy test:', await p.textContent('#cNote'));
+    const wf = { 3: { class_type: 'KSampler', inputs: { seed: 1, steps: 20 } }, 6: { class_type: 'CLIPTextEncode', inputs: { text: '{{PROMPT}}' }, _meta: { title: 'Positive' } }, 9: { class_type: 'SaveVideo', inputs: {} } };
+    await p.setInputFiles('#cWf', { name: 'h3_api.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(wf)) });
+    await p.fill('#xPrompt', 'A red dragon flies over a floating city, slow orbit shot'); await p.click('#xGo');
+    await p.waitForFunction(() => /Local/.test(document.querySelector('#xJobs .step b').textContent) && /Gata/.test(document.querySelector('#xJobs .step').textContent), null, { timeout: 20000 });
+    console.log('comfy sent:', comfyBody.prompt[6].inputs.text, '| seed changed:', comfyBody.prompt[3].inputs.seed !== 1);
+    const mwf = { 1: { class_type: 'TextEncodeAceStepAudio', inputs: { tags: '{{PROMPT}}', lyrics: '[instrumental]' } }, 2: { class_type: 'EmptyAceStepLatentAudio', inputs: { seconds: '{{SECONDS}}' } }, 5: { class_type: 'SaveAudio', inputs: {} } };
+    await p.setInputFiles('#cWfM', { name: 'ace_api.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(mwf)) });
+    await p.locator('#cBox').scrollIntoViewIfNeeded(); await shot('videoai-comfy');
+    // Totul automat cu tot local: clipuri ComfyUI + muzică ACE-Step
+    await p.selectOption('#aModel', 'comfy'); await p.selectOption('#aMusic', 'local'); await p.selectOption('#aLen', '0'); await p.click('#aGo');
+    await p.waitForFunction(() => /Export 4K/.test(document.querySelector('#aSteps').textContent) && !document.querySelector('#aGo').disabled, null, { timeout: 60000 });
+    console.log('auto local:', (await p.textContent('#aSteps')).replace(/\s+/g, ' '), '| music seconds:', musicBody?.prompt[2].inputs.seconds, '| tags:', musicBody?.prompt[1].inputs.tags.slice(0, 30));
     await p.selectOption('#xModel', 'kling'); await p.waitForTimeout(500);
     console.log('kling durations (from mocked schema):', await p.$$eval('#xDur option', o => o.map(x => x.value)));
     const still = path.join(OUT, 'xai-still.jpg');
