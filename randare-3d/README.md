@@ -20,6 +20,8 @@ Sait de prezentare + editor web pentru randări 3D de case, construit după mode
 - **Acoperiș:** în două ape, în patru ape sau terasă, cu țiglă în mai multe culori.
 - **Calitate înaltă:** umbre de contact (ambient occlusion GTAO) în vederea live și în randare, lumină de mediu, tavan luminat în interior.
 - **Limbi:** română, engleză, rusă, franceză, germană (selector în antet, sau `?lang=en` / `ru` / `fr` / `de`). Textele sunt în `js/i18n-dict.js`.
+- **Proiectele mele:** mai multe proiecte salvate în browser, cu miniatură, deschidere, dublare și ștergere; un șablon deschis devine proiect nou și nu-l înlocuiește pe cel curent.
+- **Fișă client:** o pagină cu randarea 3D, planul, camerele și cantitățile de materiale, cu câmpuri pentru client și observații; se tipărește sau se salvează ca PDF.
 - **Proiecte:** salvare automată în browser, anulare/refacere, export/import `.json`, galerie „Randările mele” (IndexedDB).
 
 ## Ce e simulat sau lipsește față de Cedreo
@@ -30,6 +32,19 @@ Sait de prezentare + editor web pentru randări 3D de case, construit după mode
 - Un singur nivel (scara e decorativă); fără import din CAD sau din imagini.
 - Cantitățile de materiale sunt estimări fără pierderi și fără fundație.
 
+## Viteză
+
+Măsurat cu Chromium pe o conexiune 4G lentă simulată (1,6 Mbit/s, 150 ms latență), cu fișiere comprimate gzip ca pe GitHub Pages:
+
+| | înainte | acum |
+|---|---|---|
+| Pagina de prezentare pe mobil (încărcare completă) | 2,2 s, 382 KB | 0,5 s, 45 KB |
+| Pagina de prezentare pe desktop | 3,7 s, 659 KB | 0,8 s, 99 KB |
+| Editorul (încărcare completă) | 2,5 s, 20 de cereri | 2,0 s, 7 cereri |
+| Vederea 3D în repaus, 5 secunde | ~300 de cadre | 2 cadre |
+
+Ce s-a schimbat: imagini WebP în două mărimi (800 px și 1600 px), fiecare limbă într-un fișier separat (`js/lang/xx.js`, generat cu `node randare-3d/tools/lang-build.js` din `js/i18n-dict.js`), modulele pentru umbrele de contact se descarcă doar când e nevoie de ele, iar vederea 3D se desenează doar când se schimbă ceva.
+
 ## Imaginile din galerie
 
-Toate imaginile din `galerie/` sunt generate cu editorul (`window.planora.renderPhoto`). Motorul 3D, three.js r160, e inclus în `vendor/` (licență MIT).
+Toate imaginile din `galerie/` sunt generate cu editorul (`window.planora.renderPhoto`). Pagina folosește versiunile `.webp`; fișierele `.jpg` rămân ca sursă. Motorul 3D, three.js r160, e inclus în `vendor/` (licență MIT).
