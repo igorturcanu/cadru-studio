@@ -8,7 +8,7 @@ Studio video în română care merge direct în browser. Faci video-uri pentru c
 
 - **Creează:** scenariu → voce → fundal → opțiuni, apoi „Generează video” construiește montajul scenă cu scenă.
 - **Montaj:** încarci, lipești sau imporți din link filme, poze și audio. Le pui pe timeline, le tai și adaugi text (subtitrare, titlu, karaoke), filtre, zoom, voce și muzică. Exporți video WebM sau MP4.
-- **Video AI 4K:** clipuri generate cu Gemini Omni Flash, Kling 3.0, Seedance 2.5 sau Veo 3.1, crescute la 4K.
+- **Video AI 4K:** clipuri generate cu Gemini Omni Flash, Kling 3.0, Seedance 2.5, Veo 3.1 sau Grok Imagine 1.5, crescute la 4K.
 - **Export 4K:** Montajul exportă la 720p, 1080p sau 4K (3840×2160).
 - **Miniaturi:** editor de thumbnail 1280×720, salvat ca PNG.
 - **Proiecte:** se salvează în browser (IndexedDB), cu tot cu fișiere.
@@ -22,7 +22,7 @@ Totul rulează local, în browser. Fișierele nu pleacă de pe dispozitiv.
 
 În claude.ai, aceleași butoane folosesc Claude. Bifa „Folosește Groq și în claude.ai” forțează Groq și acolo.
 
-## Video AI 4K (Gemini Omni Flash, Kling 3.0, Seedance 2.5, Veo 3.1)
+## Video AI 4K (Gemini Omni Flash, Kling 3.0, Seedance 2.5, Veo 3.1, Grok Imagine)
 
 Fila **Video AI 4K** generează clipuri AI și le pune direct în Materiale. Toate modelele merg prin [fal.ai](https://fal.ai), cu cheia ta (păstrată doar în browser, trimisă doar la `queue.fal.run`).
 
@@ -34,6 +34,7 @@ Fila **Video AI 4K** generează clipuri AI și le pune direct în Materiale. Toa
 | Seedance 2.5 | `bytedance/seedance-2.5/text-to-video`, `.../image-to-video` | 480p/720p, până la 30 s, sunet |
 | Seedance 2.5 Flash | `bytedance/seedance-2.5/flash/text-to-video` | 480p/720p, ieftin |
 | Veo 3.1 | `fal-ai/veo3.1`, `fal-ai/veo3.1/image-to-video` | 720p–4K, până la 8 s |
+| Grok Imagine 1.5 (xAI) | `xai/grok-imagine-video/v1.5/text-to-video`, `.../v1.5/image-to-video` | 480p–1080p, până la 15 s, cu sunet |
 
 - **Costă bani:** generarea (per secundă, plătită la fal.ai) și „4K cu AI” (`fal-ai/bytedance-upscaler/upscale/video`, `target_resolution: 4k`).
 - **Gratuit:** „4K local” (redesenare la 3840×2160 în browser), exportul din Montaj la 4K (selectorul „Export 4K” din antet) și „Fă promptul mai bun” cu cheia Groq.
