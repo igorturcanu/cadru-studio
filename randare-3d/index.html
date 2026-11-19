@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Planora 3D</title>
+<meta name="description" content="Desenează planul casei, amenajează-l și obține randări 3D foto și vederi 360° în câteva minute, direct în browser.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231f3a5f'/%3E%3Cpath d='M6 17 16 8l10 9v8H6z' fill='none' stroke='%23f2a541' stroke-width='3' stroke-linejoin='round'/%3E%3C/svg%3E">
+<style>
+:root {
+  --ink: #17212c; --muted: #5b6875; --line: #e3e8ee; --bg: #ffffff; --soft: #f4f6f9;
+  --brand: #1f3a5f; --brand-2: #2b4f7e; --accent: #e8892b; --accent-2: #f2a541;
+  --radius: 14px; --max: 1160px;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); background: var(--bg); }
+img { max-width: 100%; height: auto; display: block; }
+a { color: inherit; }
+.wrap { max-width: var(--max); margin: 0 auto; padding: 0 20px; }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; border-radius: 10px; font-weight: 600; text-decoration: none; border: 1px solid transparent; transition: transform .15s, box-shadow .15s, background .15s; }
+.btn:hover { transform: translateY(-1px); }
+.btn.primary { background: var(--accent); color: #fff; box-shadow: 0 6px 18px rgba(232,137,43,.35); }
+.btn.ghost { border-color: rgba(255,255,255,.35); color: #fff; }
+.btn.ghost:hover { background: rgba(255,255,255,.08); }
+.btn.outline { border-color: var(--line); color: var(--ink); background: #fff; }
+
+/* antet */
+.nav { position: sticky; top: 0; z-index: 30; background: rgba(255,255,255,.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+.nav .wrap { display: flex; align-items: center; gap: 22px; height: 64px; }
+.logo { display: flex; align-items: center; gap: 9px; font-weight: 800; font-size: 18px; text-decoration: none; color: var(--brand); white-space: nowrap; }
+.logo svg { width: 30px; height: 30px; }
+.nav ul { list-style: none; display: flex; gap: 20px; margin: 0; padding: 0; flex: 1; }
+.nav ul a { text-decoration: none; color: var(--muted); font-weight: 500; font-size: 15px; }
+.nav ul a:hover { color: var(--ink); }
+.nav .btn { padding: 9px 16px; font-size: 15px; }
+.burger { display: none; margin-left: auto; background: none; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: 18px; }
+
+/* erou */
+.hero { background: radial-gradient(1200px 500px at 80% -10%, #36628f 0%, transparent 60%), linear-gradient(160deg, #18304f, #1f3a5f 60%, #24466f); color: #fff; overflow: hidden; }
+.hero .wrap { display: grid; grid-template-columns: 1.02fr 1.1fr; gap: 48px; align-items: center; padding-top: 72px; padding-bottom: 80px; }
+.eyebrow { display: inline-block; font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-2); margin-bottom: 14px; }
+.hero h1 { font-size: clamp(34px, 4.6vw, 54px); line-height: 1.08; margin: 0 0 18px; letter-spacing: -.02em; }
+.hero p.lead { font-size: 19px; color: #d4deea; margin: 0 0 28px; max-width: 34em; }
+.hero .ctas { display: flex; gap: 12px; flex-wrap: wrap; }
+.hero .note { margin-top: 16px; font-size: 14px; color: #a9bbd0; }
+.hero-art { position: relative; }
+.hero-art .main { border-radius: 16px; box-shadow: 0 30px 80px rgba(0,0,0,.45); border: 1px solid rgba(255,255,255,.12); }
+.hero-art .pip { position: absolute; width: 46%; left: -8%; bottom: -26px; border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,.45); border: 3px solid #fff; }
+.hero-art .badge { position: absolute; right: 14px; top: 14px; background: rgba(15,25,40,.75); color: #fff; font-size: 13px; padding: 6px 10px; border-radius: 8px; }
+
+.stats { background: var(--brand); color: #fff; }
+.stats .wrap { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; padding-top: 26px; padding-bottom: 26px; text-align: center; }
+.stats b { display: block; font-size: 28px; color: var(--accent-2); }
+.stats span { color: #c8d4e2; font-size: 14px; }
+
+section { padding: 86px 0; }
+section.alt { background: var(--soft); }
+.sec-head { text-align: center; max-width: 720px; margin: 0 auto 48px; }
+.sec-head h2 { font-size: clamp(28px, 3.4vw, 40px); line-height: 1.15; margin: 0 0 12px; letter-spacing: -.01em; }
+.sec-head p { color: var(--muted); font-size: 18px; margin: 0; }
+
+/* pași */
+.steps { display: grid; gap: 64px; }
+.step { display: grid; grid-template-columns: 1fr 1.15fr; gap: 48px; align-items: center; }
+.step:nth-child(even) .txt { order: 2; }
+.step .num { display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 800; margin-bottom: 14px; }
+.step h3 { font-size: 26px; margin: 0 0 10px; line-height: 1.2; }
+.step p { color: var(--muted); margin: 0 0 12px; }
+.step ul { margin: 0; padding-left: 20px; color: var(--muted); }
+.step li { margin: 4px 0; }
+.shot { border-radius: var(--radius); overflow: hidden; box-shadow: 0 18px 50px rgba(23,33,44,.16); border: 1px solid var(--line); background: #fff; }
+
+/* funcții */
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; }
+.card .ic { width: 46px; height: 46px; border-radius: 12px; display: grid; place-items: center; font-size: 22px; background: #fdf0e2; margin-bottom: 14px; }
+.card h3 { margin: 0 0 6px; font-size: 18px; }
+.card p { margin: 0; color: var(--muted); font-size: 15px; }
+
+/* comparație zi / noapte */
+.compare { position: relative; border-radius: var(--radius); overflow: hidden; box-shadow: 0 18px 50px rgba(23,33,44,.16); user-select: none; aspect-ratio: 16/9; }
+.compare img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.compare .top { clip-path: inset(0 50% 0 0); }
+.compare input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: ew-resize; margin: 0; }
+.compare .bar { position: absolute; top: 0; bottom: 0; left: 50%; width: 3px; background: #fff; pointer-events: none; box-shadow: 0 0 10px rgba(0,0,0,.4); }
+.compare .bar::after { content: "⇆"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 40px; height: 40px; border-radius: 50%; background: #fff; display: grid; place-items: center; color: var(--brand); font-weight: 700; }
+.compare .lbl { position: absolute; bottom: 12px; background: rgba(15,25,40,.7); color: #fff; padding: 4px 10px; border-radius: 7px; font-size: 13px; pointer-events: none; }
+
+/* galerie */
+.filters { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 26px; }
+.filters button { border: 1px solid var(--line); background: #fff; border-radius: 99px; padding: 7px 16px; font: inherit; font-size: 14px; cursor: pointer; }
+.filters button.on { background: var(--brand); color: #fff; border-color: var(--brand); }
+.gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.gallery figure { margin: 0; border-radius: 12px; overflow: hidden; position: relative; cursor: zoom-in; background: #ddd; }
+.gallery img { aspect-ratio: 16/9; object-fit: cover; width: 100%; transition: transform .35s; }
+.gallery figure:hover img { transform: scale(1.04); }
+.gallery figcaption { position: absolute; left: 0; right: 0; bottom: 0; padding: 26px 12px 10px; color: #fff; font-size: 14px; font-weight: 600; background: linear-gradient(transparent, rgba(0,0,0,.6)); }
+.lightbox { position: fixed; inset: 0; background: rgba(8,12,18,.9); display: none; align-items: center; justify-content: center; z-index: 60; padding: 20px; }
+.lightbox.open { display: flex; }
+.lightbox img { max-height: 90vh; border-radius: 10px; }
+.lightbox button { position: absolute; top: 14px; right: 18px; background: none; border: 0; color: #fff; font-size: 34px; cursor: pointer; }
+
+/* pentru cine */
+.who { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+.who .card { text-align: left; }
+
+/* prețuri */
+.toggle { display: inline-flex; background: #fff; border: 1px solid var(--line); border-radius: 99px; padding: 4px; margin-top: 18px; }
+.toggle button { border: 0; background: none; padding: 7px 16px; border-radius: 99px; font: inherit; font-size: 14px; cursor: pointer; }
+.toggle button.on { background: var(--brand); color: #fff; }
+.plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; align-items: stretch; }
+.plan { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 28px; display: flex; flex-direction: column; }
+.plan.pop { border: 2px solid var(--accent); position: relative; box-shadow: 0 18px 50px rgba(232,137,43,.15); }
+.plan.pop::before { content: "Cel mai ales"; position: absolute; top: -13px; left: 50%; transform: translateX(-50%); background: var(--accent); color: #fff; font-size: 12px; font-weight: 700; padding: 3px 12px; border-radius: 99px; }
+.plan h3 { margin: 0; font-size: 20px; }
+.plan .for { color: var(--muted); font-size: 14px; margin: 4px 0 16px; }
+.plan .price { font-size: 40px; font-weight: 800; line-height: 1; }
+.plan .price small { font-size: 15px; font-weight: 500; color: var(--muted); }
+.plan .per { color: var(--muted); font-size: 13px; min-height: 20px; margin: 6px 0 18px; }
+.plan ul { list-style: none; padding: 0; margin: 0 0 24px; flex: 1; }
+.plan li { padding: 6px 0 6px 26px; position: relative; font-size: 15px; }
+.plan li::before { content: "✓"; position: absolute; left: 0; color: #2f9e62; font-weight: 800; }
+.plan li.no { color: #9aa5b1; }
+.plan li.no::before { content: "–"; color: #9aa5b1; }
+.plan .btn { justify-content: center; }
+.fine { text-align: center; color: var(--muted); font-size: 13px; margin-top: 18px; }
+
+/* întrebări */
+.faq { max-width: 820px; margin: 0 auto; }
+.faq details { border-bottom: 1px solid var(--line); padding: 16px 4px; }
+.faq summary { cursor: pointer; font-weight: 600; font-size: 17px; list-style: none; display: flex; justify-content: space-between; gap: 12px; }
+.faq summary::after { content: "+"; font-size: 22px; color: var(--accent); line-height: 1; }
+.faq details[open] summary::after { content: "–"; }
+.faq p { color: var(--muted); margin: 10px 0 0; }
+
+.final { background: linear-gradient(140deg, #1f3a5f, #2b4f7e); color: #fff; text-align: center; border-radius: 22px; padding: 56px 24px; }
+.final h2 { font-size: clamp(26px, 3.4vw, 38px); margin: 0 0 10px; }
+.final p { color: #cdd8e5; margin: 0 0 26px; font-size: 18px; }
+
+footer { background: #111a24; color: #a9b6c4; padding: 48px 0 30px; font-size: 14px; }
+footer .cols { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 28px; }
+footer h4 { color: #fff; margin: 0 0 10px; font-size: 14px; }
+footer ul { list-style: none; padding: 0; margin: 0; }
+footer li { margin: 6px 0; }
+footer a { text-decoration: none; color: #a9b6c4; }
+footer a:hover { color: #fff; }
+footer .logo { color: #fff; }
+footer .bottom { border-top: 1px solid #243140; margin-top: 30px; padding-top: 18px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+
+@media (max-width: 960px) {
+  .nav ul, .nav .btn.hide-m { display: none; }
+  .burger { display: block; }
+  .nav.open ul { display: flex; flex-direction: column; position: absolute; top: 64px; left: 0; right: 0; background: #fff; padding: 14px 20px; border-bottom: 1px solid var(--line); gap: 12px; }
+  .hero .wrap { grid-template-columns: 1fr; padding-top: 48px; gap: 40px; }
+  .hero-art .pip { left: auto; right: -4%; width: 42%; }
+  .stats .wrap { grid-template-columns: repeat(2, 1fr); }
+  .step, .step:nth-child(even) { grid-template-columns: 1fr; gap: 24px; }
+  .step:nth-child(even) .txt { order: 0; }
+  .grid3, .plans { grid-template-columns: 1fr; }
+  .gallery { grid-template-columns: repeat(2, 1fr); }
+  .who { grid-template-columns: repeat(2, 1fr); }
+  footer .cols { grid-template-columns: 1fr 1fr; }
+  section { padding: 64px 0; }
+}
+@media (max-width: 560px) {
+  .gallery, .who { grid-template-columns: 1fr; }
+  .hero-art .pip { display: none; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav" id="nav">
+  <div class="wrap">
+    <a class="logo" href="#">
+      <svg viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#1f3a5f"/><path d="M6 17 16 8l10 9v8H6z" fill="none" stroke="#f2a541" stroke-width="3" stroke-linejoin="round"/></svg>
+      Planora 3D
+    </a>
+    <ul>
+      <li><a href="#creeaza-randari">Cum funcționează</a></li>
+      <li><a href="#functii">Funcții</a></li>
+      <li><a href="#galerie">Galerie</a></li>
+      <li><a href="#preturi">Prețuri</a></li>
+      <li><a href="#intrebari">Întrebări</a></li>
+    </ul>
+    <a class="btn primary hide-m" href="./editor.html">Încearcă gratuit</a>
+    <button class="burger" id="burger" aria-label="Meniu">☰</button>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <div>
+      <span class="eyebrow">Randări 3D pentru case și apartamente</span>
+      <h1>Arată-le clienților casa înainte să fie construită</h1>
+      <p class="lead">Desenezi planul în 2D, alegi mobila și materialele, setezi ora zilei și apeși „Randare”. În câteva minute ai imagini 3D gata de trimis, plus o vedere 360° prin care te poți plimba.</p>
+      <div class="ctas">
+        <a class="btn primary" href="./editor.html">Creează prima randare →</a>
+        <a class="btn ghost" href="#galerie">Vezi galeria</a>
+      </div>
+      <p class="note">Fără instalare și fără card. Merge direct în browser, pe calculator sau tabletă.</p>
+    </div>
+    <div class="hero-art">
+      <img class="main" src="./galerie/living-seara.jpg" alt="Randare 3D a unui living cu bucătărie deschisă, seara, cu lămpile aprinse" width="1600" height="900">
+      <span class="badge">Randare făcută în Planora 3D</span>
+      <img class="pip" src="./galerie/apartament-de-sus.jpg" alt="Vedere 3D de sus a unui apartament cu două camere" width="1600" height="900">
+    </div>
+  </div>
+</header>
+
+<div class="stats">
+  <div class="wrap">
+    <div><b>~5 min</b><span>de la plan la prima randare</span></div>
+    <div><b>până la 4K</b><span>imagini 3840 px pentru prezentări</span></div>
+    <div><b>360°</b><span>panorame pentru tururi virtuale</span></div>
+    <div><b>100%</b><span>în browser, datele rămân la tine</span></div>
+  </div>
+</div>
+
+<section id="creeaza-randari">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Cum creezi randări</span>
+      <h2>Trei pași de la schiță la imagine foto</h2>
+      <p>Nu ai nevoie de experiență în modelare 3D. Planul și vederea 3D se actualizează împreună, în timp real.</p>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="txt">
+          <span class="num">1</span>
+          <h3>Desenează planul în 2D</h3>
+          <p>Trage dreptunghiuri pentru camere sau desenează pereții colț cu colț. Cotele apar singure, iar camerele lipite împart același perete.</p>
+          <ul><li>Uși și ferestre puse cu un clic pe perete</li><li>Suprafața fiecărei camere calculată automat</li><li>Pornești de la zero sau de la un șablon</li></ul>
+        </div>
+        <img class="shot" src="./galerie/pas-1-plan.jpg" alt="Editorul Planora: plan 2D al unui apartament cu cote" loading="lazy" width="1200" height="760">
+      </div>
+      <div class="step">
+        <div class="txt">
+          <span class="num">2</span>
+          <h3>Amenajează și alege materialele</h3>
+          <p>Adaugi mobilier din catalog și îl muți direct pe plan. Pentru fiecare cameră alegi pardoseala, iar pentru fiecare perete culoarea.</p>
+          <ul><li>Canapele, paturi, bucătării, băi, lumini și decor</li><li>Copaci, piscine și mașini pentru exterior</li><li>Dimensiuni, rotire și culori la fiecare obiect</li></ul>
+        </div>
+        <img class="shot" src="./galerie/pas-2-amenajare.jpg" alt="Editorul Planora cu planul 2D și vederea 3D una lângă alta" loading="lazy" width="1200" height="760">
+      </div>
+      <div class="step">
+        <div class="txt">
+          <span class="num">3</span>
+          <h3>Setează lumina și apasă „Randare”</h3>
+          <p>Alegi ora zilei și orientarea casei, iar soarele și umbrele se mută după ele. Seara se aprind lămpile. Apoi alegi rezoluția și primești imaginea finală.</p>
+          <ul><li>Umbre moi și margini netede, calculate în mai multe treceri</li><li>Format peisaj, pătrat sau portret, până la 4K</li><li>Panoramă 360° din orice punct al casei</li></ul>
+        </div>
+        <img class="shot" src="./galerie/pas-3-randare.jpg" alt="Fereastra de randare foto cu imaginea finală a unui living" loading="lazy" width="1200" height="760">
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="alt" id="functii">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Funcții</span>
+      <h2>Tot ce îți trebuie pentru o prezentare convingătoare</h2>
+      <p>Un singur instrument pentru plan, amenajare și imagini, gândit pentru constructori, renovări și vânzări.</p>
+    </div>
+    <div class="grid3">
+      <div class="card"><div class="ic">📐</div><h3>Plan 2D cu cote</h3><p>Pereți, camere, uși și ferestre, aliniate automat pe grilă. Exporți planul ca imagine PNG.</p></div>
+      <div class="card"><div class="ic">🧊</div><h3>3D în timp real</h3><p>Orice schimbare din plan apare imediat în 3D. Rotești, te apropii și intri în camere.</p></div>
+      <div class="card"><div class="ic">☀️</div><h3>Lumină după ora zilei</h3><p>Dimineață, după-amiază sau seară, cu soare, umbre și lumina lunii. Orientarea nord se reglează.</p></div>
+      <div class="card"><div class="ic">🪵</div><h3>Materiale și culori</h3><p>Parchet, gresie, marmură și beton pentru podele, plus o paletă de culori pentru pereți.</p></div>
+      <div class="card"><div class="ic">🛋️</div><h3>Catalog de obiecte</h3><p>Mobilier pentru living, dormitor, bucătărie și baie, lumini, decor și obiecte de exterior.</p></div>
+      <div class="card"><div class="ic">📷</div><h3>Randări foto până la 4K</h3><p>Imagini cu umbre moi, gata de pus în ofertă, pe sait sau în anunțul imobiliar.</p></div>
+      <div class="card"><div class="ic">🌐</div><h3>Vederi 360°</h3><p>Panorame echirectangulare pe care le răsfoiești în editor sau le urci pe orice platformă 360°.</p></div>
+      <div class="card"><div class="ic">✂️</div><h3>Pereți tăiați</h3><p>Coboară pereții la 1 m pentru o vedere de ansamblu în care se văd toate camerele.</p></div>
+      <div class="card"><div class="ic">💾</div><h3>Proiecte și galerie</h3><p>Proiectul se salvează singur. Îl exporți ca fișier, iar randările rămân în „Randările mele”.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Zi sau seară</span>
+      <h2>Aceeași cameră, altă atmosferă</h2>
+      <p>Trage de bară ca să compari. Schimbi ora dintr-un glisor și randezi din nou.</p>
+    </div>
+    <div class="compare" id="compare">
+      <img src="./galerie/living-seara.jpg" alt="Livingul seara" loading="lazy">
+      <img class="top" src="./galerie/living-zi.jpg" alt="Livingul ziua" loading="lazy">
+      <div class="bar"></div>
+      <span class="lbl" style="left:12px">Ziua, 10:30</span><span class="lbl" style="right:12px">Seara, 20:45</span>
+      <input type="range" min="0" max="100" value="50" aria-label="Compară ziua cu seara">
+    </div>
+  </div>
+</section>
+
+<section class="alt" id="galerie">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Galerie</span>
+      <h2>Randări făcute cu editorul Planora</h2>
+      <p>Toate imaginile de mai jos sunt generate direct în browser, din șabloanele incluse.</p>
+    </div>
+    <div class="filters" id="filters">
+      <button class="on" data-f="toate">Toate</button>
+      <button data-f="interior">Interior</button>
+      <button data-f="exterior">Exterior</button>
+      <button data-f="plan">Vederi de ansamblu</button>
+    </div>
+    <div class="gallery" id="gallery">
+      <figure data-c="interior"><img src="./galerie/living-zi.jpg" alt="Living cu bucătărie deschisă, ziua" loading="lazy"><figcaption>Living cu bucătărie, ziua</figcaption></figure>
+      <figure data-c="interior"><img src="./galerie/living-seara.jpg" alt="Living cu bucătărie deschisă, seara" loading="lazy"><figcaption>Living cu bucătărie, seara</figcaption></figure>
+      <figure data-c="interior"><img src="./galerie/dormitor.jpg" alt="Dormitor cu pat dublu și fereastră mare" loading="lazy"><figcaption>Dormitor matrimonial</figcaption></figure>
+      <figure data-c="plan"><img src="./galerie/apartament-de-sus.jpg" alt="Vedere 3D de sus a apartamentului" loading="lazy"><figcaption>Apartament 2 camere, plan 3D</figcaption></figure>
+      <figure data-c="exterior"><img src="./galerie/casa-exterior.jpg" alt="Casă pe un nivel cu piscină, după-amiaza" loading="lazy"><figcaption>Casă cu piscină, după-amiaza</figcaption></figure>
+      <figure data-c="exterior"><img src="./galerie/casa-apus.jpg" alt="Casă cu piscină, seara, cu luminile aprinse" loading="lazy"><figcaption>Casă cu piscină, seara</figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Pentru cine</span>
+      <h2>Făcut pentru cei care vând sau construiesc case</h2>
+    </div>
+    <div class="who">
+      <div class="card"><div class="ic">🏗️</div><h3>Constructori</h3><p>Prezinți proiectele înainte de șantier și închei mai repede contractele.</p></div>
+      <div class="card"><div class="ic">🔨</div><h3>Renovări</h3><p>Arăți „înainte și după” cu materialele alese de client.</p></div>
+      <div class="card"><div class="ic">🏡</div><h3>Agenți imobiliari</h3><p>Planuri clare și imagini atractive pentru anunțuri, chiar și pentru proprietăți goale.</p></div>
+      <div class="card"><div class="ic">🎨</div><h3>Designeri de interior</h3><p>Testezi variante de culori și mobilier în câteva minute.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="alt" id="preturi">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Prețuri</span>
+      <h2>Începi gratuit, treci la Pro când ai nevoie</h2>
+      <p>Toate planurile includ planul 2D, vederea 3D și randările foto.</p>
+      <div class="toggle" id="billing"><button class="on" data-b="luna">Lunar</button><button data-b="an">Anual (−20%)</button></div>
+    </div>
+    <div class="plans">
+      <div class="plan">
+        <h3>Gratuit</h3><p class="for">Pentru a testa și proiecte personale</p>
+        <div class="price">0 lei</div><div class="per">pentru totdeauna</div>
+        <ul><li>Proiecte nelimitate în browser</li><li>Randări Full HD</li><li>Plan 2D exportat PNG</li><li class="no">Randări 4K</li><li class="no">Vederi 360°</li></ul>
+        <a class="btn outline" href="./editor.html">Începe gratuit</a>
+      </div>
+      <div class="plan pop">
+        <h3>Pro</h3><p class="for">Pentru profesioniști independenți</p>
+        <div class="price" data-m="149" data-y="119">149 lei <small>/lună</small></div><div class="per" data-per>facturat lunar</div>
+        <ul><li>Tot ce e în Gratuit</li><li>Randări 4K, calitate maximă</li><li>Vederi 360° nelimitate</li><li>Proiecte în cloud și pe mai multe dispozitive</li><li>Suport prin e-mail</li></ul>
+        <a class="btn primary" href="./editor.html">Încearcă Pro 14 zile</a>
+      </div>
+      <div class="plan">
+        <h3>Echipă</h3><p class="for">Pentru firme cu mai mulți utilizatori</p>
+        <div class="price" data-m="399" data-y="319">399 lei <small>/lună</small></div><div class="per" data-per>facturat lunar, până la 5 utilizatori</div>
+        <ul><li>Tot ce e în Pro</li><li>Bibliotecă comună de proiecte</li><li>Logo-ul firmei pe randări</li><li>Instruire pentru echipă</li><li>Suport prioritar</li></ul>
+        <a class="btn outline" href="#contact">Cere o ofertă</a>
+      </div>
+    </div>
+    <p class="fine">Prețurile sunt orientative. Plățile online și contul în cloud nu sunt încă activate, iar acum toate funcțiile editorului sunt deschise gratuit.</p>
+  </div>
+</section>
+
+<section id="intrebari">
+  <div class="wrap">
+    <div class="sec-head"><span class="eyebrow">Întrebări frecvente</span><h2>Ce întreabă lumea</h2></div>
+    <div class="faq">
+      <details open><summary>Trebuie să instalez ceva?</summary><p>Nu. Planora 3D merge în orice browser modern (Chrome, Edge, Firefox, Safari) pe calculator sau tabletă. Pe telefon poți vedea proiectele, dar desenatul e mai comod pe ecran mare.</p></details>
+      <details><summary>Cât durează o randare?</summary><p>Pe un laptop obișnuit, o imagine Full HD în calitate „Bună” durează câteva secunde, iar o imagine 4K în calitate maximă poate dura un minut sau două. Totul se calculează pe placa video a calculatorului tău.</p></details>
+      <details><summary>Unde se salvează proiectele?</summary><p>Proiectul curent se salvează automat în browser. Îl poți exporta oricând ca fișier .json și îl deschizi pe alt calculator. Randările stau în „Randările mele” și le descarci ca PNG.</p></details>
+      <details><summary>Pot folosi imaginile în anunțuri și oferte?</summary><p>Da. Imaginile pe care le generezi îți aparțin și le poți folosi oriunde: în oferte, pe sait, pe rețele sociale sau în anunțuri imobiliare.</p></details>
+      <details><summary>Ce este o vedere 360°?</summary><p>O panoramă care cuprinde tot ce se vede din jurul unui punct. În editor o rotești cu mouse-ul, iar fișierul descărcat (4096×2048) merge în orice vizualizator sau platformă care acceptă imagini 360°.</p></details>
+      <details><summary>Pot importa un plan făcut în altă aplicație?</summary><p>Momentan deschizi doar proiecte Planora (.json). Importul din imagini și din formate CAD e pe lista de funcții viitoare.</p></details>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:0" id="contact">
+  <div class="wrap">
+    <div class="final">
+      <h2>Prima ta randare e la cinci minute distanță</h2>
+      <p>Deschide editorul, alege șablonul „Apartament 2 camere” și apasă „📷 Randare”.</p>
+      <a class="btn primary" href="./editor.html">Deschide editorul →</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a class="logo" href="#"><svg viewBox="0 0 32 32" width="28" height="28"><rect width="32" height="32" rx="7" fill="#2b4f7e"/><path d="M6 17 16 8l10 9v8H6z" fill="none" stroke="#f2a541" stroke-width="3" stroke-linejoin="round"/></svg>Planora 3D</a>
+        <p>Plan 2D, amenajare 3D și randări pentru case, direct în browser.</p>
+      </div>
+      <div><h4>Produs</h4><ul><li><a href="./editor.html">Editor</a></li><li><a href="#functii">Funcții</a></li><li><a href="#galerie">Galerie</a></li><li><a href="#preturi">Prețuri</a></li></ul></div>
+      <div><h4>Șabloane</h4><ul><li><a href="./editor.html?sablon=apartament">Apartament 2 camere</a></li><li><a href="./editor.html?sablon=casa">Casă cu grădină</a></li><li><a href="./editor.html?sablon=gol">Plan gol</a></li></ul></div>
+      <div><h4>Ajutor</h4><ul><li><a href="#creeaza-randari">Cum funcționează</a></li><li><a href="#intrebari">Întrebări frecvente</a></li></ul></div>
+    </div>
+    <div class="bottom"><span>© <span id="yr">2026</span> Planora 3D. Proiect demonstrativ.</span><span>Motor 3D: three.js (licență MIT)</span></div>
+  </div>
+</footer>
+
+<div class="lightbox" id="lightbox"><button aria-label="Închide">×</button><img alt=""></div>
+
+<script>
+document.getElementById('yr').textContent = new Date().getFullYear();
+document.getElementById('burger').addEventListener('click', () => document.getElementById('nav').classList.toggle('open'));
+document.querySelectorAll('#nav ul a').forEach(a => a.addEventListener('click', () => document.getElementById('nav').classList.remove('open')));
+// comparație zi / seară
+const cmp = document.getElementById('compare');
+cmp.querySelector('input').addEventListener('input', e => {
+  const v = e.target.value;
+  cmp.querySelector('.top').style.clipPath = `inset(0 ${100 - v}% 0 0)`;
+  cmp.querySelector('.bar').style.left = v + '%';
+});
+// filtre galerie
+document.querySelectorAll('#filters button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('#filters button').forEach(x => x.classList.toggle('on', x === b));
+  document.querySelectorAll('#gallery figure').forEach(f => { f.style.display = b.dataset.f === 'toate' || f.dataset.c === b.dataset.f ? '' : 'none'; });
+}));
+// lightbox
+const lb = document.getElementById('lightbox');
+document.querySelectorAll('#gallery figure').forEach(f => f.addEventListener('click', () => { lb.querySelector('img').src = f.querySelector('img').src; lb.querySelector('img').alt = f.querySelector('img').alt; lb.classList.add('open'); }));
+lb.addEventListener('click', () => lb.classList.remove('open'));
+document.addEventListener('keydown', e => { if (e.key === 'Escape') lb.classList.remove('open'); });
+// facturare lunară / anuală
+document.querySelectorAll('#billing button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('#billing button').forEach(x => x.classList.toggle('on', x === b));
+  const year = b.dataset.b === 'an';
+  document.querySelectorAll('.price[data-m]').forEach(p => { p.innerHTML = `${year ? p.dataset.y : p.dataset.m} lei <small>/lună</small>`; });
+  document.querySelectorAll('[data-per]').forEach((p, i) => { p.textContent = (year ? 'facturat anual' : 'facturat lunar') + (i === 1 ? ', până la 5 utilizatori' : ''); });
+}));
+</script>
+</body>
+</html>

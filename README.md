@@ -25,6 +25,10 @@ Totul rulează local, în browser. Fișierele nu pleacă de pe dispozitiv.
 - **Pe orice site (gratuit):** căutare poze și muzică cu licență liberă (Openverse) și imagini AI rapide (Pollinations), cu buton „＋ În Materiale”.
 - **Doar în claude.ai, cu conectorul AI Personal:** imagini 8K și melodii generate (costă bani).
 
+## Planora 3D (randări 3D pentru case)
+
+În folderul `randare-3d/` e un sait separat: pagină de prezentare și editor de plan 2D/3D cu randări foto și vederi 360°. Detalii în [randare-3d/README.md](randare-3d/README.md).
+
 ## Pași următori
 
 - Server mic pentru import din linkuri care nu permit descărcarea directă
