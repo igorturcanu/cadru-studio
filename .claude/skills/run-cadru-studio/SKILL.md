@@ -24,9 +24,10 @@ Node and `require('playwright')` with its bundled Chromium. Both are already pre
 node .claude/skills/run-cadru-studio/driver.cjs all
 ```
 
-Flows: `smoke`, `create`, `export`, `publish`, `all`.
+Flows: `smoke`, `create`, `export`, `publish`, `videos`, `videoai`, `all`.
 
-- `smoke` loads all 8 tabs and takes a screenshot of each: `tab-<view>.png`.
+- `videoai` mocks the fal.ai queue (`queue.fal.run` submit → status → result) and the OpenAPI schema, generates a Kling clip from a still, runs „4K cu AI” and „4K local” (expects „Gata: 3840×2160”), then exports the Montaj at „Export 4K” and checks the file is 3840x2160. It needs ffmpeg to make the 3 s test clip.
+- `smoke` loads all the tabs and takes a screenshot of each: `tab-<view>.png`.
 - `create` does the following:
   - Types a script and clicks „Împarte în scene”.
   - Adds mocked music through „Adaugă ca muzică”.

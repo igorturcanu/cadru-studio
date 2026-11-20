@@ -44,6 +44,8 @@ button,.btn{font:inherit;font-weight:500;color:var(--fg);background:var(--panel2
 button:hover,.btn:hover{border-color:var(--muted)}
 button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button.create{background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;border-color:transparent;font-weight:600;box-shadow:0 2px 10px color-mix(in srgb,#db2777 35%,transparent)}
+button.create:hover{filter:brightness(1.1);border-color:transparent}
 button.rec{background:var(--rec);color:#fff;border-color:var(--rec)}
 button.ghost{background:transparent}
 button.danger{color:var(--rec)}
@@ -206,7 +208,7 @@ td.w{color:var(--muted);white-space:nowrap}
 .toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:13px;z-index:30}
 
 @media (max-width:1050px){.editor{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.stage{grid-column:1/-1;order:-1}}
-@media (max-width:1360px){.logo small{display:none}nav.tabs a{padding:6px 8px}}
+@media (max-width:1480px){.logo small{display:none}nav.tabs a{padding:6px 8px}}
 @media (max-width:720px){.editor,.scen{grid-template-columns:minmax(0,1fr)}.steps{grid-template-columns:minmax(0,1fr)}.logo small{display:none}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -222,6 +224,7 @@ td.w{color:var(--muted);white-space:nowrap}
       <a href="#proiecte" data-view="proiecte">Proiecte</a>
       <a href="#videoclipuri" data-view="videoclipuri">Videoclipuri</a>
       <a href="#publica" data-view="publica">Publică</a>
+      <a href="#videoai" data-view="videoai">Video AI 4K</a>
       <a href="#ai" data-view="ai">AI Personal</a>
       <a href="#ghid" data-view="ghid">Ghid</a>
     </nav>
@@ -233,6 +236,11 @@ td.w{color:var(--muted);white-space:nowrap}
         <option value="1:1">1:1 Instagram</option>
       </select>
     </label>
+    <select id="quality" style="width:auto" title="Calitatea fișierului exportat" aria-label="Calitate export">
+      <option value="720">Export 720p</option>
+      <option value="1080">Export 1080p</option>
+      <option value="2160">Export 4K</option>
+    </select>
     <button id="btnTheme" title="Schimbă tema: automată, luminoasă sau întunecată" style="min-width:44px">◐</button>
     <button id="btnSave" title="Salvează proiectul în acest browser">Salvează</button>
     <button class="rec" id="btnExport">● Exportă video</button>
@@ -559,12 +567,147 @@ td.w{color:var(--muted);white-space:nowrap}
   </div>
 </main>
 
+<!-- VIDEO AI 4K -->
+<main class="view wrap" id="v-videoai" hidden>
+  <div class="aigrid">
+    <section class="panel wide">
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><h2>Video AI 4K</h2><span class="kind" id="xState">nicio cheie</span><span class="cost">fal.ai costă</span><span class="free">local gratuit</span></div>
+      <p class="note" style="margin:0">Generezi clipuri cu Gemini Omni Flash, Kling 3.0, Seedance 2.5 sau Veo 3.1 (sau doar scrii scenele cu Regizorul AI și le faci în orice site gratuit), le crești la 4K și le pui direct în Materiale. Modelele din cloud merg printr-un singur cont fal.ai, cu cheia ta, și plătești doar ce generezi. Modelele deschise (MiniMax H3, Wan) rulează gratuit pe calculatorul tău, prin ComfyUI.</p>
+      <div class="howto">
+        <div><b>1</b>Pui cheia fal.ai mai jos (o singură dată).</div>
+        <div><b>2</b>Alegi modelul, scrii ce vrei să se vadă și apeși „Generează clipul”.</div>
+        <div><b>3</b>Clipul ajunge în Materiale. Îl crești la 4K, îl pui pe timeline și exporți în 4K.</div>
+      </div>
+      <details id="xKeyBox" style="border:1px solid var(--line);border-radius:10px;padding:8px 10px">
+        <summary style="cursor:pointer;font-weight:600">🔑 Cheia ta fal.ai <span class="kind" id="xKeyState"></span></summary>
+        <p class="note" style="margin:6px 0">Faci cont pe <a href="https://fal.ai/dashboard/keys" target="_blank" rel="noopener">fal.ai/dashboard/keys ↗</a>, încarci credit și creezi o cheie. Cheia se păstrează doar în acest browser și pleacă doar spre queue.fal.run. Nu o pune în cod și nu o trimite nimănui.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end">
+          <label class="f" style="flex:1;min-width:220px">Cheia fal.ai<input type="password" id="xKey" autocomplete="off" placeholder="xxxxxxxx-xxxx-…:…"></label>
+          <button class="primary" id="xKeySave">Salvează</button><button id="xKeyDel">Șterge cheia</button>
+        </div>
+        <p class="note" id="xKeyNote" style="margin:6px 0 0"></p>
+      </details>
+    </section>
+
+    <section class="panel wide" style="border-color:#a855f7">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><h2>▶ Totul automat</h2><span class="note">idee → scene → clipuri → muzică → titlu → montaj → export 4K</span></div>
+      <label class="f">Ce film vrei (câteva fraze, în orice limbă)<textarea id="aIdea" style="min-height:70px">Un tânăr magician găsește într-o pădure veche o poartă de piatră care se aprinde. Trece prin ea și ajunge într-un oraș plutitor deasupra norilor, cu dragoni.</textarea></label>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px">
+        <label class="f">Model<select id="aModel"></select></label>
+        <label class="f">Stil<select id="aStyle"><option>Fantasy epic, ca un film mare</option><option>Cinematic realist</option><option>Natură și relaxare, fără oameni</option><option>Documentar</option><option>Animație 3D în stil Pixar</option><option>Anime</option></select></label>
+        <label class="f">Scene<select id="aN"><option>3</option><option selected>5</option><option>6</option><option>8</option><option>10</option></select></label>
+        <label class="f">Format<select id="aRatio"><option value="16:9">16:9 YouTube</option><option value="9:16">9:16 Shorts</option></select></label>
+        <label class="f">Muzică gratuită<select id="aMusic"><option value="epic orchestral">Epică</option><option value="calm ambient">Liniștită</option><option value="emotional piano">Emoționantă</option><option value="suspense tension">Tensiune</option><option value="local">Generată local (ComfyUI, ACE-Step)</option><option value="">Fără muzică</option></select></label>
+        <label class="f">Durata videoului<select id="aLen"><option value="0">Doar scenele (scurt)</option><option value="600">10 minute (în buclă)</option><option value="3600">1 oră (în buclă)</option><option value="10800">3 ore (în buclă)</option></select></label>
+        <label class="f">Limba titlului<select id="aLang"><option value="Romanian">română</option><option value="Russian">rusă</option><option value="English">engleză</option></select></label>
+      </div>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:13px">
+        <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="aReplace" checked> Înlocuiește ce e pe timeline</label>
+        <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="aExport" checked> Pornește singur exportul 4K la final</label>
+        <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="aUp"> 4K cu AI pe fiecare clip <span class="cost">costă</span></label>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="create" id="aGo" style="font-size:15px;padding:9px 18px">▶ Fă tot automat</button><span class="note">Cu cheia Groq (gratuită) scrie scenele, muzica și titlul. Cu cheia fal.ai face și clipurile, apoi montajul și exportul.</span></div>
+      <div id="aSteps" style="display:grid;gap:4px;font-size:13px"></div>
+      <p class="note" id="aNote" style="margin:0"></p>
+      <div id="aOutBox" hidden style="display:grid;gap:6px"><label class="f">Titlu și descriere pentru YouTube<textarea id="aOut" style="min-height:140px"></textarea></label><button id="aCopy" style="justify-self:start">Copiază pentru YouTube</button></div>
+    </section>
+
+    <section class="panel">
+      <h2>Generează un clip</h2>
+      <label class="f">Model<select id="xModel"></select></label>
+      <p class="note" id="xModelInfo" style="margin:0"></p>
+      <details id="cBox" open hidden style="border:1px solid var(--line);border-radius:10px;padding:8px 10px">
+        <summary style="cursor:pointer;font-weight:600">🖥 Local: ComfyUI <span class="kind" id="cState"></span></summary>
+        <ol class="note" style="margin:6px 0;padding-left:18px">
+          <li>Instalezi ComfyUI (0.30 sau mai nou) și modelul, de exemplu MiniMax H3 din Templates, sau Wan.</li>
+          <li>Pornești ComfyUI cu <code>--enable-cors-header</code>, ca acest site să-i poată trimite scenele.</li>
+          <li>În căsuța de prompt pozitiv scrii <code>{{PROMPT}}</code>, apoi Workflow → Export (API) și încarci fișierul aici.</li>
+        </ol>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end">
+          <label class="f" style="flex:1;min-width:200px">Adresa ComfyUI<input type="text" id="cUrl" placeholder="http://127.0.0.1:8188"></label>
+          <button class="primary" id="cWfBtn">Încarcă workflow (API)</button><input type="file" id="cWf" accept=".json,application/json" hidden><button id="cTest">Verifică legătura</button>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px"><b style="font-size:13px">Muzică locală (ACE-Step)</b><span class="kind" id="cStateM"></span><button id="cWfMBtn">Încarcă workflow muzică (API)</button><input type="file" id="cWfM" accept=".json,application/json" hidden></div>
+        <p class="note" style="margin:4px 0 0">În workflow-ul ACE-Step pui <code>{{PROMPT}}</code> în câmpul de stil (tags) și, opțional, <code>{{SECONDS}}</code> la durată. Cadru îl folosește la „Totul automat” cu Muzică: „Generată local”.</p>
+        <p class="note" id="cNote" style="margin:6px 0 0">Merge și cu un server cu GPU închiriat: pui adresa lui în loc de 127.0.0.1.</p>
+      </details>
+      <label class="f">Ce se vede în clip (merge cel mai bine în engleză)<textarea id="xPrompt" style="min-height:110px">Slow aerial drone shot over a misty mountain lake at sunrise, golden light on the water, pine forests, calm and cinematic, 4K nature documentary</textarea></label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button id="xBetter">✦ Fă promptul mai bun</button><span class="note" id="xBetterNote" style="align-self:center"></span></div>
+      <div id="xGenOpts" style="display:contents">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px">
+        <label class="f">Format<select id="xRatio"></select></label>
+        <label class="f">Rezoluție<select id="xRes"></select></label>
+        <label class="f">Durată<select id="xDur"></select></label>
+        <label class="f" style="align-content:end"><span style="display:flex;gap:6px;align-items:center;color:var(--fg)"><input type="checkbox" id="xAudio"> Sunet</span></label>
+      </div>
+      </div>
+      <label class="f">Pornește de la o poză (opțional)<span style="display:flex;gap:8px;align-items:center"><button id="xImgBtn">＋ Alege poza</button><span class="note" id="xImgName">fără poză: clipul pornește doar din text</span><button class="ghost" id="xImgDel" hidden>✕</button></span><input type="file" id="xImg" accept="image/*" hidden></label>
+      <details><summary style="cursor:pointer;font-size:13px">Avansat</summary>
+        <div style="display:grid;gap:8px;margin-top:8px">
+          <label class="f">Endpoint fal.ai (îl poți schimba dacă fal.ai redenumește modelul)<input type="text" id="xEndpoint"></label>
+          <label class="f">Parametri în plus, JSON (se adaugă peste cei de mai sus)<textarea id="xExtra" style="min-height:50px" placeholder='{"negative_prompt": "blur, text, watermark"}'></textarea></label>
+        </div>
+      </details>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button class="create" id="xGo">Generează clipul</button><span class="note" id="xCost"></span></div>
+      <p class="note" id="xNote" style="margin:0"></p>
+    </section>
+
+    <section class="panel">
+      <h2>Crește la 4K</h2>
+      <p class="note" style="margin:0">Două căi. Alegi pe clipul de mai jos ce vrei.</p>
+      <div class="res">
+        <div class="step"><b>4K local <span class="free">gratuit</span></b><span class="note">Browserul tău redesenează clipul la 3840×2160 cu bitrate mare. Nu inventează detalii noi, dar YouTube tratează video-ul ca 4K și îi dă o calitate de redare mult mai bună.</span></div>
+        <div class="step"><b>4K cu AI <span class="cost">costă bani</span></b><span class="note">ByteDance Upscaler pe fal.ai refă detaliile până la 4K. Merge pe clipurile generate aici (au deja adresă pe fal.ai) sau pe un link direct .mp4.</span></div>
+      </div>
+      <label class="f">Link direct către un .mp4 (opțional)<span style="display:flex;gap:6px"><input type="text" id="xUpUrl" placeholder="https://…/clip.mp4"><button id="xUpGo">4K cu AI</button></span></label>
+      <h2 style="margin-top:6px">Export 4K din Montaj</h2>
+      <p class="note" style="margin:0">Sus, lângă Format, alegi „Export 4K”. Exportul din Montaj iese atunci la 3840×2160 (sau 2160×3840 pentru Shorts).</p>
+    </section>
+
+    <section class="panel wide">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><h2>Regizor AI: din câteva fraze, un film pe scene</h2><span class="free">gratuit cu Groq</span></div>
+      <p class="note" style="margin:0">Scrii simplu, ca unui om, ce film vrei. Regizorul îl împarte în scene și scrie pentru fiecare promptul complet, cu mișcarea camerei (dronă, apropiere, travling, orbită) și unghiul. Apoi generezi scenele aici cu fal.ai sau copiezi prompturile în orice site cu credite gratuite (Digen AI, Kling, Hailuo), descarci clipurile și le încarci înapoi.</p>
+      <label class="f">Ce film vrei (cu cuvintele tale, în orice limbă)<textarea id="dIdea" style="min-height:70px">Un tânăr magician găsește într-o pădure veche o poartă de piatră care se aprinde. Trece prin ea și ajunge într-un oraș plutitor deasupra norilor, cu dragoni.</textarea></label>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px">
+        <label class="f">Stil<select id="dStyle"><option>Fantasy epic, ca un film mare</option><option>Cinematic realist</option><option>Natură și relaxare, fără oameni</option><option>Documentar</option><option>Animație 3D în stil Pixar</option><option>Anime</option></select></label>
+        <label class="f">Câte scene<select id="dN"><option>3</option><option selected>5</option><option>6</option><option>8</option><option>10</option></select></label>
+        <label class="f" style="align-content:end"><span style="display:flex;gap:6px;align-items:center;color:var(--fg)"><input type="checkbox" id="dSame" checked> Același personaj în toate</span></label>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button class="create" id="dGo">✦ Fă scenele</button><button class="create" id="dAll" hidden>Generează toate scenele (fal.ai)</button><button id="dCopyAll" hidden>Copiază toate prompturile</button><a class="btn" href="https://digen.ai" target="_blank" rel="noopener">Deschide Digen AI ↗</a><button id="dUpload">＋ Încarcă clipurile descărcate</button><input type="file" id="dFile" multiple accept="video/*" hidden></div>
+      <p class="note" id="dNote" style="margin:0"></p>
+      <div class="res" id="dScenes"></div>
+    </section>
+
+    <section class="panel wide">
+      <div style="display:flex;gap:8px;align-items:center"><h2>Clipurile tale AI</h2><div class="spacer"></div><button id="xToMontaj">Mergi în Montaj →</button></div>
+      <div class="res" id="xJobs"><p class="empty">Niciun clip încă. Clipurile generate apar aici și în Materiale.</p></div>
+    </section>
+  </div>
+</main>
+
 <!-- GHID -->
 <main class="view wrap" id="v-ghid" hidden>
   <div class="guide">
     <div style="display:grid;gap:8px">
       <h1>Cum funcționează Cadru, buton cu buton</h1>
       <p>Cadru e un studio video care merge direct în browser. Încarci filmele și pozele tale, le pui pe timeline, adaugi text, voce și muzică, apoi exporți un video gata de urcat pe YouTube. Fișierele tale nu pleacă nicăieri: totul se procesează pe calculatorul tău.</p>
+    </div>
+
+    <div>
+      <h3>Video AI 4K: clipuri cu Gemini Omni Flash, Kling 3.0 și Seedance 2.5</h3>
+      <p>În fila <b>Video AI 4K</b> scrii ce vrei să se vadă, alegi modelul și primești un clip gata făcut, pus direct în Materiale. Toate modelele merg printr-un singur cont <a href="https://fal.ai" target="_blank" rel="noopener">fal.ai ↗</a>, cu cheia ta.</p>
+      <ul>
+        <li><b>Gemini Omni Flash 1.2</b>: realism și sunet nativ, până la 4K, 3–15 s. Bun pentru oameni și dialog.</li>
+        <li><b>Kling 3.0 Pro / 4K</b>: cea mai bună mișcare de cameră. Varianta 4K generează direct în 3840×2160, dar e cea mai scumpă.</li>
+        <li><b>Seedance 2.5</b> și <b>Flash</b>: clipuri lungi, până la 30 s dintr-o bucată, la 720p. Flash e ieftin, bun pentru teste.</li>
+        <li><b>Veo 3.1</b>: modelul mare de la Google, cu sunet, până la 8 s.</li>
+      </ul>
+      <p><b>Ce e gratuit și ce costă.</b> Generarea clipurilor costă mereu bani: plătești direct la fal.ai, per secundă de video. „4K cu AI” (ByteDance Upscaler) costă și el. Sunt gratuite: „4K local” (browserul redesenează clipul la 3840×2160), exportul 4K din Montaj (sus: „Export 4K”) și „Fă promptul mai bun” cu cheia Groq gratuită.</p>
+      <p><b>Ce înseamnă 4K local.</b> Nu inventează detalii noi, doar mărește curat clipul. YouTube dă însă video-urilor urcate în 4K un bitrate mult mai mare, deci și clipurile de 720p/1080p arată vizibil mai bine pe canal.</p>
+      <p><b>▶ Totul automat.</b> Scrii ideea și apeși un singur buton. Cadru face scenele, clipurile, muzica gratuită, titlul și descrierea, pune totul pe timeline și pornește exportul 4K. Poți alege și 10 minute, 1 oră sau 3 ore: clipurile se repetă în buclă, ca la videourile relaxante.</p>
+      <p><b>Local și gratuit: ComfyUI.</b> Dacă ai o placă video puternică (sau închiriezi un server cu GPU), rulezi modele deschise ca MiniMax H3 sau Wan în ComfyUI și Cadru le trimite scenele direct. Nu plătești per clip. Pornești ComfyUI cu <code>--enable-cors-header</code>, pui <code>{{PROMPT}}</code> în promptul pozitiv, exporți cu Workflow → Export (API) și încarci fișierul în fila Video AI 4K.</p>
+      <p><b>Regizor AI.</b> Scrii în câteva fraze ce film vrei. Regizorul (gratuit, cu cheia Groq) îl împarte în scene și scrie pentru fiecare promptul complet, cu mișcarea camerei. Generezi scenele cu fal.ai sau copiezi prompturile în site-uri cu credite gratuite, de exemplu Digen AI, apoi încarci clipurile descărcate.</p>
+      <p><b>Pe calculator.</b> Unealta <code>tools/ai_video_4k.py</code> face același lucru din linia de comandă, plus 4K cu ffmpeg și lipirea mai multor clipuri într-un singur video 4K.</p>
     </div>
 
     <div>
@@ -711,6 +854,9 @@ td.w{color:var(--muted);white-space:nowrap}
 const $ = s => document.querySelector(s);
 const uid = () => Math.random().toString(36).slice(2, 9);
 const FORMATS = {'16:9':[1280,720],'9:16':[720,1280],'1:1':[1080,1080]};
+let EXPQ = 1; /* scara exportului: 1 = 720p, 1.5 = 1080p, 3 = 4K */
+const expDims = q => FORMATS[S.format].map(x => Math.round(x * q / 2) * 2);
+const expScale = () => { const t = +(document.querySelector('#quality')?.value || 1080); return Math.max(1, t / Math.min(...FORMATS[S.format])); };
 const S = { format:'16:9', media:[], clips:[], sel:null, audio:{voce:null, muzica:null}, vol:{voce:1, muzica:0.35}, pps:40 };
 const cv = $('#cv'), g = cv.getContext('2d');
 let T = 0, playing = false, last = 0, rec = null;
@@ -850,7 +996,7 @@ function drawCounter(c, local, d, W, H){
   const bw = g.measureText(txt).width * e; g.shadowBlur = 0; g.fillRect(W / 2 - bw / 2, y + fs * 0.62, bw, Math.max(3, fs * 0.05)); g.restore();
 }
 function draw(t){
-  const [W, H] = FORMATS[S.format];
+  const [W, H] = expDims(rec ? EXPQ : 1);
   if (cv.width !== W || cv.height !== H){ cv.width = W; cv.height = H; }
   g.save(); g.fillStyle = '#000'; g.fillRect(0, 0, W, H);
   const hit = clipAt(t);
@@ -1401,13 +1547,14 @@ $('#btnExport').onclick = async () => {
   }
   if (long && mode === 'mem') mode = 'parts';
   location.hash = 'montaj'; ensureAudio(); await wakeOn();
+  EXPQ = expScale(); { const [w, h] = expDims(EXPQ); cv.width = w; cv.height = h; }
   const vs = cv.captureStream(30); const tracks = [...vs.getVideoTracks()]; if (recDest) tracks.push(...recDest.stream.getAudioTracks());
   const stream = new MediaStream(tracks);
   const nParts = mode === 'parts' ? Math.ceil(tot / PART) : 1;
   rec = { cancel:false, mode, part:0, nParts, partEnd: mode === 'parts' ? PART : Infinity, mr:null, writeQ:Promise.resolve(), written:0 };
   const startPart = () => {
     const chunks = []; let mr;
-    try { mr = new MediaRecorder(stream, mime ? {mimeType:mime, videoBitsPerSecond: long ? 3e6 : 6e6} : undefined); } catch(e){ toast('Exportul nu a putut porni în acest browser.'); rec = null; wakeOff(); $('#modal').hidden = true; return; }
+    try { mr = new MediaRecorder(stream, mime ? {mimeType:mime, videoBitsPerSecond: long ? Math.min(12e6, 3e6 * Math.max(1, EXPQ * EXPQ / 1.5)) : 6e6 * Math.max(1, EXPQ * EXPQ / 1.5)} : undefined); } catch(e){ toast('Exportul nu a putut porni în acest browser.'); rec = null; wakeOff(); $('#modal').hidden = true; return; }
     mr.ondataavailable = e => { if (!e.data.size) return; if (rec?.mode === 'disk'){ const d = e.data; rec.written += d.size; rec.writeQ = rec.writeQ.then(() => writable.write(d)); } else chunks.push(e.data); };
     mr.onstop = async () => {
       if (!rec || rec.cancel){ if (writable) try { await writable.abort(); } catch(e){} rec = null; wakeOff(); return; }
@@ -1673,8 +1820,342 @@ applyTheme((() => { try { return localStorage.getItem('cadru-theme') || ''; } ca
 $('#btnTheme').onclick = () => { const cur = document.documentElement.dataset.theme || ''; const t = THEMES[(THEMES.indexOf(cur) + 1) % 3];
   applyTheme(t); try { t ? localStorage.setItem('cadru-theme', t) : localStorage.removeItem('cadru-theme'); } catch(e){} toast('Tema: ' + THEME_LBL[t].slice(2)); };
 
+/* ---------- Video AI 4K: modele video prin fal.ai (cheia utilizatorului) ---------- */
+const XKEY = 'cadru-fal-key', XJOBS = 'cadru-fal-jobs', XQUAL = 'cadru-quality';
+const XM = [
+  { id:'omni', name:'Gemini Omni Flash 1.2 (Google)', t2v:'google/gemini-omni-flash/v1.2/text-to-video', i2v:'google/gemini-omni-flash/image-to-video', img:'image_url',
+    ratios:['16:9','9:16'], res:['720p','1080p','4k'], resDef:'1080p', durs:['4','6','8','10','15'], durDef:'8', audio:true,
+    info:'Realism și sunet nativ, 360p până la 4K, 3–15 secunde. Bun pentru scene cu oameni și dialog.' },
+  { id:'kling', name:'Kling 3.0 Pro (1080p)', t2v:'fal-ai/kling-video/v3/pro/text-to-video', i2v:'fal-ai/kling-video/v3/pro/image-to-video', img:'start_image_url',
+    ratios:['16:9','9:16','1:1'], res:null, durs:['5','10','15'], durDef:'5', audio:true,
+    info:'Mișcare de cameră foarte bună și fizică realistă, 1080p. Bun pentru natură, drone, peisaje.' },
+  { id:'kling4k', name:'Kling 3.0 4K nativ', t2v:'fal-ai/kling-video/v3/4k/text-to-video', i2v:'fal-ai/kling-video/v3/4k/image-to-video', img:'start_image_url',
+    ratios:['16:9','9:16','1:1'], res:null, durs:['5','10','15'], durDef:'5', audio:true, perSec:0.42,
+    info:'Același Kling 3.0, dar generat direct în 4K. Cel mai scump, fără nevoie de upscale.' },
+  { id:'seed', name:'Seedance 2.5 (ByteDance)', t2v:'bytedance/seedance-2.5/text-to-video', i2v:'bytedance/seedance-2.5/image-to-video', img:'image_url',
+    ratios:['16:9','9:16','1:1','21:9'], res:['480p','720p'], resDef:'720p', durs:['5','10','15','30'], durDef:'10', audio:true,
+    info:'Clipuri lungi, până la 30 de secunde dintr-o bucată, cu sunet. Iese la 720p, apoi îl crești la 4K.' },
+  { id:'seedflash', name:'Seedance 2.5 Flash (ieftin, rapid)', t2v:'bytedance/seedance-2.5/flash/text-to-video', i2v:null, img:'image_url',
+    ratios:['16:9','9:16','1:1','21:9'], res:['480p','720p'], resDef:'720p', durs:['5','10','15','30'], durDef:'10', audio:true,
+    info:'Varianta rapidă și ieftină. Bună pentru teste de prompt înainte de varianta mare.' },
+  { id:'veo', name:'Veo 3.1 (Google)', t2v:'fal-ai/veo3.1', i2v:'fal-ai/veo3.1/image-to-video', img:'image_url',
+    ratios:['16:9','9:16'], res:['720p','1080p','4k'], resDef:'1080p', durs:['4s','6s','8s'], durDef:'8s', audio:true,
+    info:'Modelul video mare de la Google, cu sunet. 720p, 1080p sau 4K, până la 8 secunde.' },
+  { id:'comfy', name:'Local, gratuit: ComfyUI (MiniMax H3, Wan…)', local:true, t2v:'comfy', i2v:null, img:'image',
+    ratios:['16:9','9:16','1:1'], res:null, durs:['5'], durDef:'5', audio:false,
+    info:'Rulează pe placa ta video (sau pe un server cu GPU închiriat), prin ComfyUI. Nu plătești per clip. Durata, rezoluția și sunetul le alegi în workflow-ul din ComfyUI.' },
+];
+const CURL = 'cadru-comfy-url', CWF = 'cadru-comfy-wf', CWFM = 'cadru-comfy-wf-music';
+const xReady = () => xModel().local ? !!xGet(CWF) : !!xGet(XKEY);
+const xGet = k => { try { return localStorage.getItem(k) || ''; } catch(e){ return ''; } };
+const xSet = (k, v) => { try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch(e){} };
+let xImg = null, xSchema = {}; const xJobs = [];
+try { for (const j of JSON.parse(xGet(XJOBS) || '[]')) xJobs.push(j); } catch(e){}
+const xSaveJobs = () => xSet(XJOBS, JSON.stringify(xJobs.slice(0, 30).map(({media, busy, promise, ...j}) => j)));
+const xModel = () => XM.find(m => m.id === $('#xModel').value) || XM[0];
+const xEsc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function xOpts(sel, vals, def){ const cur = sel.value; sel.innerHTML = vals.map(v => `<option value="${xEsc(v)}">${xEsc(v === 'auto' ? 'automat' : /^\d+s?$/.test(v) ? parseInt(v) + ' s' : v === '4k' ? '4K' : v)}</option>`).join(''); sel.value = vals.includes(cur) ? cur : (def ?? vals[0]); }
+function xKeyUI(){ const k = !!xGet(XKEY); $('#xState').textContent = k ? 'cheie fal.ai salvată' : 'nicio cheie'; $('#xKeyState').textContent = k ? 'salvată' : 'lipsește'; if (!k) $('#xKeyBox').open = true; }
+function xCost(){ const m = xModel(); const d = parseInt($('#xDur').value) || 0;
+  $('#xCost').innerHTML = (m.perSec && d ? `aprox. $${(m.perSec * d).toFixed(2)} pentru ${d} s · ` : '') + `<a href="https://fal.ai/models/${xEsc($('#xEndpoint').value.trim())}" target="_blank" rel="noopener">prețul exact pe fal.ai ↗</a>`; }
+function xEndpointDef(){ const m = xModel(); return (xImg && m.i2v) ? m.i2v : m.t2v; }
+function xModelUI(){ const m = xModel(); $('#cBox').hidden = !m.local; $('#xGenOpts').hidden = !!m.local;
+  if (m.local){ $('#xModelInfo').textContent = m.info; $('#xEndpoint').value = 'comfy'; $('#xCost').innerHTML = '<span class="free">gratuit</span> rulează pe calculatorul tău'; cUI(); return; }
+  $('#xModelInfo').textContent = m.info + (xImg && !m.i2v ? ' Acest model pornește doar din text, poza va fi ignorată.' : '');
+  xOpts($('#xRatio'), m.ratios, $('#format').value in {'16:9':1,'9:16':1,'1:1':1} && m.ratios.includes($('#format').value) ? $('#format').value : m.ratios[0]);
+  $('#xRes').disabled = !m.res; xOpts($('#xRes'), m.res || ['nativ'], m.resDef);
+  xOpts($('#xDur'), m.durs, m.durDef); $('#xAudio').disabled = !m.audio; $('#xAudio').checked = false;
+  $('#xEndpoint').value = xEndpointDef(); xCost(); xLoadSchema($('#xEndpoint').value); }
+/* Citește schema live a modelului de pe fal.ai, dacă browserul o poate încărca, ca opțiunile să fie exact cele acceptate acum. */
+async function xLoadSchema(ep){
+  if (xSchema[ep] !== undefined){ xApplySchema(ep); return; }
+  xSchema[ep] = null;
+  try { const ctl = new AbortController(); const tm = setTimeout(() => ctl.abort(), 6000);
+    const r = await fetch('https://fal.ai/api/openapi/queue/openapi.json?endpoint_id=' + encodeURIComponent(ep), {signal:ctl.signal}); clearTimeout(tm);
+    if (!r.ok) return; const j = await r.json(); const sch = j.components?.schemas || {};
+    let ref = null; for (const p of Object.values(j.paths || {})){ const rb = p.post?.requestBody?.content?.['application/json']?.schema; if (rb?.$ref){ ref = rb.$ref; break; } }
+    const inp = ref ? sch[ref.split('/').pop()] : null; if (!inp?.properties) return;
+    const en = pr => { if (!pr) return null; const e = pr.enum || pr.anyOf?.find(x => x.enum)?.enum || (pr.$ref ? sch[pr.$ref.split('/').pop()]?.enum : null) || pr.allOf?.map(x => x.$ref && sch[x.$ref.split('/').pop()]?.enum).find(Boolean); return e ? e.map(String) : null; };
+    const P = inp.properties; xSchema[ep] = { props:Object.keys(P), ratios:en(P.aspect_ratio), res:en(P.resolution), durs:en(P.duration),
+      durDef:P.duration?.default != null ? String(P.duration.default) : null, resDef:P.resolution?.default || null, img:['image_url','start_image_url','first_frame_url','image'].find(k => P[k]) || null };
+    if ($('#xEndpoint').value.trim() === ep) xApplySchema(ep);
+  } catch(e){}
+}
+function xApplySchema(ep){ const s = xSchema[ep]; if (!s) return;
+  if (s.ratios) xOpts($('#xRatio'), s.ratios); if (s.res){ $('#xRes').disabled = false; xOpts($('#xRes'), s.res, s.resDef); } else if (!s.props.includes('resolution')){ $('#xRes').disabled = true; xOpts($('#xRes'), ['nativ']); }
+  if (s.durs) xOpts($('#xDur'), s.durs, s.durDef); $('#xAudio').disabled = !s.props.includes('generate_audio');
+  $('#xModelInfo').textContent = xModel().info + ' Opțiunile sunt citite live de pe fal.ai.'; xCost(); }
+function xBody(){ const m = xModel(), ep = $('#xEndpoint').value.trim(), s = xSchema[ep];
+  const has = k => s ? s.props.includes(k) : true;
+  const b = { prompt:$('#xPrompt').value.trim() };
+  if (has('aspect_ratio')) b.aspect_ratio = $('#xRatio').value;
+  if (!$('#xRes').disabled && has('resolution')) b.resolution = $('#xRes').value;
+  if (has('duration')) b.duration = $('#xDur').value;
+  if (!$('#xAudio').disabled && has('generate_audio')) b.generate_audio = $('#xAudio').checked;
+  if (xImg && ep !== m.t2v) b[(s && s.img) || m.img] = xImg.data;
+  const ex = $('#xExtra').value.trim(); if (ex){ try { Object.assign(b, JSON.parse(ex)); } catch(e){ throw new Error('Parametrii în plus nu sunt JSON valid.'); } }
+  return b; }
+async function xFal(url, opt = {}){
+  const key = xGet(XKEY); if (!key) throw Object.assign(new Error('Pune întâi cheia fal.ai.'), {code:'no_key'});
+  let r; try { r = await fetch(url, {...opt, headers:{'Authorization':'Key ' + key, ...(opt.body ? {'Content-Type':'application/json'} : {})}}); }
+  catch(e){ throw new Error('Nu am putut ajunge la fal.ai (rețea sau blocat de browser).'); }
+  const txt = await r.text(); let j = null; try { j = JSON.parse(txt); } catch(e){}
+  if (!r.ok){ const d = j?.detail; const msg = Array.isArray(d) ? d.map(x => (x.loc ? x.loc.slice(-1)[0] + ': ' : '') + x.msg).join('; ') : (typeof d === 'string' ? d : j?.error || j?.message || txt.slice(0, 200));
+    throw Object.assign(new Error(r.status === 401 || r.status === 403 ? 'Cheia fal.ai nu e bună sau nu are acces la acest model.' : r.status === 402 || /balance|credit|locked/i.test(msg) ? 'Contul fal.ai nu are destul credit. Încarcă credit pe fal.ai/dashboard/billing.' : 'fal.ai a răspuns: ' + (msg || 'HTTP ' + r.status)), {status:r.status}); }
+  return j; }
+function xFindVideo(o){ if (!o || typeof o !== 'object') return null; if (o.video?.url) return o.video.url; if (Array.isArray(o.videos) && o.videos[0]?.url) return o.videos[0].url;
+  for (const v of Object.values(o)){ if (typeof v === 'string' && /^https?:\/\/\S+\.(mp4|webm|mov)(\?|$)/i.test(v)) return v; if (v && typeof v === 'object'){ const f = xFindVideo(v); if (f) return f; } } return null; }
+/* Trimite cererea în coada fal.ai și așteaptă rezultatul. Jobul rămâne salvat, deci îl poți relua după un refresh. */
+async function xRun(job){
+  job.busy = true; renderXJobs();
+  try {
+    if (!job.status_url){ const q = await xFal('https://queue.fal.run/' + job.endpoint, {method:'POST', body:JSON.stringify(job.body)});
+      job.request_id = q.request_id; job.status_url = q.status_url || `https://queue.fal.run/${job.endpoint}/requests/${q.request_id}/status`; job.response_url = q.response_url || `https://queue.fal.run/${job.endpoint}/requests/${q.request_id}`; delete job.body; xSaveJobs(); }
+    const t0 = Date.now();
+    for (;;){ const st = await xFal(job.status_url + (job.status_url.includes('?') ? '&' : '?') + 'logs=0');
+      job.state = st.status === 'IN_QUEUE' ? 'În coadă' + (st.queue_position != null ? ` (poziția ${st.queue_position + 1})` : '') : st.status === 'IN_PROGRESS' ? 'Se generează… ' + Math.round((Date.now() - t0) / 1000) + ' s' : st.status; renderXJobs();
+      if (st.status === 'COMPLETED') break; if (st.status === 'FAILED' || st.error) throw new Error(st.error || 'Generarea a eșuat la fal.ai.');
+      if (Date.now() - t0 > 30 * 60 * 1000) throw new Error('Durează prea mult. Apasă „Verifică din nou” mai târziu.');
+      await new Promise(r => setTimeout(r, 4000)); }
+    const out = await xFal(job.response_url); const url = xFindVideo(out); if (!url) throw new Error('fal.ai a terminat, dar nu am găsit adresa video-ului în răspuns.');
+    job.remoteUrl = url; job.state = 'Gata'; job.done = true; xSaveJobs(); await xFetchToMedia(job);
+  } catch(e){ job.state = 'Eroare: ' + e.message; job.err = true; xSaveJobs(); }
+  job.busy = false; renderXJobs(); }
+async function xFetchToMedia(job){
+  try { const r = await fetch(job.remoteUrl); if (!r.ok) throw 0; const b = await r.blob(); if (b.size < 2048) throw 0;
+    job.media = makeMedia(new Blob([b], {type:b.type && b.type.startsWith('video') ? b.type : 'video/mp4'}), 'video', job.name + '.mp4'); renderMedia(); refreshPickers(); toast('Clipul e în Materiale: „' + job.name + '”.'); }
+  catch(e){ job.state = 'Gata, dar nu l-am putut aduce în Materiale. Descarcă-l din link și încarcă-l în Montaj.'; } }
+function xNewJob(endpoint, body, name, kind = 'gen'){ const job = { id:uid(), endpoint, body, name, kind, prompt:body.prompt || '', t:Date.now(), state:'Se trimite…' }; xJobs.unshift(job); xSaveJobs(); job.promise = endpoint === 'comfy' ? cRun(job) : xRun(job); return job; }
+function renderXJobs(){ const el = $('#xJobs'); if (!xJobs.length){ el.innerHTML = '<p class="empty">Niciun clip încă. Clipurile generate apar aici și în Materiale.</p>'; return; }
+  el.innerHTML = xJobs.map((j, i) => `<div class="step" style="gap:6px"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${xEsc(j.name)}</b><span class="kind">${xEsc(j.endpoint.split('/').slice(0, 3).join('/'))}</span></div>
+    ${j.prompt ? `<span class="note">${xEsc(j.prompt.slice(0, 160))}</span>` : ''}<span class="note" style="color:${j.err ? 'var(--rec)' : j.done ? 'var(--ok)' : 'var(--muted)'}">${xEsc(j.state || '')}</span>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">${j.media ? `<button data-xtl="${i}">＋ Pe timeline</button>${j.kind !== 'up' ? `<button data-xup="${i}">4K local <span class="free">gratuit</span></button>` : ''}<button data-xsave="${i}">Salvează fișierul</button>` : ''}
+    ${j.remoteUrl ? `${!j.media ? `<button data-xget="${i}">Adu în Materiale</button>` : ''}${j.kind !== 'up' && j.endpoint !== 'comfy' ? `<button data-xai="${i}">4K cu AI <span class="cost">costă</span></button>` : ''}<a class="btn" href="${xEsc(j.remoteUrl)}" target="_blank" rel="noopener">Link ↗</a>` : ''}
+    ${!j.done && !j.busy && (j.status_url || j.comfyId) ? `<button data-xre="${i}">Verifică din nou</button>` : ''}<button class="ghost" data-xdel="${i}" title="Scoate din listă">✕</button></div></div>`).join(''); }
+$('#xJobs').onclick = async e => { const b = e.target.closest('button'); if (!b) return; const d = b.dataset; const j = xJobs[+(d.xtl ?? d.xup ?? d.xsave ?? d.xget ?? d.xai ?? d.xre ?? d.xdel)]; if (!j) return;
+  if (d.xtl){ addToTimeline(j.media); toast('Pus pe timeline. Îl vezi în Montaj.'); }
+  else if (d.xsave) plainDownload(j.media.file, j.name.replace(/[^\w\- .ăâîșțĂÂÎȘȚ]/g, '') + '.' + (j.media.file.type.includes('webm') ? 'webm' : 'mp4'));
+  else if (d.xget){ b.disabled = true; await xFetchToMedia(j); renderXJobs(); }
+  else if (d.xre){ j.err = false; j.endpoint === 'comfy' ? cRun(j) : xRun(j); }
+  else if (d.xdel){ xJobs.splice(xJobs.indexOf(j), 1); xSaveJobs(); renderXJobs(); }
+  else if (d.xai) xAiUpscale(j.remoteUrl, j.name);
+  else if (d.xup) xLocalUpscale(j); };
+function xAiUpscale(url, name){ if (!xGet(XKEY)){ $('#xKeyBox').open = true; toast('Pune întâi cheia fal.ai.'); return; }
+  xNewJob('fal-ai/bytedance-upscaler/upscale/video', { video_url:url, target_resolution:'4k' }, (name || 'clip') + ' · 4K AI', 'up'); renderXJobs(); toast('Upscale 4K pornit pe fal.ai.'); }
+$('#xUpGo').onclick = () => { const u = $('#xUpUrl').value.trim(); if (!/^https:\/\/\S+$/.test(u)){ toast('Pune un link https direct către un fișier video.'); return; } xAiUpscale(u, u.split('/').pop().split('?')[0] || 'clip'); };
+/* 4K local: redesenează clipul la 2160p pe un canvas și îl înregistrează cu bitrate mare (gratuit, în timp real). */
+async function xLocalUpscale(j){
+  if (!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream){ toast('Browserul tău nu poate face asta. Încearcă Chrome sau Edge.'); return; }
+  if (j.busy) return; j.busy = true; const prev = j.state;
+  const v = document.createElement('video'); v.src = j.media.url; v.playsInline = true; v.preload = 'auto';
+  try { await new Promise((res, rej) => { v.onloadedmetadata = res; v.onerror = () => rej(new Error('Clipul nu se poate citi.')); });
+    const vw = v.videoWidth || 1280, vh = v.videoHeight || 720, k = 2160 / Math.min(vw, vh); const W = Math.round(vw * k / 2) * 2, H = Math.round(vh * k / 2) * 2;
+    const c = document.createElement('canvas'); c.width = W; c.height = H; const cx = c.getContext('2d'); cx.imageSmoothingEnabled = true; cx.imageSmoothingQuality = 'high';
+    const tracks = [...c.captureStream(30).getVideoTracks()]; let ac = null;
+    try { ac = new (window.AudioContext || window.webkitAudioContext)(); const src = ac.createMediaElementSource(v); const dst = ac.createMediaStreamDestination(); src.connect(dst); tracks.push(...dst.stream.getAudioTracks()); } catch(e){}
+    const mime = ['video/mp4;codecs=avc1,mp4a','video/mp4','video/webm;codecs=vp9,opus','video/webm'].find(t => MediaRecorder.isTypeSupported(t)) || '';
+    const mr = new MediaRecorder(new MediaStream(tracks), mime ? {mimeType:mime, videoBitsPerSecond:40e6} : undefined); const chunks = []; mr.ondataavailable = e => e.data.size && chunks.push(e.data);
+    const done = new Promise(res => { mr.onstop = res; });
+    let raf = 0; const paint = () => { cx.drawImage(v, 0, 0, W, H); j.state = `4K local: ${Math.round(100 * v.currentTime / (v.duration || 1))}% (${W}×${H})`; const n = document.querySelector(`[data-xup="${xJobs.indexOf(j)}"]`)?.closest('.step')?.querySelector('.note:last-of-type'); if (n) n.textContent = j.state; if (!v.ended) raf = requestAnimationFrame(paint); };
+    renderXJobs(); paint(); mr.start(1000); await v.play(); paint();
+    await new Promise(res => { v.onended = res; }); cancelAnimationFrame(raf); cx.drawImage(v, 0, 0, W, H); await new Promise(r => setTimeout(r, 250)); mr.stop(); await done; try { ac && ac.close(); } catch(e){}
+    const blob = new Blob(chunks, {type:mime || 'video/webm'}); const name = j.name + ' · 4K';
+    const m = makeMedia(blob, 'video', name + (mime.includes('mp4') ? '.mp4' : '.webm')); renderMedia(); refreshPickers();
+    xJobs.unshift({ id:uid(), endpoint:'local/4k', name, kind:'up', state:`Gata: ${W}×${H}, ${(blob.size / 1048576).toFixed(1)} MB. E în Materiale.`, done:true, media:m, t:Date.now() });
+    j.state = prev; toast('Clipul 4K e în Materiale.');
+  } catch(e){ j.state = 'Eroare la 4K local: ' + e.message; }
+  j.busy = false; renderXJobs(); }
+$('#xGo').onclick = () => {
+  if (xModel().local && !xGet(CWF)){ $('#xNote').textContent = 'Încarcă întâi workflow-ul ComfyUI (mai sus, la „Local”).'; return; }
+  if (!xModel().local && !xGet(XKEY)){ $('#xKeyBox').open = true; $('#xKeyNote').textContent = 'Pune cheia fal.ai aici, apoi apasă din nou „Generează clipul”.'; $('#xKey').focus(); return; }
+  const p = $('#xPrompt').value.trim(); if (p.length < 5){ $('#xNote').textContent = 'Scrie ce vrei să se vadă în clip.'; return; }
+  let body; try { body = xBody(); } catch(e){ $('#xNote').textContent = e.message; return; }
+  const ep = $('#xEndpoint').value.trim() || xEndpointDef(); const m = xModel();
+  xNewJob(ep, body, `${m.name.split(' (')[0]} · ${p.slice(0, 40)}${p.length > 40 ? '…' : ''}`);
+  $('#xNote').textContent = 'Trimis. Un clip durează de obicei 1–5 minute. Poți lucra în alte tabe între timp.'; };
+$('#xModel').innerHTML = XM.map(m => `<option value="${m.id}">${xEsc(m.name)}</option>`).join('');
+$('#xModel').onchange = xModelUI; $('#xDur').onchange = xCost; $('#xEndpoint').onchange = () => { xCost(); xLoadSchema($('#xEndpoint').value.trim()); };
+$('#xImgBtn').onclick = () => $('#xImg').click();
+$('#xImg').onchange = async () => { const f = $('#xImg').files[0]; if (!f) return;
+  try { const im = await createImageBitmap(f); const k = Math.min(1, 1920 / Math.max(im.width, im.height)); const c = document.createElement('canvas'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+    xImg = { name:f.name, data:c.toDataURL('image/jpeg', 0.92) }; $('#xImgName').textContent = f.name + ` (${c.width}×${c.height})`; $('#xImgDel').hidden = false; }
+  catch(e){ toast('Poza nu se poate citi.'); } $('#xImg').value = ''; xModelUI(); };
+$('#xImgDel').onclick = () => { xImg = null; $('#xImgName').textContent = 'fără poză: clipul pornește doar din text'; $('#xImgDel').hidden = true; xModelUI(); };
+$('#xKey').value = xGet(XKEY);
+$('#xKeySave').onclick = () => { const k = $('#xKey').value.trim(); if (k && (k.length < 20 || /\s/.test(k))){ $('#xKeyNote').textContent = 'Cheia pare incompletă. Copiaz-o din nou de pe fal.ai.'; return; } xSet(XKEY, k); xKeyUI(); $('#xKeyNote').textContent = k ? 'Salvată în acest browser.' : 'Cheia a fost ștearsă.'; if (k) $('#xKeyBox').open = false; };
+$('#xKeyDel').onclick = () => { xSet(XKEY, ''); $('#xKey').value = ''; xKeyUI(); $('#xKeyNote').textContent = 'Cheia a fost ștearsă din acest browser.'; };
+$('#xBetter').onclick = async () => { if (!sampleFn){ $('#xBetterNote').textContent = 'Pune cheia Groq în Scenarii ca să meargă (sau deschide în claude.ai).'; return; }
+  const p = $('#xPrompt').value.trim(); $('#xBetter').disabled = true; $('#xBetterNote').textContent = 'Scriu…';
+  try { const r = await sampleFn(`Rewrite this idea as one prompt for an AI video model (${xModel().name}). English only, 60-110 words, one continuous shot. Describe subject, setting, camera movement, lens, lighting, mood, colour grade and ambient sound. No text overlays, no logos. Reply with the prompt only.\n\nIdea: ${p}`, {cache:false});
+    const t = (r.text || '').trim().replace(/^["„]|["”]$/g, ''); if (t) $('#xPrompt').value = t; $('#xBetterNote').textContent = t ? 'Gata. Îl poți edita.' : 'Nu a venit niciun text.'; }
+  catch(e){ $('#xBetterNote').textContent = aiErr(e, 'Nu a mers acum. Încearcă din nou.'); }
+  $('#xBetter').disabled = false; };
+$('#xToMontaj').onclick = () => { location.hash = 'montaj'; };
+$('#quality').value = xGet(XQUAL) || '1080'; $('#quality').onchange = () => { xSet(XQUAL, $('#quality').value); toast('Exportul iese la ' + ($('#quality').value === '2160' ? '4K' : $('#quality').value + 'p') + '.'); };
+/* ComfyUI local: trimite workflow-ul exportat „API format”, cu promptul scenei, și ia video-ul rezultat. */
+const cBase = () => (xGet(CURL) || 'http://127.0.0.1:8188').trim().replace(/\/+$/, '');
+function cUI(){ let n = 0; try { n = Object.keys(JSON.parse(xGet(CWF) || '{}')).length; } catch(e){}
+  $('#cUrl').value = cBase(); $('#cStateM').textContent = xGet(CWFM) ? 'workflow muzică încărcat' : 'fără workflow de muzică'; $('#cState').textContent = xGet(CWF) ? `workflow încărcat (${n} noduri)${xGet(CWF).includes('{{PROMPT}}') ? ', cu {{PROMPT}}' : ''}` : 'niciun workflow'; }
+function cInject(wf, prompt, secs){ let hit = false; const seed = () => Math.floor(Math.random() * 2 ** 31);
+  for (const n of Object.values(wf)) for (const [k, v] of Object.entries(n.inputs || {})){ if (typeof v === 'string' && v.includes('{{PROMPT}}')){ n.inputs[k] = v.split('{{PROMPT}}').join(prompt); hit = true; } if (v === '{{SECONDS}}') n.inputs[k] = secs || 120; if ((k === 'seed' || k === 'noise_seed') && typeof v === 'number') n.inputs[k] = seed(); }
+  if (!hit){ const t = Object.values(wf).find(n => /TextEncode|Prompt/i.test(n.class_type || '') && typeof n.inputs?.text === 'string' && !/negat/i.test(n._meta?.title || ''));
+    if (!t) throw new Error('Nu găsesc în workflow unde să pun promptul. Scrie {{PROMPT}} în căsuța de prompt din ComfyUI și exportă din nou.'); t.inputs.text = prompt; }
+  return wf; }
+async function cFetch(path, opt){ let r; try { r = await fetch(cBase() + path, opt); } catch(e){ throw new Error('Nu ajung la ComfyUI la ' + cBase() + '. E pornit cu --enable-cors-header? Browserul poate cere voie pentru „rețeaua locală”: apasă Permite.'); }
+  const t = await r.text(); let j = null; try { j = JSON.parse(t); } catch(e){}
+  if (!r.ok){ const ne = j?.node_errors && Object.values(j.node_errors)[0]?.errors?.[0]; throw new Error('ComfyUI: ' + (ne ? ne.message + (ne.details ? ' (' + ne.details + ')' : '') : j?.error?.message || t.slice(0, 200))); }
+  return j; }
+async function cRun(job){
+  job.busy = true; renderXJobs();
+  try {
+    if (!job.comfyId){ const wf = cInject(JSON.parse(xGet(CWF)), job.prompt); const q = await cFetch('/prompt', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({prompt:wf, client_id:'cadru-' + uid()})});
+      job.comfyId = q.prompt_id; delete job.body; xSaveJobs(); }
+    const t0 = Date.now(); let files = null;
+    for (;;){ const h = (await cFetch('/history/' + job.comfyId))?.[job.comfyId];
+      if (h?.status?.status_str === 'error'){ const m = (h.status.messages || []).find(x => x[0] === 'execution_error')?.[1]; throw new Error('ComfyUI: ' + (m?.exception_message || 'eroare la generare')); }
+      if (h?.outputs){ files = Object.values(h.outputs).flatMap(o => [...(o.gifs || []), ...(o.videos || []), ...(o.video || []), ...(o.images || []), ...(o.animated || [])]).filter(f => f && f.filename);
+        if (files.length || h.status?.completed) break; }
+      job.state = 'Se generează pe calculatorul tău… ' + Math.round((Date.now() - t0) / 1000) + ' s'; renderXJobs();
+      if (Date.now() - t0 > 2 * 3600 * 1000) throw new Error('Durează peste 2 ore. Apasă „Verifică din nou” mai târziu.');
+      await new Promise(r => setTimeout(r, 3000)); }
+    const f = files.find(x => /\.(mp4|webm|mov|mkv)$/i.test(x.filename)) || files.find(x => /\.(gif|webp)$/i.test(x.filename));
+    if (!f) throw new Error('ComfyUI a terminat, dar workflow-ul nu salvează un video. Adaugă la final nodul „Save Video” / „Video Combine”.');
+    job.remoteUrl = cBase() + '/view?' + new URLSearchParams({filename:f.filename, subfolder:f.subfolder || '', type:f.type || 'output'}); job.state = 'Gata'; job.done = true; xSaveJobs(); await xFetchToMedia(job);
+  } catch(e){ job.state = 'Eroare: ' + e.message; job.err = true; xSaveJobs(); }
+  job.busy = false; renderXJobs(); }
+$('#cUrl').onchange = () => { xSet(CURL, $('#cUrl').value.trim()); cUI(); };
+$('#cWfBtn').onclick = () => $('#cWf').click();
+$('#cWf').onchange = async () => { const f = $('#cWf').files[0]; $('#cWf').value = ''; if (!f) return;
+  try { const j = JSON.parse(await f.text()); if (j.nodes && j.links) throw new Error('Acesta e workflow-ul obișnuit. În ComfyUI alege Workflow → Export (API) și încarcă acel fișier.');
+    if (!Object.values(j).some(n => n && n.class_type)) throw new Error('Fișierul nu pare un workflow ComfyUI în format API.');
+    xSet(CWF, JSON.stringify(j)); cUI(); $('#cNote').textContent = 'Workflow salvat în acest browser.'; } catch(e){ $('#cNote').textContent = e.message; } };
+$('#cTest').onclick = async () => { $('#cNote').textContent = 'Verific…'; try { const st = await cFetch('/system_stats'); const d = st?.devices?.[0];
+  $('#cNote').textContent = 'Legătura merge. ComfyUI ' + (st?.system?.comfyui_version || '') + (d ? ` · ${d.name} · ${(d.vram_total / 1073741824).toFixed(0)} GB VRAM` : ''); } catch(e){ $('#cNote').textContent = e.message; } };
+$('#cWfMBtn').onclick = () => $('#cWfM').click();
+$('#cWfM').onchange = async () => { const f = $('#cWfM').files[0]; $('#cWfM').value = ''; if (!f) return;
+  try { const j = JSON.parse(await f.text()); if (j.nodes && j.links) throw new Error('Exportă cu Workflow → Export (API).'); if (!Object.values(j).some(n => n && n.class_type)) throw new Error('Fișierul nu pare un workflow ComfyUI în format API.');
+    xSet(CWFM, JSON.stringify(j)); cUI(); $('#cNote').textContent = 'Workflow de muzică salvat. În „Totul automat” alege Muzică: generată local.'; } catch(e){ $('#cNote').textContent = e.message; } };
+/* Muzică locală (ACE-Step în ComfyUI): {{PROMPT}} = stilul, {{SECONDS}} = durata. */
+async function cMusic(style, secs, onState){
+  const wf = cInject(JSON.parse(xGet(CWFM)), style, secs); const q = await cFetch('/prompt', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({prompt:wf, client_id:'cadru-' + uid()})});
+  const t0 = Date.now();
+  for (;;){ const h = (await cFetch('/history/' + q.prompt_id))?.[q.prompt_id];
+    if (h?.status?.status_str === 'error') throw new Error('ComfyUI: eroare la muzică');
+    const files = h?.outputs ? Object.values(h.outputs).flatMap(o => [...(o.audio || []), ...(o.audios || [])]).filter(f => f?.filename) : [];
+    if (files.length){ const f = files[0]; const r = await fetch(cBase() + '/view?' + new URLSearchParams({filename:f.filename, subfolder:f.subfolder || '', type:f.type || 'output'})); if (!r.ok) throw new Error('Nu pot descărca muzica din ComfyUI.');
+      const b = await r.blob(); return { blob:b.type.startsWith('audio') ? b : new Blob([b], {type:'audio/mpeg'}), name:f.filename }; }
+    if (h?.status?.completed) throw new Error('Workflow-ul de muzică nu salvează audio. Adaugă „Save Audio” la final.');
+    onState && onState(Math.round((Date.now() - t0) / 1000)); if (Date.now() - t0 > 3600 * 1000) throw new Error('Muzica durează prea mult.');
+    await new Promise(r => setTimeout(r, 3000)); } }
+/* Regizor AI: transformă câteva fraze într-o listă de scene cu prompturi și mișcări de cameră (Groq gratuit sau Claude). */
+let dScenes = [];
+function renderDScenes(){ const el = $('#dScenes'); $('#dAll').hidden = $('#dCopyAll').hidden = !dScenes.length;
+  el.innerHTML = dScenes.map((d, i) => `<div class="step" style="gap:6px"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b>Scena ${i + 1}${d.title ? ': ' + xEsc(d.title) : ''}</b><span class="kind">🎥 ${xEsc(d.camera || '')}</span><span class="kind">${xEsc(d.duration || '')} s</span></div>
+    <textarea data-dp="${i}" style="min-height:70px">${xEsc(d.prompt)}</textarea>
+    <div style="display:flex;gap:6px;flex-wrap:wrap"><button data-dgen="${i}">Generează (fal.ai)</button><button data-dcopy="${i}">Copiază promptul</button></div></div>`).join(''); }
+$('#dScenes').oninput = e => { const i = e.target.dataset.dp; if (i != null) dScenes[+i].prompt = e.target.value; };
+async function dCopy(t){ try { await navigator.clipboard.writeText(t); toast('Copiat. Lipește-l în site-ul de video.'); } catch(e){ toast('Nu am putut copia. Selectează textul manual.'); } }
+function dGen(i, noImg){ if (xModel().local && !xGet(CWF)){ toast('Încarcă întâi workflow-ul ComfyUI la „Generează un clip”.'); return false; }
+  if (!xModel().local && !xGet(XKEY)){ $('#xKeyBox').open = true; $('#xKeyBox').scrollIntoView({behavior:'smooth'}); toast('Pune întâi cheia fal.ai sus. Sau copiază promptul într-un site gratuit.'); return false; }
+  const d = dScenes[i]; $('#xPrompt').value = d.prompt; let body; try { body = xBody(); } catch(e){ toast(e.message); return false; }
+  let ep = $('#xEndpoint').value.trim() || xEndpointDef(); const m0 = xModel(); if (noImg && ep === m0.i2v){ ep = m0.t2v; for (const k of ['image_url','start_image_url','first_frame_url','image']) delete body[k]; }
+  const m = xModel(); if (d.duration){ const opts = [...$('#xDur').options].map(o => o.value); const near = opts.reduce((a, b) => Math.abs(parseInt(b) - d.duration) < Math.abs(parseInt(a) - d.duration) ? b : a, opts[0]); if (near && 'duration' in body) body.duration = near; }
+  return xNewJob(ep, body, `Scena ${i + 1} · ${m.name.split(' (')[0]}`); }
+$('#dScenes').onclick = e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.dcopy) dCopy(dScenes[+b.dataset.dcopy].prompt); if (b.dataset.dgen && dGen(+b.dataset.dgen)) toast('Scena ' + (+b.dataset.dgen + 1) + ' trimisă. O vezi în „Clipurile tale AI”.'); };
+$('#dAll').onclick = () => { let n = 0; for (let i = 0; i < dScenes.length; i++){ if (!dGen(i)) return; n++; } toast(n + ' scene trimise la ' + xModel().name.split(' (')[0] + '.'); };
+$('#dCopyAll').onclick = () => dCopy(dScenes.map((d, i) => `Scena ${i + 1}: ${d.prompt}`).join('\n\n'));
+$('#dUpload').onclick = () => $('#dFile').click();
+$('#dFile').onchange = () => { const f = [...$('#dFile').files]; if (f.length){ addFiles(f); toast(f.length + ' clipuri în Materiale. Le pui pe timeline din Montaj.'); } $('#dFile').value = ''; };
+async function dMake(idea, style, n, same){
+    const res = await sampleFn.json(`You are a film director and cinematographer writing shots for an AI video model (${xModel().name}). Turn the idea below into exactly ${n} consecutive scenes that tell it as a short film with a beginning, a turn and an ending. Style: ${style}.
+For each scene write one self-contained English prompt of 60-100 words: subject and action, setting, ONE clear camera movement (e.g. slow drone fly-over, dolly-in close-up, tracking shot, low-angle orbit, crane up reveal, handheld follow), lens and framing, lighting, colour grade, atmosphere and ambient sound. Vary shot sizes and camera moves between scenes like a real film crew. No on-screen text, no logos, no subtitles.${same ? ' Keep the same main character with an identical, explicitly repeated description (age, face, hair, clothes) in every prompt.' : ''}
+Reply only with JSON: an array of ${n} objects {"title": short Romanian scene title, "camera": short Romanian name of the camera move, "duration": seconds 5-10, "prompt": English prompt}.
+
+IDEA: ${idea}`, {cache:false});
+    const arr = Array.isArray(res) ? res : (res?.scenes || []); return arr.filter(x => x && x.prompt).map(x => ({ title:String(x.title || ''), camera:String(x.camera || ''), duration:Math.max(3, Math.min(15, parseInt(x.duration) || 5)), prompt:String(x.prompt).trim() })); }
+$('#dGo').onclick = async () => {
+  if (!sampleFn){ $('#dNote').textContent = 'Pune cheia ta Groq (gratuită) în Scenarii → Cheia ta AI, sau deschide Cadru în claude.ai.'; return; }
+  const idea = $('#dIdea').value.trim(); if (idea.length < 10){ $('#dNote').textContent = 'Scrie în câteva fraze ce film vrei.'; return; }
+  $('#dGo').disabled = true; $('#dNote').textContent = 'Regizorul scrie scenele…';
+  try { dScenes = await dMake(idea, $('#dStyle').value, +$('#dN').value, $('#dSame').checked);
+    $('#dNote').textContent = dScenes.length ? `${dScenes.length} scene gata. Le poți edita, apoi le generezi aici sau le copiezi în alt site.` : 'Nu au venit scene. Încearcă din nou.'; renderDScenes(); }
+  catch(e){ $('#dNote').textContent = aiErr(e, 'Nu a mers acum. Încearcă din nou.'); }
+  $('#dGo').disabled = false; };
+/* Pilot automat: idee -> scene -> clipuri -> (4K AI) -> timeline -> muzică -> titlu și descriere -> export 4K. */
+const ASTEPS = ['Regizorul scrie scenele', 'Se generează clipurile', 'Se pun clipurile pe timeline', 'Se adaugă muzica', 'Se scriu titlul și descrierea', 'Export 4K'];
+let aState = [];
+function aUI(i, st, txt){ if (i != null){ aState[i] = {st, txt}; } $('#aSteps').innerHTML = ASTEPS.map((n, k) => { const x = aState[k] || {st:'todo'}; const ic = x.st === 'done' ? '✓' : x.st === 'run' ? '✱' : x.st === 'skip' ? '–' : x.st === 'err' ? '✕' : '○';
+  return `<div style="display:flex;gap:8px;align-items:baseline"><b style="width:16px;color:${x.st === 'done' ? 'var(--ok)' : x.st === 'err' ? 'var(--rec)' : x.st === 'run' ? 'var(--accent)' : 'var(--muted)'}">${ic}</b><span>${n}${x.txt ? ` <span class="note">· ${xEsc(x.txt)}</span>` : ''}</span></div>`; }).join(''); }
+$('#aGo').onclick = async () => {
+  const idea = $('#aIdea').value.trim(); if (idea.length < 10){ $('#aNote').textContent = 'Scrie în câteva fraze ce film vrei.'; return; }
+  if (!sampleFn){ $('#aNote').textContent = 'Pune întâi cheia Groq (gratuită) în Scenarii → Cheia ta AI. Fără ea regizorul nu poate scrie scenele.'; return; }
+  if ($('#aModel').value) { $('#xModel').value = $('#aModel').value; xModelUI(); }
+  const paid = xReady(); $('#aGo').disabled = true; $('#aOutBox').hidden = true; aState = []; aUI(); $('#aNote').textContent = '';
+  if ($('#aModel').value) { $('#xModel').value = $('#aModel').value; xModelUI(); }
+  const fmtSel = $('#aRatio').value; if ($('#format').value !== fmtSel){ $('#format').value = fmtSel; $('#format').dispatchEvent(new Event('change')); }
+  if ([...$('#xRatio').options].some(o => o.value === fmtSel)) $('#xRatio').value = fmtSel;
+  try {
+    aUI(0, 'run'); dScenes = await dMake(idea, $('#aStyle').value, +$('#aN').value, true); renderDScenes();
+    if (!dScenes.length) throw new Error('Regizorul nu a trimis scene. Încearcă din nou.'); aUI(0, 'done', dScenes.length + ' scene');
+    let clips = [];
+    if (!paid){ aUI(1, 'skip', xModel().local ? 'lipsește workflow-ul ComfyUI: prompturile sunt mai jos, în Regizor AI' : 'fără cheie fal.ai: prompturile sunt mai jos, în Regizor AI'); aUI(2, 'skip'); }
+    else {
+      aUI(1, 'run', 'trimit ' + dScenes.length + ' scene la ' + xModel().name.split(' (')[0]);
+      const jobs = dScenes.map((d, i) => dGen(i, true)); if (jobs.some(j => !j)) throw new Error('Nu am putut trimite scenele.');
+      let left = jobs.length; await Promise.all(jobs.map(j => j.promise.then(() => { left--; aUI(1, 'run', `${jobs.length - left} din ${jobs.length} gata`); })));
+      let fin = jobs;
+      if ($('#aUp').checked){ aUI(1, 'run', '4K cu AI pe fiecare clip…'); fin = jobs.map(j => j.remoteUrl ? xNewJob('fal-ai/bytedance-upscaler/upscale/video', { video_url:j.remoteUrl, target_resolution:'4k' }, j.name + ' · 4K AI', 'up') : j);
+        await Promise.all(fin.map(j => j.promise)); fin = fin.map((j, k) => j.media ? j : jobs[k]); }
+      clips = fin.map(j => j.media).filter(Boolean); const bad = jobs.length - clips.length;
+      aUI(1, clips.length ? 'done' : 'err', `${clips.length} clipuri` + (bad ? `, ${bad} au eșuat (vezi „Clipurile tale AI”)` : ''));
+      if (!clips.length) throw new Error('Niciun clip nu s-a generat. Vezi eroarea în „Clipurile tale AI”.');
+      aUI(2, 'run'); await Promise.all(clips.map(m => m.duration ? 0 : new Promise(r => { m.el.addEventListener('loadedmetadata', r, {once:true}); setTimeout(r, 5000); })));
+      if ($('#aReplace').checked){ S.clips = []; }
+      S.clips.push(newCard({ dur:3, text:'', style:'titlu', pos:'mijloc', bg:'noapte', _auto:true }));
+      for (const m of clips) addToTimeline(m);
+      const target = +$('#aLen').value; let reps = 1;
+      const hms = x => { x = Math.round(x); const h = Math.floor(x / 3600), m = Math.floor(x % 3600 / 60); return h ? `${h} h ${String(m).padStart(2, '0')} min` : `${m} min ${x % 60} s`; };
+      if (target){ const seq = S.clips.slice(-clips.length); const once = seq.reduce((a, c) => a + dur(c), 0);
+        if (once > 0.5){ let t = total(); while (t < target){ for (const c of seq){ if (t >= target) break; S.clips.push({ ...c, id:uid() }); t += dur(c); } } } }
+      renderTimeline(); aUI(2, 'done', clips.length + ' clipuri în ordinea scenelor' + (target ? `, repetate în buclă: ${hms(total())}` : ''));
+    }
+    const credits = [];
+    if ($('#aMusic').value === 'local'){ aUI(3, 'run', 'ACE-Step pe calculatorul tău');
+      try { if (!xGet(CWFM)) throw new Error('încarcă workflow-ul de muzică în secțiunea Local: ComfyUI');
+        const secs = Math.min(240, Math.max(30, Math.round(total() || 120)));
+        const style = (await sampleFn.json(`Give one English music style prompt (comma-separated tags: genre, instruments, mood, tempo) for the instrumental soundtrack of this film: ${idea}. Reply only with JSON {"tags": string}.`, {cache:false}).catch(() => null))?.tags || $('#aStyle').value + ', cinematic instrumental soundtrack';
+        const r = await cMusic(style, secs, t => aUI(3, 'run', `ACE-Step: ${t} s`)); const m = makeMedia(r.blob, 'audio', 'muzica-acestep.' + (r.name.split('.').pop() || 'mp3'));
+        m.credit = 'Muzică generată local cu ACE-Step.'; S.audio.muzica = m.id; renderMedia(); refreshPickers(); aUI(3, 'done', `generată local, ${secs} s, se repetă în buclă`);
+      } catch(e){ aUI(3, 'err', e.message); } }
+    else if ($('#aMusic').value){ aUI(3, 'run');
+      try { const res = await ovSearch('audio', $('#aMusic').value, 6); let ok = null;
+        for (const r of res){ const b = await ovBlob(r, 'audio'); if (b){ const m = makeMedia(b.type ? b : new Blob([b], {type:'audio/mpeg'}), 'audio', (r.title || 'muzica') + '.mp3');
+          m.credit = `Muzică: „${r.title || 'fără titlu'}” de ${r.creator || 'autor necunoscut'}, ${licName(r)}${r.foreign_landing_url ? ' (' + r.foreign_landing_url + ')' : ''}`; S.audio.muzica = m.id; credits.push(m.credit); ok = r; break; } }
+        renderMedia(); refreshPickers(); aUI(3, ok ? 'done' : 'err', ok ? `„${ok.title || 'fără titlu'}”, licență liberă` : 'nu am găsit o melodie descărcabilă');
+      } catch(e){ aUI(3, 'err', 'căutarea de muzică nu a mers aici'); } }
+    else aUI(3, 'skip');
+    aUI(4, 'run'); let meta = null;
+    try { meta = await sampleFn.json(`Write YouTube metadata in ${$('#aLang').value} for a short AI film. Story idea: ${idea}\nScenes: ${dScenes.map(d => d.title).join('; ')}\nReply only with JSON {"title": max 70 characters, curiosity without lies, no emoji; "description": 3 short paragraphs plus 3 hashtags; "tags": array of 10 short tags}.`, {cache:false}); } catch(e){}
+    if (meta?.title){ $('#vTitle').value = meta.title; const t = S.clips.find(c => c._auto); if (t) t.text = meta.title;
+      $('#aOut').value = [meta.title, '', meta.description || '', credits.length ? '\nMuzică:\n' + credits.join('\n') : '', '\nRealizat cu AI (' + xModel().name.split(' (')[0] + ') în Cadru Studio.', meta.tags?.length ? '\nTaguri: ' + meta.tags.join(', ') : ''].join('\n').trim();
+      if (credits.length){ $('#creditsOut').value = credits.join('\n'); $('#creditsBox').hidden = false; }
+      $('#aOutBox').hidden = false; aUI(4, 'done', meta.title); }
+    else { S.clips = S.clips.filter(c => !(c._auto && !c.text)); aUI(4, 'err', 'nu am primit titlul; îl scrii tu în Publică'); }
+    S.clips = S.clips.filter(c => !(c._auto && !c.text)); renderTimeline(); renderInspector();
+    if (!paid){ aUI(5, 'skip'); $('#aNote').textContent = 'Gata partea gratuită. Fă clipurile din prompturile de mai jos (de ex. în Digen AI), încarcă-le cu „＋ Încarcă clipurile descărcate”, pune-le pe timeline și exportă. Cu o cheie fal.ai, butonul face și clipurile singur.'; }
+    else { $('#quality').value = '2160'; xSet(XQUAL, '2160');
+      if (+$('#aLen').value >= 3600) $('#aNote').textContent = `Exportul în browser merge în timp real: un video de ${Math.round(total() / 60)} de minute durează tot atâta. Mai rapid: salvează clipurile („Salvează fișierul”) și rulează pe calculator „python3 tools/ai_video_4k.py loop clip1.mp4 clip2.mp4 … --music muzica.mp3 --hours 3”, care face videoul de 3 ore în 4K în câteva minute.`;
+      if ($('#aExport').checked){ aUI(5, 'run', 'ține tab-ul deschis și vizibil'); location.hash = 'montaj'; await new Promise(r => setTimeout(r, 700)); $('#btnExport').click(); aUI(5, 'done', 'pornit în Montaj'); }
+      else { aUI(5, 'skip', 'calitatea e pusă pe 4K; apasă „Exportă video” în Montaj'); $('#aNote').textContent = 'Totul e pe timeline. Verifică în Montaj și apasă „Exportă video”.'; } }
+  } catch(e){ const k = aState.findIndex(x => x?.st === 'run'); if (k >= 0) aUI(k, 'err', e.message); $('#aNote').textContent = aiErr(e, e.message || 'Ceva nu a mers. Încearcă din nou.'); }
+  $('#aGo').disabled = false; };
+$('#aCopy').onclick = () => dCopy($('#aOut').value);
+$('#aModel').innerHTML = XM.map(m => `<option value="${m.id}">${xEsc(m.name)}</option>`).join(''); $('#aModel').value = 'seedflash';
+aUI();
+xModelUI(); xKeyUI(); for (const j of xJobs){ if (j.done && j.remoteUrl && !j.media) j.state = 'Gata. Apasă „Adu în Materiale” (linkurile fal.ai expiră după câteva zile).'; else if (!j.done && (j.status_url || j.comfyId) && !j.err) j.state = 'Întrerupt de reîncărcarea paginii.'; } renderXJobs();
+
 /* ---------- routing ---------- */
-const VIEWS = ['creeaza','montaj','scenarii','miniaturi','proiecte','videoclipuri','publica','ai','ghid'];
+const VIEWS = ['creeaza','montaj','scenarii','miniaturi','proiecte','videoclipuri','publica','videoai','ai','ghid'];
 function route(){ const v = (location.hash || '#creeaza').slice(1); const name = VIEWS.includes(v) ? v : 'creeaza';
   for (const n of VIEWS) $('#v-' + n).hidden = n !== name;
   if (name === 'miniaturi') drawThumb(); if (name === 'proiecte') renderProjects(); if (name === 'videoclipuri') renderVideos(); if (name === 'creeaza') renderVoices();
