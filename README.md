@@ -16,6 +16,10 @@ Studio video în română care merge direct în browser. Faci video-uri pentru c
 
 Totul rulează local, în browser. Fișierele nu pleacă de pe dispozitiv.
 
+## Claude vizionează video de pe YouTube (/watch)
+
+În `.claude/skills/watch/` e skill-ul `/watch` (din [bradautomates/claude-video](https://github.com/bradautomates/claude-video), MIT). În Claude Code, în acest repo, scrii `/watch <link YouTube> <întrebarea ta>` și Claude „vizionează” videoul: cadre + transcript, sau Gemini dacă pui o cheie gratuită. Detalii în [`.claude/skills/watch/SURSA.md`](.claude/skills/watch/SURSA.md).
+
 ## AI pe site-ul tău (cheia Groq)
 
 În tabul **Scenarii → 🔑 Cheia ta AI (Groq)** pui cheia ta Groq (`gsk_…`) și alegi modelul. Apoi „Scrie scenariul”, „5 idei de titlu” și „Împarte cu AI” merg direct pe GitHub Pages, fără claude.ai. Cheia se păstrează doar în browserul tău (localStorage) și se trimite doar la `api.groq.com`. Nu o pune niciodată în cod sau în repo.
