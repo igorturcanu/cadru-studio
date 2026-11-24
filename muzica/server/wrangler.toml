@@ -1,0 +1,18 @@
+name = "cadru-muzica-api"
+main = "worker.js"
+compatibility_date = "2025-06-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "cadru-muzica"
+database_id = "PUNE_AICI_ID_UL_BAZEI_D1"
+
+[vars]
+API_URL = "https://cadru-muzica-api.CONTUL-TAU.workers.dev"
+ALLOWED_ORIGINS = "https://igorturcanu.github.io"
+MAIL_FROM = "Cadru Muzică <login@domeniul-tau.ro>"
+EL_MODEL = "music_v1"
+LS_CHECKOUT_CREATOR = "https://MAGAZINUL-TAU.lemonsqueezy.com/buy/ID-CREATOR"
+LS_CHECKOUT_PRO = "https://MAGAZINUL-TAU.lemonsqueezy.com/buy/ID-PRO"
+LS_CHECKOUT_PACK = "https://MAGAZINUL-TAU.lemonsqueezy.com/buy/ID-PACHET"
+# Secrete (nu se scriu aici): wrangler secret put RESEND_API_KEY / ELEVENLABS_API_KEY / LS_SIGNING_SECRET

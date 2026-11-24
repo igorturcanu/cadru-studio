@@ -51,13 +51,16 @@ Fila **Video AI 4K** generează clipuri AI și le pune direct în Materiale. Toa
 
 ## Muzică (generator de muzică instrumentală)
 
-Fila **Muzică** (și separat la `/muzica/`) compune muzică direct în browser, fără cont și fără cheie:
+Fila **Muzică** (și separat la `/muzica/`, instalabilă pe telefon ca aplicație) compune muzică direct în browser, fără cont:
 
-- 119 stiluri (relaxare, somn, meditație, lo-fi, pian, cinematic, jazz, electronic, world, inclusiv doină și horă, copii, sărbători, gaming, natură pură).
-- 62 de instrumente pe 6 piste (acorduri, melodie, bas, pad, ornamente, tobe) și 9 seturi de tobe; tempo, tonalitate, 15 scări, energie, volum pe pistă, reverb, fade.
-- 17 sunete de natură (ploaie, ocean, foc, păsări…) și frecvențe 174–963 Hz plus binaurale.
-- De la 30 de secunde la 3 ore. „＋ În video (Cadru)” pune melodia în Materiale ca muzică de fundal; „Descarcă” dă WAV, MP4 (AAC) sau WebM (Opus).
-- Limite: fără voce și versuri; sunetul e sintetizat, potrivit pentru ambient, pian, lo-fi, meditație. Pentru voce, secțiunea „Prompt pentru AI” scrie descrierea pentru Suno sau AI Personal.
+- 119 stiluri și 62 de instrumente pe 6 piste, plus 9 seturi de tobe; tempo, tonalitate, 15 scări, energie, volum pe pistă, reverb, fade.
+- **8 instrumente reale înregistrate** (★): pian de concert, chitară, harpă, vioară, violoncel, contrabas, flaut, corn. Sample-urile sunt în `muzica/samples/` (CC BY 3.0, vezi `CREDITE.md`).
+- 17 sunete de natură și frecvențe 174–963 Hz plus binaurale.
+- **Mastering automat** la −14 LUFS (standardul YouTube) sau −18 LUFS pentru somn.
+- **Buclă perfectă** (se reia fără cusătură) și buclă repetată până la **10 ore**.
+- **Piste separate (stems)**, **certificat de licență** cu ID și **pachet YouTube** (titlu, descriere, etichete, în engleză sau română).
+- „＋ În video (Cadru)” pune melodia în Materiale; „Descarcă” dă WAV, MP4 (AAC) sau WebM (Opus).
+- **Studio AI cu abonament**: generări cu voce și versuri, pe credite (Gratuit, Creator 5 €, Pro 12 €, pachet 3 €). Serverul e în `muzica/server/` și pornește după pașii din [muzica/server/README.md](muzica/server/README.md).
 
 Mostre de un minut în `muzica/mostre/`.
 
