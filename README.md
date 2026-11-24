@@ -8,7 +8,7 @@ Studio video în română care merge direct în browser. Faci video-uri pentru c
 
 - **Creează:** scenariu → voce → fundal → opțiuni, apoi „Generează video” construiește montajul scenă cu scenă.
 - **Montaj:** încarci, lipești sau imporți din link filme, poze și audio. Le pui pe timeline, le tai și adaugi text (subtitrare, titlu, karaoke), filtre, zoom, voce și muzică. Exporți video WebM sau MP4.
-- **Video AI 4K:** clipuri generate cu Gemini Omni Flash, Kling 3.0, Seedance 2.5 sau Veo 3.1, crescute la 4K.
+- **Video AI 4K:** clipuri generate cu Gemini Omni Flash, Kling 3.0, Seedance 2.5, Veo 3.1 sau Grok Imagine 1.5, crescute la 4K.
 - **Export 4K:** Montajul exportă la 720p, 1080p sau 4K (3840×2160).
 - **Miniaturi:** editor de thumbnail 1280×720, salvat ca PNG.
 - **Proiecte:** se salvează în browser (IndexedDB), cu tot cu fișiere.
@@ -16,13 +16,17 @@ Studio video în română care merge direct în browser. Faci video-uri pentru c
 
 Totul rulează local, în browser. Fișierele nu pleacă de pe dispozitiv.
 
+## Claude vizionează video de pe YouTube (/watch)
+
+În `.claude/skills/watch/` e skill-ul `/watch` (din [bradautomates/claude-video](https://github.com/bradautomates/claude-video), MIT). În Claude Code, în acest repo, scrii `/watch <link YouTube> <întrebarea ta>` și Claude „vizionează” videoul: cadre + transcript, sau Gemini dacă pui o cheie gratuită. Detalii în [`.claude/skills/watch/SURSA.md`](.claude/skills/watch/SURSA.md).
+
 ## AI pe site-ul tău (cheia Groq)
 
 În tabul **Scenarii → 🔑 Cheia ta AI (Groq)** pui cheia ta Groq (`gsk_…`) și alegi modelul. Apoi „Scrie scenariul”, „5 idei de titlu” și „Împarte cu AI” merg direct pe GitHub Pages, fără claude.ai. Cheia se păstrează doar în browserul tău (localStorage) și se trimite doar la `api.groq.com`. Nu o pune niciodată în cod sau în repo.
 
 În claude.ai, aceleași butoane folosesc Claude. Bifa „Folosește Groq și în claude.ai” forțează Groq și acolo.
 
-## Video AI 4K (Gemini Omni Flash, Kling 3.0, Seedance 2.5, Veo 3.1)
+## Video AI 4K (Gemini Omni Flash, Kling 3.0, Seedance 2.5, Veo 3.1, Grok Imagine)
 
 Fila **Video AI 4K** generează clipuri AI și le pune direct în Materiale. Toate modelele merg prin [fal.ai](https://fal.ai), cu cheia ta (păstrată doar în browser, trimisă doar la `queue.fal.run`).
 
@@ -34,6 +38,7 @@ Fila **Video AI 4K** generează clipuri AI și le pune direct în Materiale. Toa
 | Seedance 2.5 | `bytedance/seedance-2.5/text-to-video`, `.../image-to-video` | 480p/720p, până la 30 s, sunet |
 | Seedance 2.5 Flash | `bytedance/seedance-2.5/flash/text-to-video` | 480p/720p, ieftin |
 | Veo 3.1 | `fal-ai/veo3.1`, `fal-ai/veo3.1/image-to-video` | 720p–4K, până la 8 s |
+| Grok Imagine 1.5 (xAI) | `xai/grok-imagine-video/v1.5/text-to-video`, `.../v1.5/image-to-video` | 480p–1080p, până la 15 s, cu sunet |
 
 - **Costă bani:** generarea (per secundă, plătită la fal.ai) și „4K cu AI” (`fal-ai/bytedance-upscaler/upscale/video`, `target_resolution: 4k`).
 - **Gratuit:** „4K local” (redesenare la 3840×2160 în browser), exportul din Montaj la 4K (selectorul „Export 4K” din antet) și „Fă promptul mai bun” cu cheia Groq.
@@ -43,6 +48,18 @@ Fila **Video AI 4K** generează clipuri AI și le pune direct în Materiale. Toa
 - **Video de 3 ore în 4K, rapid:** `python3 tools/ai_video_4k.py loop a.mp4 b.mp4 … --music muzica.mp3 --hours 3` repetă clipurile și muzica fără re-encodare, deci durează minute, nu ore. Exportul din browser merge în timp real (3 ore durează 3 ore).
 - **Regizor AI (gratuit cu Groq):** scrii câteva fraze, primești 3–10 scene cu prompt complet și mișcare de cameră. Le generezi aici sau copiezi prompturile în site-uri cu credite gratuite (ex. Digen AI, care nu are API) și încarci clipurile înapoi.
 - Pe calculator: `tools/ai_video_4k.py` (`gen`, `upscale`, `join`), cu `FAL_KEY` în mediu.
+
+## Muzică (generator de muzică instrumentală)
+
+Fila **Muzică** (și separat la `/muzica/`) compune muzică direct în browser, fără cont și fără cheie:
+
+- 119 stiluri (relaxare, somn, meditație, lo-fi, pian, cinematic, jazz, electronic, world, inclusiv doină și horă, copii, sărbători, gaming, natură pură).
+- 62 de instrumente pe 6 piste (acorduri, melodie, bas, pad, ornamente, tobe) și 9 seturi de tobe; tempo, tonalitate, 15 scări, energie, volum pe pistă, reverb, fade.
+- 17 sunete de natură (ploaie, ocean, foc, păsări…) și frecvențe 174–963 Hz plus binaurale.
+- De la 30 de secunde la 3 ore. „＋ În video (Cadru)” pune melodia în Materiale ca muzică de fundal; „Descarcă” dă WAV, MP4 (AAC) sau WebM (Opus).
+- Limite: fără voce și versuri; sunetul e sintetizat, potrivit pentru ambient, pian, lo-fi, meditație. Pentru voce, secțiunea „Prompt pentru AI” scrie descrierea pentru Suno sau AI Personal.
+
+Mostre de un minut în `muzica/mostre/`.
 
 ## AI Personal: ce merge unde
 

@@ -225,6 +225,7 @@ td.w{color:var(--muted);white-space:nowrap}
       <a href="#videoclipuri" data-view="videoclipuri">Videoclipuri</a>
       <a href="#publica" data-view="publica">Publică</a>
       <a href="#videoai" data-view="videoai">Video AI 4K</a>
+      <a href="#muzica" data-view="muzica">Muzică</a>
       <a href="#ai" data-view="ai">AI Personal</a>
       <a href="#ghid" data-view="ghid">Ghid</a>
     </nav>
@@ -508,6 +509,12 @@ td.w{color:var(--muted);white-space:nowrap}
     <button class="primary" id="pSave">Salvează proiectul</button>
   </div>
   <div class="pgrid" id="pgrid"></div>
+</main>
+
+<!-- MUZICĂ: generatorul din muzica/index.html, încărcat la prima deschidere -->
+<main class="view wrap" id="v-muzica" hidden>
+  <p class="note" style="margin:0 0 8px">Generator de muzică instrumentală: 119 stiluri, 62 de instrumente, natură și frecvențe. Apasă „＋ În video (Cadru)” și melodia intră în Materiale, ca muzică de fundal a proiectului. <a href="muzica/" target="_blank" rel="noopener">Deschide separat</a></p>
+  <iframe id="muzFrame" title="Generator de muzică" style="width:100%;height:calc(100vh - 150px);min-height:560px;border:1px solid var(--line,#333);border-radius:10px;background:#12141c" loading="lazy"></iframe>
 </main>
 
 <!-- AI PERSONAL -->
@@ -1841,6 +1848,9 @@ const XM = [
   { id:'veo', name:'Veo 3.1 (Google)', t2v:'fal-ai/veo3.1', i2v:'fal-ai/veo3.1/image-to-video', img:'image_url',
     ratios:['16:9','9:16'], res:['720p','1080p','4k'], resDef:'1080p', durs:['4s','6s','8s'], durDef:'8s', audio:true,
     info:'Modelul video mare de la Google, cu sunet. 720p, 1080p sau 4K, până la 8 secunde.' },
+  { id:'grok', name:'Grok Imagine 1.5 (xAI)', t2v:'xai/grok-imagine-video/v1.5/text-to-video', i2v:'xai/grok-imagine-video/v1.5/image-to-video', img:'image_url',
+    ratios:['16:9','9:16','1:1'], res:['480p','720p','1080p'], resDef:'720p', durs:['6','8','10','15'], durDef:'8', audio:true,
+    info:'Modelul video de la xAI (Elon Musk), cu sunet, până la 1080p și 15 secunde. Merge cu aceeași cheie fal.ai.' },
   { id:'comfy', name:'Local, gratuit: ComfyUI (MiniMax H3, Wan…)', local:true, t2v:'comfy', i2v:null, img:'image',
     ratios:['16:9','9:16','1:1'], res:null, durs:['5'], durDef:'5', audio:false,
     info:'Rulează pe placa ta video (sau pe un server cu GPU închiriat), prin ComfyUI. Nu plătești per clip. Durata, rezoluția și sunetul le alegi în workflow-ul din ComfyUI.' },
@@ -2155,10 +2165,13 @@ aUI();
 xModelUI(); xKeyUI(); for (const j of xJobs){ if (j.done && j.remoteUrl && !j.media) j.state = 'Gata. Apasă „Adu în Materiale” (linkurile fal.ai expiră după câteva zile).'; else if (!j.done && (j.status_url || j.comfyId) && !j.err) j.state = 'Întrerupt de reîncărcarea paginii.'; } renderXJobs();
 
 /* ---------- routing ---------- */
-const VIEWS = ['creeaza','montaj','scenarii','miniaturi','proiecte','videoclipuri','publica','videoai','ai','ghid'];
+const VIEWS = ['creeaza','montaj','scenarii','miniaturi','proiecte','videoclipuri','publica','videoai','muzica','ai','ghid'];
+/* puntea cu generatorul de muzică (muzica/index.html, același domeniu) */
+window.cadruAddAudio = (blob, name) => { const m = makeMedia(blob, 'audio', name); S.audio.muzica = m.id; renderMedia(); renderTimeline(); refreshPickers(); toast('Muzica „' + name + '” e în Materiale și e setată ca fundal.'); };
+window.cadruVideoDuration = () => total();
 function route(){ const v = (location.hash || '#creeaza').slice(1); const name = VIEWS.includes(v) ? v : 'creeaza';
   for (const n of VIEWS) $('#v-' + n).hidden = n !== name;
-  if (name === 'miniaturi') drawThumb(); if (name === 'proiecte') renderProjects(); if (name === 'videoclipuri') renderVideos(); if (name === 'creeaza') renderVoices();
+  if (name === 'miniaturi') drawThumb(); if (name === 'proiecte') renderProjects(); if (name === 'videoclipuri') renderVideos(); if (name === 'creeaza') renderVoices(); if (name === 'muzica' && !$('#muzFrame').src) $('#muzFrame').src = 'muzica/index.html';
   document.querySelectorAll('nav.tabs a').forEach(a => { if (a.dataset.view === name) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
   if (name !== 'montaj') stop(); }
 addEventListener('hashchange', route);
