@@ -49,6 +49,18 @@ Fila **Video AI 4K** generează clipuri AI și le pune direct în Materiale. Toa
 - **Regizor AI (gratuit cu Groq):** scrii câteva fraze, primești 3–10 scene cu prompt complet și mișcare de cameră. Le generezi aici sau copiezi prompturile în site-uri cu credite gratuite (ex. Digen AI, care nu are API) și încarci clipurile înapoi.
 - Pe calculator: `tools/ai_video_4k.py` (`gen`, `upscale`, `join`), cu `FAL_KEY` în mediu.
 
+## Muzică (generator de muzică instrumentală)
+
+Fila **Muzică** (și separat la `/muzica/`) compune muzică direct în browser, fără cont și fără cheie:
+
+- 119 stiluri (relaxare, somn, meditație, lo-fi, pian, cinematic, jazz, electronic, world, inclusiv doină și horă, copii, sărbători, gaming, natură pură).
+- 62 de instrumente pe 6 piste (acorduri, melodie, bas, pad, ornamente, tobe) și 9 seturi de tobe; tempo, tonalitate, 15 scări, energie, volum pe pistă, reverb, fade.
+- 17 sunete de natură (ploaie, ocean, foc, păsări…) și frecvențe 174–963 Hz plus binaurale.
+- De la 30 de secunde la 3 ore. „＋ În video (Cadru)” pune melodia în Materiale ca muzică de fundal; „Descarcă” dă WAV, MP4 (AAC) sau WebM (Opus).
+- Limite: fără voce și versuri; sunetul e sintetizat, potrivit pentru ambient, pian, lo-fi, meditație. Pentru voce, secțiunea „Prompt pentru AI” scrie descrierea pentru Suno sau AI Personal.
+
+Mostre de un minut în `muzica/mostre/`.
+
 ## AI Personal: ce merge unde
 
 - **Pe orice site (gratuit):** căutare poze și muzică cu licență liberă (Openverse) și imagini AI rapide (Pollinations), cu buton „＋ În Materiale”.
