@@ -20,6 +20,19 @@ Sait de prezentare + editor web pentru randări 3D de case, construit după mode
 - **Acoperiș:** în două ape, în patru ape sau terasă, cu țiglă în mai multe culori.
 - **Calitate înaltă:** umbre de contact (ambient occlusion GTAO) în vederea live și în randare, lumină de mediu, tavan luminat în interior.
 - **Limbi:** română, engleză, rusă, franceză, germană (selector în antet, sau `?lang=en` / `ru` / `fr` / `de`). Textele sunt în `js/i18n-dict.js`.
+- **Niveluri:** parter și oricâte etaje; „Adaugă nivel deasupra” copiază pereții, ferestrele și camerele de dedesubt. Planul arată estompat nivelul de jos, iar „Toate nivelurile” arată casa întreagă.
+- **Mod persoană:** vederile Interior, Exterior și Grădină te pun la înălțimea ochilor; te rotești 360° pe loc, mergi cu rotița, W/A/S/D sau săgețile (pe telefon cu butoanele ▲▼), dublu-clic pe podea ca să ajungi acolo. Pereții te opresc, ușile te lasă să treci. Modificările din proiect nu mută camera.
+- **Scări:** dreaptă, în L, în U, în spirală, cu trepte în consolă și scară de pod; urcă singure până la nivelul de deasupra și fac gol în planșeu.
+- **Scurgerea apei:** glafuri exterioare cu lăcrimar (aluminiu, piatră, tablă), pervaz interior, culoarea tâmplăriei, jgheaburi și burlane în 5 culori.
+- **Grădină:** unelte pentru alei (6 materiale) și zone (gazon, flori, pietriș, terasă, pavaj, iaz), plus copaci, brad, pom fructifer, gard viu, gard, bancă, pergolă și iluminat de grădină care se aprinde seara.
+- **Calculator de costuri:** cantitățile din proiect (toate nivelurile) se transformă în listă de cumpărături cu prețuri orientative pentru 7 țări: Republica Moldova, România, Olanda, Germania, Franța, Marea Britanie și Rusia (țara implicită urmează limba paginii), cu interval minim–maxim, prețuri proprii salvate, manoperă estimată, 16 unelte de construcție cu bifă, lista magazinelor și tipărire PDF.
+- **Prețuri actualizate:** pagina citește `preturi.json` la fiecare deschidere, deci prețurile noi apar fără o versiune nouă a codului. Fișierul se regenerează cu `node randare-3d/tools/preturi-export.mjs AAAA-LL-ZZ`, iar o sarcină programată săptămânală verifică prețurile și propune actualizarea printr-un pull request.
+- **Modele de case:** galerie cu imagini: vilă cu hol dublu înalt (scară imperială, scară rulantă, lift, candelabru, garaj dublu, piscină, fântână), casă modernă cu acoperiș plat, bloc de locuințe P+3 cu 8 apartamente, duplex, casă mică, plus modelele vechi (`?sablon=vila`, `casa_moderna`, `bloc`, `duplex`, `casa_mica`).
+- **Porți, garduri și lumini:** poartă pietonală, poartă auto culisantă, gard metalic, gard din zidărie, stâlp cu lampă, aplice, spoturi încastrate, candelabru, balcon în consolă, balustradă din sticlă, coloane.
+- **Pereți dintr-un clic:** clic pe perete și scrii lungimea, grosimea și înălțimea; butoane pentru fereastră, ușă, ușă dublă, glisantă și de balcon, puse automat în primul loc liber; dublu-clic pe un perete deschide direct mărimile.
+- **Ieși afară / Intră în casă:** în modul persoană un buton te scoate prin cea mai apropiată ușă exterioară sau te bagă înapoi în casă.
+- **Proiectele mele:** mai multe proiecte salvate în browser, cu miniatură, deschidere, dublare și ștergere; un șablon deschis devine proiect nou și nu-l înlocuiește pe cel curent.
+- **Fișă client:** o pagină cu randarea 3D, planul, camerele și cantitățile de materiale, cu câmpuri pentru client și observații; se tipărește sau se salvează ca PDF.
 - **Proiecte:** salvare automată în browser, anulare/refacere, export/import `.json`, galerie „Randările mele” (IndexedDB).
 
 ## Ce e simulat sau lipsește față de Cedreo
@@ -27,9 +40,22 @@ Sait de prezentare + editor web pentru randări 3D de case, construit după mode
 - Randarea nu e fotorealistă cu ray tracing în cloud: e o randare WebGL în browser, îmbunătățită prin acumulare de cadre.
 - Mobilierul e modelat din forme simple, nu un catalog de mii de modele 3D.
 - Fără conturi, plăți sau proiecte în cloud: prețurile de pe pagină sunt orientative și butoanele duc în editor.
-- Un singur nivel (scara e decorativă); fără import din CAD sau din imagini.
+- Fără import din CAD sau din imagini; pe scări nu se urcă efectiv în modul persoană (se schimbă nivelul cu butoanele).
 - Cantitățile de materiale sunt estimări fără pierderi și fără fundație.
+
+## Viteză
+
+Măsurat cu Chromium pe o conexiune 4G lentă simulată (1,6 Mbit/s, 150 ms latență), cu fișiere comprimate gzip ca pe GitHub Pages:
+
+| | înainte | acum |
+|---|---|---|
+| Pagina de prezentare pe mobil (încărcare completă) | 2,2 s, 382 KB | 0,5 s, 45 KB |
+| Pagina de prezentare pe desktop | 3,7 s, 659 KB | 0,8 s, 99 KB |
+| Editorul (încărcare completă) | 2,5 s, 20 de cereri | 2,0 s, 7 cereri |
+| Vederea 3D în repaus, 5 secunde | ~300 de cadre | 2 cadre |
+
+Ce s-a schimbat: imagini WebP în două mărimi (800 px și 1600 px), fiecare limbă într-un fișier separat (`js/lang/xx.js`, generat cu `node randare-3d/tools/lang-build.js` din `js/i18n-dict.js`), modulele pentru umbrele de contact se descarcă doar când e nevoie de ele, iar vederea 3D se desenează doar când se schimbă ceva.
 
 ## Imaginile din galerie
 
-Toate imaginile din `galerie/` sunt generate cu editorul (`window.planora.renderPhoto`). Motorul 3D, three.js r160, e inclus în `vendor/` (licență MIT).
+Toate imaginile din `galerie/` sunt generate cu editorul (`window.planora.renderPhoto`). Pagina folosește versiunile `.webp`; fișierele `.jpg` rămân ca sursă. Motorul 3D, three.js r160, e inclus în `vendor/` (licență MIT).

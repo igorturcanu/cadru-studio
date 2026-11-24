@@ -2,7 +2,6 @@
 // Pentru pagina de prezentare cheile sunt nume scurte (ex. „hero.title”), cu româna scrisă direct în HTML.
 (function () {
   const LANGS = [['ro', 'RO', 'Română'], ['en', 'EN', 'English'], ['ru', 'RU', 'Русский'], ['fr', 'FR', 'Français'], ['de', 'DE', 'Deutsch']];
-  const DICT = window.PLANORA_DICT || {};
   let lang = 'ro';
   try {
     const q = new URLSearchParams(location.search).get('lang');
@@ -11,18 +10,23 @@
     lang = [q, saved, nav].find((l) => l && LANGS.some(([c]) => c === l)) || 'ro';
     if (q) localStorage.setItem('planora-lang', q);
   } catch (e) { /* fără stocare */ }
+  // se încarcă doar traducerea limbii alese (româna e deja în pagină)
+  if (lang !== 'ro') {
+    const base = (document.currentScript && document.currentScript.src) || location.href;
+    document.write('<script src="' + new URL('lang/' + lang + '.js', base).href + '"><\/script>');
+  }
+  const dict = () => (window.PLANORA_DICT || {})[lang] || {};
 
   function t(s) {
     if (lang === 'ro' || s == null) return s;
-    const d = DICT[lang];
-    return (d && d[s]) || s;
+    return dict()[s] || s;
   }
   function apply(root) {
     document.documentElement.lang = lang;
     root.querySelectorAll('[data-i18n]').forEach((el) => {
       if (el.dataset.ro == null) el.dataset.ro = el.innerHTML.trim();
       const key = el.getAttribute('data-i18n') || el.dataset.ro;
-      const tr = lang === 'ro' ? null : (DICT[lang] || {})[key];
+      const tr = lang === 'ro' ? null : dict()[key];
       el.innerHTML = tr || el.dataset.ro;
     });
     root.querySelectorAll('[data-i18n-attr]').forEach((el) => {
@@ -31,12 +35,12 @@
         const [attr, key] = pair.split(':');
         const roKey = 'ro' + attr;
         if (el.dataset[roKey] == null) el.dataset[roKey] = el.getAttribute(attr) || '';
-        const tr = lang === 'ro' ? null : (DICT[lang] || {})[key || el.dataset[roKey]];
+        const tr = lang === 'ro' ? null : dict()[key || el.dataset[roKey]];
         el.setAttribute(attr, tr || el.dataset[roKey]);
       });
     });
     const tt = document.querySelector('meta[name=description]');
-    if (tt && DICT[lang] && DICT[lang]['meta.description']) tt.setAttribute('content', DICT[lang]['meta.description']);
+    if (tt && dict()['meta.description']) tt.setAttribute('content', dict()['meta.description']);
   }
   function mountSelector(sel) {
     if (!sel) return;
@@ -47,5 +51,5 @@
       location.href = u.pathname + u.search + u.hash;
     });
   }
-  window.I18N = { t, apply, mountSelector, LANG: lang, LANGS };
+  window.I18N = { t, apply, mountSelector, LANG: lang, LANGS, dict };
 })();
