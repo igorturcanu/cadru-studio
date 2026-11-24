@@ -20,6 +20,12 @@ Sait de prezentare + editor web pentru randări 3D de case, construit după mode
 - **Acoperiș:** în două ape, în patru ape sau terasă, cu țiglă în mai multe culori.
 - **Calitate înaltă:** umbre de contact (ambient occlusion GTAO) în vederea live și în randare, lumină de mediu, tavan luminat în interior.
 - **Limbi:** română, engleză, rusă, franceză, germană (selector în antet, sau `?lang=en` / `ru` / `fr` / `de`). Textele sunt în `js/i18n-dict.js`.
+- **Niveluri:** parter și oricâte etaje; „Adaugă nivel deasupra” copiază pereții, ferestrele și camerele de dedesubt. Planul arată estompat nivelul de jos, iar „Toate nivelurile” arată casa întreagă.
+- **Mod persoană:** vederile Interior, Exterior și Grădină te pun la înălțimea ochilor; te rotești 360° pe loc, mergi cu rotița, W/A/S/D sau săgețile (pe telefon cu butoanele ▲▼), dublu-clic pe podea ca să ajungi acolo. Pereții te opresc, ușile te lasă să treci. Modificările din proiect nu mută camera.
+- **Scări:** dreaptă, în L, în U, în spirală, cu trepte în consolă și scară de pod; urcă singure până la nivelul de deasupra și fac gol în planșeu.
+- **Scurgerea apei:** glafuri exterioare cu lăcrimar (aluminiu, piatră, tablă), pervaz interior, culoarea tâmplăriei, jgheaburi și burlane în 5 culori.
+- **Grădină:** unelte pentru alei (6 materiale) și zone (gazon, flori, pietriș, terasă, pavaj, iaz), plus copaci, brad, pom fructifer, gard viu, gard, bancă, pergolă și iluminat de grădină care se aprinde seara.
+- **Calculator de costuri:** cantitățile din proiect (toate nivelurile) se transformă în listă de cumpărături cu prețuri orientative pentru Olanda (€) și Republica Moldova (lei), cu interval minim–maxim, prețuri proprii salvate, manoperă estimată, lista magazinelor și tipărire PDF. Prețurile din `js/costs.js` sunt aproximative (noiembrie 2026).
 - **Proiectele mele:** mai multe proiecte salvate în browser, cu miniatură, deschidere, dublare și ștergere; un șablon deschis devine proiect nou și nu-l înlocuiește pe cel curent.
 - **Fișă client:** o pagină cu randarea 3D, planul, camerele și cantitățile de materiale, cu câmpuri pentru client și observații; se tipărește sau se salvează ca PDF.
 - **Proiecte:** salvare automată în browser, anulare/refacere, export/import `.json`, galerie „Randările mele” (IndexedDB).

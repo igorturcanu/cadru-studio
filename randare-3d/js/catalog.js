@@ -84,8 +84,24 @@ export const CATALOG = [
   { type: 'scara', name: 'Scară interioară', cat: 'Construcție', icon: '🪜', w: 1.0, d: 3.2, h: 2.8, color: WOOD_LIGHT, c2: '#3a3a3a', c1n: 'Trepte', c2n: 'Balustradă' },
   { type: 'semineu', name: 'Șemineu', cat: 'Construcție', icon: '🔥', w: 1.4, d: 0.5, h: 1.1, color: '#e8e4dc' },
   { type: 'calorifer', name: 'Calorifer', cat: 'Construcție', icon: '♒', w: 1.0, d: 0.1, h: 0.6, color: '#f4f4f2', elev: 0.15 },
-  { type: 'copac', name: 'Copac', cat: 'Exterior', icon: '🌳', w: 3, d: 3, h: 5.5, color: '#3f6b35' },
-  { type: 'tufis', name: 'Tufiș', cat: 'Exterior', icon: '🌿', w: 1.0, d: 1.0, h: 0.8, color: '#4d7c3a' },
+  { type: 'scara_l', name: 'Scară în L', cat: 'Scări', icon: '↱', w: 2.0, d: 2.2, h: 2.95, color: WOOD_LIGHT, c2: '#3a3a3a', c1n: 'Trepte', c2n: 'Balustradă', stair: true },
+  { type: 'scara_u', name: 'Scară în U', cat: 'Scări', icon: '⮌', w: 2.2, d: 2.6, h: 2.95, color: WOOD_LIGHT, c2: '#3a3a3a', c1n: 'Trepte', c2n: 'Balustradă', stair: true },
+  { type: 'scara_spirala', name: 'Scară în spirală (rotundă)', cat: 'Scări', icon: '🌀', w: 1.8, d: 1.8, h: 2.95, color: WOOD_LIGHT, c2: '#3a3a3a', c1n: 'Trepte', c2n: 'Stâlp și balustradă', stair: true },
+  { type: 'scara_plutitoare', name: 'Scară cu trepte în consolă', cat: 'Scări', icon: '▤', w: 0.9, d: 3.3, h: 2.95, color: WOOD, c2: '#d8d4cc', c1n: 'Trepte', c2n: 'Perete de sprijin', stair: true },
+  { type: 'scara_pod', name: 'Scară de pod (ascunsă în tavan)', cat: 'Scări', icon: '⇡', w: 0.7, d: 1.2, h: 2.7, color: WOOD_LIGHT, c2: '#f2f0ec', c1n: 'Trepte', c2n: 'Trapă', stair: true },
+  { type: 'copac', name: 'Copac', cat: 'Grădină', icon: '🌳', w: 3, d: 3, h: 5.5, color: '#3f6b35' },
+  { type: 'brad', name: 'Brad (conifer)', cat: 'Grădină', icon: '🌲', w: 2.2, d: 2.2, h: 6, color: '#2f5734' },
+  { type: 'pom', name: 'Pom fructifer', cat: 'Grădină', icon: '🍎', w: 2.6, d: 2.6, h: 3.4, color: '#4f7f3a', c2: '#c8352a', c1n: 'Frunze', c2n: 'Fructe' },
+  { type: 'tufis', name: 'Tufiș', cat: 'Grădină', icon: '🌿', w: 1.0, d: 1.0, h: 0.8, color: '#4d7c3a' },
+  { type: 'flori', name: 'Strat de flori', cat: 'Grădină', icon: '🌷', w: 1.6, d: 0.8, h: 0.35, color: '#e0457b', c2: '#f4c430', c1n: 'Flori', c2n: 'Flori 2' },
+  { type: 'ghiveci', name: 'Ghiveci cu flori', cat: 'Grădină', icon: '🪴', w: 0.5, d: 0.5, h: 0.75, color: '#b5643c', c2: '#d9457a', c1n: 'Ghiveci', c2n: 'Flori' },
+  { type: 'gard_viu', name: 'Gard viu', cat: 'Grădină', icon: '🟩', w: 4, d: 0.6, h: 1.3, color: '#3e6a33' },
+  { type: 'gard', name: 'Gard din lemn', cat: 'Grădină', icon: '🚧', w: 4, d: 0.08, h: 1.4, color: '#9b6a42' },
+  { type: 'banca', name: 'Bancă de grădină', cat: 'Grădină', icon: '🪑', w: 1.5, d: 0.6, h: 0.85, color: WOOD, c2: DARK, c1n: 'Lemn', c2n: 'Picioare' },
+  { type: 'pergola', name: 'Pergolă', cat: 'Grădină', icon: '⛩️', w: 3.5, d: 3.0, h: 2.6, color: WOOD, c2: '#5f8a45', c1n: 'Lemn', c2n: 'Iederă' },
+  { type: 'felinar', name: 'Stâlp de iluminat', cat: 'Grădină', icon: '🏮', w: 0.3, d: 0.3, h: 2.4, color: '#2f3135', garden: true },
+  { type: 'bolard', name: 'Bolard luminos (alee)', cat: 'Grădină', icon: '🕯️', w: 0.16, d: 0.16, h: 0.7, color: '#2f3135', garden: true },
+  { type: 'spot', name: 'Spot de grădină', cat: 'Grădină', icon: '🔦', w: 0.14, d: 0.14, h: 0.12, color: '#2f3135', garden: true },
   { type: 'masina', name: 'Mașină', cat: 'Exterior', icon: '🚗', w: 1.8, d: 4.3, h: 1.45, color: '#a33b32' },
   { type: 'piscina', name: 'Piscină', cat: 'Exterior', icon: '🏊', w: 3.5, d: 7, h: 0.05, color: '#4fb3d9' },
 ];
@@ -405,6 +421,164 @@ export function buildItem(it, lightsOn) {
       for (let i = 0; i <= n; i += 2) g.add(box(0.025, 0.9, 0.025, c2, w / 2 + 0.025, i * rise, d / 2 - i * run));
       break;
     }
+    case 'brad': {
+      g.add(cyl(0.1, 0.16, h * 0.2, mat('#5b4630'), 0, 0, 0, 10));
+      const leaf = mat(it.color, { roughness: 0.9 });
+      for (let i = 0; i < 4; i++) {
+        const k = 1 - i * 0.22, ch = h * 0.42;
+        const cone = new THREE.Mesh(new THREE.ConeGeometry(w / 2 * k, ch, 14), leaf);
+        cone.position.y = h * 0.15 + i * h * 0.2 + ch / 2; cone.castShadow = cone.receiveShadow = true; g.add(cone);
+      }
+      break;
+    }
+    case 'pom': {
+      g.add(cyl(0.08, 0.12, h * 0.42, mat('#6a4e33'), 0, 0, 0, 10));
+      const leaf = mat(it.color, { roughness: 0.9 }), fruit = mat(it.color2 || def.c2, { roughness: 0.5 });
+      const r = rng(7);
+      for (let i = 0; i < 6; i++) { const a = r() * Math.PI * 2, rr = r() * w * 0.18; g.add(sphere(w * (0.2 + r() * 0.08), leaf, Math.cos(a) * rr, h * (0.62 + r() * 0.18), Math.sin(a) * rr)); }
+      for (let i = 0; i < 26; i++) {
+        const a = r() * Math.PI * 2, el = (r() - 0.3) * 1.2, R = w * 0.36;
+        const f = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 6), fruit);
+        f.position.set(Math.cos(a) * Math.cos(el) * R, h * 0.68 + Math.sin(el) * R * 0.7, Math.sin(a) * Math.cos(el) * R); g.add(f);
+      }
+      break;
+    }
+    case 'flori': {
+      g.add(box(w, 0.12, d, mat('#5a3e2b', { roughness: 1 }), 0, 0, 0));
+      g.add(box(w + 0.06, 0.16, 0.04, mat('#8a8f96'), 0, 0, d / 2 + 0.02)); g.add(box(w + 0.06, 0.16, 0.04, mat('#8a8f96'), 0, 0, -d / 2 - 0.02));
+      g.add(box(0.04, 0.16, d, mat('#8a8f96'), w / 2 + 0.02, 0, 0)); g.add(box(0.04, 0.16, d, mat('#8a8f96'), -w / 2 - 0.02, 0, 0));
+      const cols = [it.color, it.color2 || def.c2, '#ffffff', '#8a5cc7'], stem = mat('#4f7d3a'), r = rng(3);
+      const n = Math.round(w * d * 60);
+      for (let i = 0; i < n; i++) {
+        const x = (r() - 0.5) * (w - 0.08), z = (r() - 0.5) * (d - 0.08), hh = 0.1 + r() * (h - 0.15);
+        const st = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, hh, 4), stem); st.position.set(x, 0.12 + hh / 2, z); g.add(st);
+        const fl = new THREE.Mesh(new THREE.SphereGeometry(0.03 + r() * 0.015, 7, 5), mat(cols[Math.floor(r() * cols.length)], { roughness: 0.6 })); fl.position.set(x, 0.12 + hh, z); fl.castShadow = true; g.add(fl);
+      }
+      break;
+    }
+    case 'ghiveci': {
+      g.add(cyl(w * 0.45, w * 0.32, h * 0.5, c, 0, 0, 0, 18));
+      g.add(cyl(w * 0.42, w * 0.42, 0.02, mat('#4a3424'), 0, h * 0.48, 0, 18));
+      const fl = mat(it.color2 || def.c2, { roughness: 0.6 }), leaf = mat('#4f7d3a', { roughness: 0.9 }), r = rng(5);
+      g.add(sphere(w * 0.32, leaf, 0, h * 0.62, 0));
+      for (let i = 0; i < 14; i++) { const a = r() * Math.PI * 2, rr = w * (0.15 + r() * 0.18); g.add(sphere(0.04, fl, Math.cos(a) * rr, h * (0.62 + r() * 0.25), Math.sin(a) * rr)); }
+      break;
+    }
+    case 'gard_viu': {
+      g.add(rbox(w, h, d, Math.min(0.12, d / 3), mat(it.color, { roughness: 0.95 }), 0, 0, 0));
+      break;
+    }
+    case 'gard': {
+      const n = Math.max(2, Math.round(w / 0.14));
+      for (let i = 0; i < n; i++) g.add(box(0.1, h - (i % 2) * 0.06, 0.025, c, -w / 2 + (i + 0.5) * w / n, 0, 0.02));
+      g.add(box(w, 0.08, 0.04, c, 0, 0.25, -0.02)); g.add(box(w, 0.08, 0.04, c, 0, h - 0.35, -0.02));
+      for (let i = 0; i <= Math.ceil(w / 2); i++) g.add(box(0.09, h + 0.05, 0.09, mat(shade(it.color, -0.12)), -w / 2 + Math.min(w, i * 2), 0, -0.06));
+      break;
+    }
+    case 'banca': {
+      for (let i = 0; i < 4; i++) g.add(box(w, 0.035, 0.09, c, 0, 0.42, -d / 2 + 0.08 + i * 0.12));
+      for (let i = 0; i < 3; i++) g.add(box(w, 0.08, 0.025, c, 0, 0.52 + i * 0.11, -d / 2 + 0.04));
+      for (const x of [-w / 2 + 0.1, w / 2 - 0.1]) { g.add(box(0.05, 0.42, d - 0.1, c2, x, 0, 0)); g.add(box(0.05, h - 0.42, 0.05, c2, x, 0.42, -d / 2 + 0.03)); }
+      break;
+    }
+    case 'pergola': {
+      for (const x of [-w / 2 + 0.08, w / 2 - 0.08]) for (const z of [-d / 2 + 0.08, d / 2 - 0.08]) g.add(box(0.14, h, 0.14, c, x, 0, z));
+      for (const z of [-d / 2 + 0.08, d / 2 - 0.08]) g.add(box(w + 0.3, 0.2, 0.07, c, 0, h - 0.2, z));
+      const n = Math.round(w / 0.4);
+      for (let i = 0; i <= n; i++) g.add(box(0.05, 0.14, d + 0.3, c, -w / 2 + i * w / n, h, 0));
+      const ivy = mat(it.color2 || def.c2, { roughness: 0.95 }), r = rng(9);
+      for (let i = 0; i < 18; i++) g.add(sphere(0.18 + r() * 0.12, ivy, (r() - 0.5) * w, h + 0.1, (r() > 0.5 ? 1 : -1) * (d / 2 - 0.05) + (r() - 0.5) * 0.3));
+      break;
+    }
+    case 'felinar': {
+      g.add(cyl(0.05, 0.07, h - 0.35, c, 0, 0, 0, 12));
+      g.add(cyl(0.09, 0.12, 0.05, c, 0, 0, 0, 12));
+      g.add(cyl(0.16, 0.1, 0.06, c, 0, h - 0.06, 0, 12));
+      const glow = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.09, 0.28, 12), new THREE.MeshStandardMaterial({ color: '#fff4d8', emissive: lightsOn ? '#ffd38a' : '#000', emissiveIntensity: lightsOn ? 3 : 0, roughness: 0.3 }));
+      glow.position.y = h - 0.21; g.add(glow);
+      if (lightsOn) { const L = new THREE.PointLight('#ffcf8a', 9, 11, 2); L.position.y = h - 0.3; g.add(L); }
+      break;
+    }
+    case 'bolard': {
+      g.add(cyl(w / 2, w / 2, h - 0.12, c, 0, 0, 0, 14));
+      const glow = new THREE.Mesh(new THREE.CylinderGeometry(w / 2 - 0.005, w / 2 - 0.005, 0.1, 14), new THREE.MeshStandardMaterial({ color: '#fff4d8', emissive: lightsOn ? '#ffd38a' : '#000', emissiveIntensity: lightsOn ? 3 : 0 }));
+      glow.position.y = h - 0.07; g.add(glow);
+      g.add(cyl(w / 2 + 0.01, w / 2 + 0.01, 0.03, c, 0, h - 0.03, 0, 14));
+      if (lightsOn) { const L = new THREE.PointLight('#ffcf8a', 2.2, 3.5, 2); L.position.y = h - 0.1; g.add(L); }
+      break;
+    }
+    case 'spot': {
+      g.add(cyl(w / 2, w / 2, h, c, 0, 0, 0, 14));
+      const glow = new THREE.Mesh(new THREE.CircleGeometry(w / 2 - 0.01, 14), new THREE.MeshStandardMaterial({ color: '#fff', emissive: lightsOn ? '#ffe2b0' : '#000', emissiveIntensity: lightsOn ? 4 : 0 }));
+      glow.rotation.x = -Math.PI / 2; glow.position.y = h + 0.002; g.add(glow);
+      if (lightsOn) { const L = new THREE.SpotLight('#ffe2b0', 25, 9, 0.5, 0.6, 2); L.position.y = h + 0.05; L.target.position.set(0, 6, 0.6); g.add(L); g.add(L.target); }
+      break;
+    }
+    case 'scara_l': case 'scara_u': {
+      // două rampe cu podest; prima urcă spre -z, a doua se întoarce
+      const n = Math.max(6, Math.round(h / 0.18)), rise = h / n, n1 = Math.floor(n / 2), n2 = n - n1 - 1;
+      const U = it.type === 'scara_u', fw = U ? w / 2 - 0.03 : Math.min(1.0, w * 0.45);
+      const land = fw, run1 = (d - land) / n1;
+      const tread = mat(it.color), riser = mat('#f2f0ec');
+      const x1 = U ? -w / 2 + fw / 2 : -w / 2 + fw / 2;
+      for (let i = 0; i < n1; i++) { g.add(box(fw, 0.045, run1 + 0.03, tread, x1, (i + 1) * rise - 0.045, d / 2 - (i + 0.5) * run1)); g.add(box(fw - 0.02, rise - 0.045, 0.02, riser, x1, i * rise, d / 2 - i * run1 - 0.01)); }
+      const ly = (n1 + 1) * rise;
+      g.add(box(U ? w : w, 0.08, land, tread, 0, ly - 0.08, -d / 2 + land / 2));
+      g.add(box(w, ly - 0.08, 0.04, riser, 0, 0, -d / 2 + land - 0.02));
+      if (U) {
+        const x2 = w / 2 - fw / 2, run2 = (d - land) / n2;
+        for (let i = 0; i < n2; i++) { const y = ly + (i + 1) * rise; g.add(box(fw, 0.045, run2 + 0.03, tread, x2, y - 0.045, -d / 2 + land + (i + 0.5) * run2)); g.add(box(fw - 0.02, rise - 0.045, 0.02, riser, x2, y - rise, -d / 2 + land + i * run2 + 0.01)); }
+        g.add(box(0.05, h + 0.9, 0.05, c2, 0, 0, -d / 2 + land));
+      } else {
+        const run2 = (w - fw) / n2;
+        for (let i = 0; i < n2; i++) { const y = ly + (i + 1) * rise; g.add(box(run2 + 0.03, 0.045, fw, tread, -w / 2 + fw + (i + 0.5) * run2, y - 0.045, -d / 2 + land / 2)); g.add(box(0.02, rise - 0.045, fw - 0.02, riser, -w / 2 + fw + i * run2 + 0.01, y - rise, -d / 2 + land / 2)); }
+      }
+      // balustradă simplă pe marginea exterioară
+      const rail = (x0, z0, y0, x1_, z1_, y1) => { const len = Math.hypot(x1_ - x0, z1_ - z0, y1 - y0); const m = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, len), c2); m.position.set((x0 + x1_) / 2, (y0 + y1) / 2 + 0.9, (z0 + z1_) / 2); m.lookAt(x1_, y1 + 0.9, z1_); m.castShadow = true; g.add(m); };
+      rail(-w / 2 - 0.02, d / 2, rise, -w / 2 - 0.02, -d / 2 + land, ly);
+      for (let i = 0; i <= n1; i += 2) g.add(box(0.025, 0.9, 0.025, c2, -w / 2 - 0.02, (i + 1) * rise, d / 2 - i * run1));
+      break;
+    }
+    case 'scara_spirala': {
+      const n = Math.max(10, Math.round(h / 0.2)), rise = h / n, R = Math.min(w, d) / 2, turn = Math.PI * 2 * 0.85;
+      const tread = mat(it.color);
+      g.add(cyl(0.07, 0.07, h + 0.95, c2, 0, 0, 0, 16));
+      for (let i = 0; i < n; i++) {
+        const a = (i / n) * turn, y = (i + 1) * rise;
+        const shape = new THREE.Shape(); const a0 = -turn / n * 0.55, a1 = turn / n * 0.55;
+        shape.moveTo(0, 0); shape.absarc(0, 0, R, a0, a1, false); shape.lineTo(0, 0);
+        const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.045, bevelEnabled: false, curveSegments: 6 });
+        geo.rotateX(-Math.PI / 2);
+        const m = new THREE.Mesh(geo, tread); m.position.y = y - 0.045; m.rotation.y = a; m.castShadow = m.receiveShadow = true; g.add(m);
+        const px = Math.cos(a) * (R - 0.04), pz = -Math.sin(a) * (R - 0.04);
+        g.add(box(0.02, 0.9, 0.02, c2, px, y, pz));
+      }
+      // mâna curentă în spirală
+      const pts = []; for (let i = 0; i <= 60; i++) { const a = (i / 60) * turn; pts.push(new THREE.Vector3(Math.cos(a) * (R - 0.04), 0.9 + rise + (i / 60) * (h - rise), -Math.sin(a) * (R - 0.04))); }
+      const tube = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 80, 0.022, 6), c2); tube.castShadow = true; g.add(tube);
+      break;
+    }
+    case 'scara_plutitoare': {
+      const n = Math.max(3, Math.round(h / 0.18)), rise = h / n, run = d / n;
+      g.add(box(0.12, h + 0.2, d + 0.3, c2, -w / 2 - 0.06, 0, 0));
+      for (let i = 0; i < n; i++) g.add(box(w, 0.07, run + 0.02, c, 0, (i + 1) * rise - 0.07, d / 2 - (i + 0.5) * run));
+      // parapet de sticlă pe partea liberă
+      const len = Math.hypot(d, h), ang = Math.atan2(h, d);
+      const glass = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.9, len), new THREE.MeshPhysicalMaterial({ color: '#d7ebf3', transparent: true, opacity: 0.25, roughness: 0.05, depthWrite: false }));
+      glass.position.set(w / 2 + 0.02, h / 2 + 0.5, 0); glass.rotation.x = ang; g.add(glass);
+      break;
+    }
+    case 'scara_pod': {
+      // trapă în tavan cu scară pliabilă coborâtă
+      g.add(box(w + 0.08, 0.05, d + 0.08, c2, 0, h - 0.05, 0));
+      const len = Math.hypot(d * 0.85, h), ang = Math.atan2(d * 0.85, h);
+      const arm = new THREE.Group(); arm.position.set(0, h - 0.05, -d / 2 + 0.05); arm.rotation.x = -ang;
+      for (const x of [-w / 2 + 0.06, w / 2 - 0.06]) { const r1 = new THREE.Mesh(new THREE.BoxGeometry(0.05, len, 0.08), c); r1.position.set(x, -len / 2, 0); r1.castShadow = true; arm.add(r1); }
+      const n = Math.round(len / 0.26);
+      for (let i = 1; i <= n; i++) { const st = new THREE.Mesh(new THREE.BoxGeometry(w - 0.12, 0.03, 0.1), c); st.position.set(0, -i * len / (n + 1), 0); st.rotation.x = ang; st.castShadow = true; arm.add(st); }
+      g.add(arm);
+      break;
+    }
     case 'semineu': {
       g.add(box(w, h, d, c));
       g.add(box(w + 0.1, 0.06, d + 0.08, mat('#cfc8bd'), 0, h, 0.02));
@@ -628,3 +802,71 @@ export const KITCHEN_PALETTES = [
   ['#c96b4b', '#efece6', 'Teracotă + alb'],
   ['#ffffff', '#2b2b2b', 'Alb lucios + negru'],
 ];
+
+// ---------- Texturi pentru alei și zone de grădină ----------
+function pavers(seed, base = '#a59a8e') {
+  return canvasTex(512, (g, s) => {
+    const r = rng(seed); g.fillStyle = '#6f675e'; g.fillRect(0, 0, s, s);
+    const bw = s / 4, bh = s / 8;
+    for (let y = 0; y < 8; y++) for (let x = -1; x < 5; x++) {
+      const c = new THREE.Color(base); const hsl = {}; c.getHSL(hsl); c.setHSL(hsl.h, hsl.s, hsl.l + (r() - 0.5) * 0.12);
+      g.fillStyle = '#' + c.getHexString(); g.fillRect(x * bw + (y % 2) * bw / 2 + 2, y * bh + 2, bw - 4, bh - 4);
+    }
+  });
+}
+function slabs(seed, base, n) {
+  return canvasTex(512, (g, s) => {
+    const r = rng(seed); g.fillStyle = '#7d776f'; g.fillRect(0, 0, s, s); const ts = s / n;
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+      const c = new THREE.Color(base); const hsl = {}; c.getHSL(hsl); c.setHSL(hsl.h, hsl.s, hsl.l + (r() - 0.5) * 0.08);
+      g.fillStyle = '#' + c.getHexString(); g.fillRect(x * ts + 3, y * ts + 3, ts - 6, ts - 6);
+      g.globalAlpha = 0.07; for (let k = 0; k < 60; k++) { g.fillStyle = r() > 0.5 ? '#000' : '#fff'; g.fillRect(x * ts + r() * ts, y * ts + r() * ts, 2, 2); } g.globalAlpha = 1;
+    }
+  });
+}
+function flagstone(seed) {
+  return canvasTex(512, (g, s) => {
+    const r = rng(seed); g.fillStyle = '#5e6b4f'; g.fillRect(0, 0, s, s);
+    for (let i = 0; i < 26; i++) {
+      const cx = r() * s, cy = r() * s, rad = 40 + r() * 45, c = new THREE.Color('#b9b1a2'); const hsl = {}; c.getHSL(hsl); c.setHSL(hsl.h, hsl.s, hsl.l + (r() - 0.5) * 0.14);
+      g.fillStyle = '#' + c.getHexString(); g.beginPath();
+      for (let k = 0; k < 7; k++) { const a = k / 7 * Math.PI * 2, rr = rad * (0.7 + r() * 0.3); const px = cx + Math.cos(a) * rr, py = cy + Math.sin(a) * rr; k ? g.lineTo(px, py) : g.moveTo(px, py); }
+      g.closePath(); g.fill();
+    }
+  });
+}
+function gravel(seed, base = '#c9c1b2') {
+  return canvasTex(512, (g, s) => {
+    const r = rng(seed); g.fillStyle = base; g.fillRect(0, 0, s, s);
+    for (let i = 0; i < 9000; i++) { const c = new THREE.Color(base); c.offsetHSL(0, 0, (r() - 0.5) * 0.35); g.fillStyle = '#' + c.getHexString(); g.beginPath(); g.arc(r() * s, r() * s, 1 + r() * 2.5, 0, Math.PI * 2); g.fill(); }
+  });
+}
+function lawn(seed) {
+  return canvasTex(512, (g, s) => {
+    const r = rng(seed);
+    for (let i = 0; i < 8; i++) { g.fillStyle = i % 2 ? '#5d8f3e' : '#6a9c46'; g.fillRect(0, i * s / 8, s, s / 8); }
+    g.globalAlpha = 0.35; for (let i = 0; i < 14000; i++) { g.fillStyle = r() > 0.5 ? '#4b7a31' : '#82b35a'; g.fillRect(r() * s, r() * s, 1, 3); } g.globalAlpha = 1;
+  });
+}
+function soil(seed) {
+  return canvasTex(256, (g, s) => { const r = rng(seed); g.fillStyle = '#4e3626'; g.fillRect(0, 0, s, s); for (let i = 0; i < 3000; i++) { g.fillStyle = r() > 0.5 ? '#3b281c' : '#6a4c37'; g.fillRect(r() * s, r() * s, 2, 2); } });
+}
+// size = câți metri acoperă o textură
+export const PATH_MATS = {
+  pavele: { name: 'Pavele', size: 1.6, make: () => pavers(31) },
+  pavele_rosii: { name: 'Pavele roșiatice', size: 1.6, make: () => pavers(33, '#a3634a') },
+  dale: { name: 'Dale de beton 40×40', size: 1.6, make: () => slabs(35, '#bdb8ae', 4) },
+  piatra: { name: 'Piatră naturală', size: 2.4, make: () => flagstone(37) },
+  pietris: { name: 'Pietriș', size: 1.2, make: () => gravel(39) },
+  lemn: { name: 'Deck din lemn', size: 2.0, make: () => planks('#9b6a42', 0.12, 41) },
+};
+export const ZONE_TYPES = {
+  gazon: { name: 'Gazon', size: 4, make: () => lawn(43) },
+  flori: { name: 'Strat de flori', size: 1.2, make: () => soil(45), flowers: true },
+  pietris: { name: 'Pietriș decorativ', size: 1.2, make: () => gravel(47, '#d8d2c4') },
+  terasa: { name: 'Terasă din lemn', size: 2.0, make: () => planks('#a0703f', 0.12, 49) },
+  pavaj: { name: 'Pavaj', size: 1.6, make: () => pavers(51) },
+  apa: { name: 'Iaz / apă', size: 3, make: () => canvasTex(64, (g, s) => { g.fillStyle = '#3f8fb5'; g.fillRect(0, 0, s, s); }), water: true },
+};
+const gCache = {};
+export function gardenTexture(kind, id) { const k = kind + id; const src = kind === 'path' ? PATH_MATS : ZONE_TYPES; return gCache[k] || (gCache[k] = (src[id] || Object.values(src)[0]).make()); }

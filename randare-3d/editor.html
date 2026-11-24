@@ -56,9 +56,15 @@ aside.right { border-right: 0; border-left: 1px solid var(--line); }
 #v2d canvas, #v3d canvas { display: block; width: 100%; height: 100%; touch-action: none; }
 #v3d { background: #cfe0ef; }
 .overlay { position: absolute; display: flex; gap: 4px; flex-wrap: wrap; z-index: 2; }
-.overlay.tl { top: 10px; left: 10px; } .overlay.tr { top: 10px; right: 10px; } .overlay.bl { bottom: 10px; left: 10px; } .overlay.br { bottom: 10px; right: 10px; }
+.overlay.tl { top: 10px; left: 10px; } #v3d .overlay.br { bottom: 52px; } .overlay.tr { top: 10px; right: 10px; } .overlay.bl { bottom: 10px; left: 10px; } .overlay.br { bottom: 10px; right: 10px; }
 .chip { background: rgba(255,255,255,.92); border: 1px solid var(--line); border-radius: 8px; padding: 5px 9px; font-size: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
 .chip.on { background: var(--brand); color: #fff; border-color: var(--brand); }
+.lvlbar { display: contents; }
+.lvls { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+.walkhint { position: absolute; top: 46px; left: 10px; z-index: 2; max-width: min(420px, calc(100% - 20px)); display: flex; gap: 8px; align-items: center; background: rgba(20,28,38,.8); color: #fff; font-size: 12px; line-height: 1.35; border-radius: 8px; padding: 6px 9px; }
+.walkhint[hidden] { display: none; }
+.walkhint .pad { display: flex; flex-direction: column; gap: 3px; }
+.walkhint .pad .chip { padding: 3px 10px; color: #1d2733; touch-action: none; user-select: none; }
 .vlabel { font-weight: 700; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); background: rgba(255,255,255,.85); border-radius: 6px; padding: 4px 8px; }
 .field { display: grid; grid-template-columns: 96px 1fr; align-items: center; gap: 8px; margin: 7px 0; }
 .field label { color: var(--muted); font-size: 12px; }
@@ -148,7 +154,23 @@ table.qty small { color: var(--muted); }
   #mSheet .body { padding: 0; }
   .sheet .meta div[contenteditable] { border: 0; }
   .sheet .two, .sheet table { break-inside: avoid; }
+  body.print-cost #mSheet { display: none !important; }
+  body.print-cost #mCost { position: static; display: block !important; background: none; padding: 0; }
+  body.print-cost #mCost .dialog { max-height: none; overflow: visible; box-shadow: none; width: 100%; border-radius: 0; }
+  body.print-cost #mCost .body { padding: 0; }
+  body.print-cost #mCost header .x, body.print-cost #mCost .opts { display: none; }
+  table.cost input { border: 0; }
 }
+table.cost { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.cost td, table.cost th { padding: 5px 6px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
+table.cost td:last-child, table.cost th:last-child { text-align: right; white-space: nowrap; }
+table.cost th[colspan] { background: var(--soft); color: var(--brand); }
+table.cost th[colspan="4"] { text-align: left; }
+table.cost tr.sum th { background: #eef5fd; font-size: 14px; }
+table.cost input { width: 92px; padding: 3px 5px; border: 1px solid var(--line); border-radius: 5px; }
+table.cost small { display: block; color: var(--muted); font-size: 11px; }
+.shops { display: flex; flex-wrap: wrap; gap: 6px; }
+.shops a { border: 1px solid var(--line); border-radius: 99px; padding: 4px 10px; font-size: 12px; text-decoration: none; color: var(--brand); }
 @media (max-width: 1000px) {
   .main { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
   aside.left, aside.right { display: none; position: fixed; top: 52px; bottom: 52px; width: min(320px, 88vw); z-index: 20; box-shadow: 0 10px 40px rgba(0,0,0,.25); }
@@ -169,6 +191,8 @@ table.qty small { color: var(--muted); }
   #langSel { max-width: 58px; }
   #camBtns, #viewBtns { flex-wrap: wrap; }
   #v3d .overlay.br { bottom: 50px; }
+  #v3d .overlay.tl { display: none; }
+  .walkhint .txt { display: none; }
 }
 </style>
 <script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js" } }</script>
@@ -189,11 +213,13 @@ table.qty small { color: var(--muted); }
       <option value="" data-i18n>Șabloane…</option>
       <option value="apartament" data-i18n>Apartament 2 camere</option>
       <option value="casa" data-i18n>Casă cu grădină</option>
+      <option value="casa_etaj" data-i18n>Casă cu etaj și grădină</option>
       <option value="gol" data-i18n>Plan gol</option>
     </select>
     <div class="grp">
       <button class="tbtn" id="btnProj">📁<span class="hide-m"> <span data-i18n>Proiecte</span></span></button>
-      <button class="tbtn hide-s" id="btnSheet">📄<span class="hide-m"> <span data-i18n>Fișă client</span></span></button>
+      <button class="tbtn" id="btnCost">💶<span class="hide-s"> <span data-i18n>Costuri</span></span></button>
+    <button class="tbtn hide-s" id="btnSheet">📄<span class="hide-m"> <span data-i18n>Fișă client</span></span></button>
       <button class="tbtn hide-m" id="btnPlan" data-i18n>Plan PNG</button>
     </div>
     <div class="sp"></div>
@@ -224,6 +250,11 @@ table.qty small { color: var(--muted); }
           <button class="tool" data-tool="window"><span class="ic">🪟</span><span data-i18n>Fereastră</span></button>
           <button class="tool" data-tool="balcony"><span class="ic">▯</span><span data-i18n>Ușă balcon</span></button>
         </div>
+        <h3 style="margin-top:12px" data-i18n>Grădină</h3>
+        <div class="tools">
+          <button class="tool" data-tool="path"><span class="ic">🟫</span><span data-i18n>Alee</span></button>
+          <button class="tool" data-tool="zone"><span class="ic">🌱</span><span data-i18n>Zonă</span></button>
+        </div>
         <h3 style="margin-top:12px" data-i18n>Adnotări</h3>
         <div class="tools">
           <button class="tool" data-tool="dim"><span class="ic">↔</span><span data-i18n>Cotă</span></button>
@@ -246,21 +277,27 @@ table.qty small { color: var(--muted); }
     <section class="stage split" id="stage">
       <div class="view" id="v2d">
         <canvas id="c2d"></canvas>
-        <div class="overlay tl"><span class="vlabel" data-i18n>Plan 2D</span></div>
+        <div class="overlay tl"><span class="vlabel" data-i18n>Plan 2D</span><span class="lvlbar"></span></div>
         <div class="overlay tr">
           <button class="chip" id="zoomFit">⤢ <span data-i18n>Încadrează</span></button>
         </div>
       </div>
       <div class="view" id="v3d">
         <div class="overlay tl"><span class="vlabel" data-i18n>Vedere 3D</span></div>
+        <div class="walkhint" id="walkHint" hidden>
+          <span><b data-i18n>Mod persoană</b><span class="txt"> · </span><span class="txt" data-i18n>Trage ca să te rotești 360°. Rotița, W/S sau săgețile te duc înainte și înapoi. Dublu-clic pe podea ca să mergi acolo.</span></span>
+          <span class="pad"><button class="chip" data-walk="w" aria-label="↑">▲</button><button class="chip" data-walk="s" aria-label="↓">▼</button></span>
+        </div>
         <div class="overlay tr" id="camBtns">
           <button class="chip on" data-cam="persp" data-i18n>Perspectivă</button>
           <button class="chip" data-cam="top" data-i18n>De sus</button>
           <button class="chip" data-cam="interior" data-i18n>Interior</button>
           <button class="chip" data-cam="exterior" data-i18n>Exterior</button>
+          <button class="chip" data-cam="gradina" data-i18n>Grădină</button>
         </div>
         <div class="overlay br">
           <button class="chip" id="hqBtn">✨ <span data-i18n>Calitate înaltă</span></button>
+          <button class="chip" id="lvlAllBtn" hidden>🏢 <span data-i18n>Toate nivelurile</span></button>
           <button class="chip" id="cutBtn">✂ <span data-i18n>Pereți tăiați</span></button>
         </div>
       </div>
@@ -358,8 +395,24 @@ table.qty small { color: var(--muted); }
   </div>
 </div>
 
+<div class="modal" id="mCost" role="dialog" aria-modal="true" aria-labelledby="mCostT">
+  <div class="dialog wide">
+    <header><h2 id="mCostT">💶 <span data-i18n>Calculator de materiale și costuri</span></h2><button class="x" data-close>×</button></header>
+    <div class="body">
+      <p class="hint" style="margin:0 0 10px" data-i18n>Cantitățile se calculează automat din proiect, pe toate nivelurile: pereți, acoperiș, ferestre, uși, pardoseli, jgheaburi și grădină.</p>
+      <div class="opts" style="margin-bottom:12px">
+        <div class="field"><label data-i18n>Țara / prețuri</label><select id="cRegion"></select></div>
+        <div class="field"><label data-i18n>Învelitoare acoperiș</label><select id="cRoof"></select></div>
+        <div class="field"><label data-i18n>Manoperă</label><label class="chk"><input type="checkbox" id="cLabour"> <span data-i18n>adaugă o estimare</span></label></div>
+      </div>
+      <div class="row noprint" style="margin:0 0 10px"><button class="btn primary" id="cPrint">🖨 <span data-i18n>Tipărește / Salvează PDF</span></button><button class="btn" id="cReset" data-i18n>Prețurile implicite</button></div>
+      <div id="costBody"></div>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
-<link rel="modulepreload" href="./vendor/three.module.min.js"><link rel="modulepreload" href="./vendor/OrbitControls.js"><link rel="modulepreload" href="./js/catalog.js"><link rel="modulepreload" href="./vendor/jsm/environments/RoomEnvironment.js">
+<link rel="modulepreload" href="./vendor/three.module.min.js"><link rel="modulepreload" href="./vendor/OrbitControls.js"><link rel="modulepreload" href="./js/catalog.js"><link rel="modulepreload" href="./js/costs.js"><link rel="modulepreload" href="./vendor/jsm/environments/RoomEnvironment.js">
 <script src="./js/i18n.js"></script>
 <script type="module" src="./js/editor.js"></script>
 </body>
