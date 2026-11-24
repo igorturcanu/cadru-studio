@@ -1,0 +1,1018 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+</head>
+<body>
+<title>Cadru Muzică</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: consola de mixaj — stiluri în stânga, piste (roluri) în dreapta, transport fix jos */
+:root{
+  --bg:#12141c; --panel:#1a1d28; --panel2:#222634; --line:#2e3346;
+  --fg:#e9e6df; --muted:#9a9cab; --accent:#f2a541; --accent2:#7cc4b4; --danger:#e0746a;
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --body:"Inter",ui-sans-serif,system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--fg)}
+body{font-family:var(--body);font-size:14px;line-height:1.5;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 150px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;font-weight:700}
+h1{font-size:clamp(26px,4vw,38px);letter-spacing:-.01em}
+h2{font-size:17px;letter-spacing:.01em}
+.wrap{max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+header p{margin:4px 0 0;color:var(--muted);max-width:62ch}
+.stats{display:flex;gap:18px;flex-wrap:wrap}
+.stat{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.stat b{display:block;font-family:var(--display);font-size:24px;color:var(--accent);font-weight:700}
+.grid{display:grid;grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:18px}
+@media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+input[type=search],input[type=number],select,textarea{background:var(--panel2);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:7px 9px;font:inherit;min-width:0;width:100%}
+textarea{font-family:var(--mono);font-size:12px;resize:vertical}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.cats{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:var(--panel2);border:1px solid var(--line);color:var(--fg);border-radius:999px;padding:4px 10px;font:inherit;font-size:12px;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--accent);color:#1b1408;border-color:var(--accent);font-weight:600}
+.styles{display:flex;flex-direction:column;gap:4px;max-height:560px;overflow:auto;padding-right:4px}
+.st{display:grid;grid-template-columns:1fr auto;gap:2px 10px;text-align:left;background:transparent;border:1px solid transparent;border-radius:7px;padding:7px 9px;color:var(--fg);font:inherit;cursor:pointer}
+.st:hover{background:var(--panel2)}
+.st[aria-selected=true]{background:var(--panel2);border-color:var(--accent)}
+.st b{font-weight:600}
+.st small{grid-column:1/-1;color:var(--muted);font-size:12px}
+.st span{font-family:var(--mono);font-size:11px;color:var(--accent2)}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.tracks{display:flex;flex-direction:column;gap:8px}
+.track{display:grid;grid-template-columns:110px minmax(0,1.4fr) minmax(0,1fr) 90px;gap:8px;align-items:center;background:var(--panel2);border-radius:8px;padding:8px 10px}
+.track .nm{font-weight:600;font-size:13px}
+.track .nm small{display:block;color:var(--muted);font-weight:400;font-size:11px}
+@media (max-width:640px){.track{grid-template-columns:1fr 1fr}.track .nm{grid-column:1/-1}}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.nat{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.ncard{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:6px}
+.ncard.on{border-color:var(--accent2)}
+.ncard label{display:flex;gap:6px;align-items:center;font-size:13px;cursor:pointer}
+.ncard input[type=checkbox]{accent-color:var(--accent2)}
+.btn{background:var(--panel2);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:9px 14px;font:inherit;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);color:#1b1408;border-color:var(--accent)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.transport{position:fixed;left:0;right:0;bottom:0;background:#0d0f15ee;backdrop-filter:blur(8px);border-top:1px solid var(--line);padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));z-index:20}
+.tin{max-width:1280px;margin:0 auto;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.now{flex:1 1 220px;min-width:0;display:flex;flex-direction:column;gap:4px}
+.now b{font-family:var(--display);font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.now small{color:var(--muted);font-family:var(--mono);font-size:11px}
+canvas#viz{width:180px;height:40px;flex:0 1 180px;min-width:0;max-width:100%}
+.prog{height:4px;background:var(--line);border-radius:2px;overflow:hidden}
+.prog i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+.fmt{width:auto}
+.note{color:var(--muted);font-size:12px;margin:0}
+.cmp{width:100%;border-collapse:collapse;font-size:13px;min-width:560px}
+.cmp th,.cmp td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+.cmp th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+.cmp td:last-child{color:var(--accent)}
+.scroll{overflow-x:auto}
+.smps{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}.smp{display:flex;flex-direction:column;gap:4px;background:var(--panel2);border-radius:8px;padding:8px 10px;min-width:0}.smp b{font-size:13px}.smp audio{width:100%;height:36px}
+.toast{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(90px + env(safe-area-inset-bottom,0px));background:var(--panel2);border:1px solid var(--accent);padding:10px 14px;border-radius:8px;z-index:30;max-width:min(420px,calc(100vw - 32px))}
+@media (max-width:640px){canvas#viz{display:none}.now{flex:1 1 calc(100% - 150px)}.fmt{flex:1 1 0;min-width:0}.transport .btn{padding:9px 12px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Cadru Muzică</h1>
+      <p>Generator de muzică instrumentală pentru canalele tale. Alegi stilul, instrumentele pe fiecare pistă, sunetele de natură și frecvența, asculți și descarci. Totul se compune în browser, fără cont și fără limite de piese.</p>
+    </div>
+    <div class="stats" id="stats"></div>
+  </header>
+
+  <section class="panel" aria-labelledby="h-mostre">
+    <h2 id="h-mostre">Ascultă mostre (1 minut fiecare)</h2>
+    <div class="smps"><div class="smp"><b>Somn profund</b><audio controls preload="none" src="mostre/somn_profund.mp3"></audio></div><div class="smp"><b>Lo-fi hip hop</b><audio controls preload="none" src="mostre/lo_fi_hip_hop.mp3"></audio></div><div class="smp"><b>Doină românească</b><audio controls preload="none" src="mostre/doina_romaneasca.mp3"></audio></div><div class="smp"><b>Trailer epic</b><audio controls preload="none" src="mostre/trailer_epic.mp3"></audio></div><div class="smp"><b>Jazz lounge</b><audio controls preload="none" src="mostre/jazz_lounge.mp3"></audio></div><div class="smp"><b>Pădure magică</b><audio controls preload="none" src="mostre/padure_magica.mp3"></audio></div><div class="smp"><b>Synthwave</b><audio controls preload="none" src="mostre/synthwave.mp3"></audio></div><div class="smp"><b>Boluri tibetane</b><audio controls preload="none" src="mostre/boluri_tibetane.mp3"></audio></div><div class="smp"><b>Horă</b><audio controls preload="none" src="mostre/hora.mp3"></audio></div><div class="smp"><b>Furtună</b><audio controls preload="none" src="mostre/furtuna.mp3"></audio></div></div>
+  </section>
+
+  <div class="grid">
+    <section class="panel" aria-labelledby="h-stil">
+      <h2 id="h-stil">Stil</h2>
+      <input type="search" id="q" placeholder="Caută: pian, ploaie, lo-fi, nai…" aria-label="Caută stil">
+      <div class="cats" id="cats"></div>
+      <div class="styles" id="styles" role="listbox" aria-label="Stiluri"></div>
+    </section>
+
+    <div style="display:flex;flex-direction:column;gap:18px;min-width:0">
+      <section class="panel" aria-labelledby="h-comp">
+        <h2 id="h-comp">Compoziție</h2>
+        <div class="row">
+          <div class="field"><span class="label">Durată</span><select id="dur"></select></div>
+          <div class="field"><span class="label">Tempo <span id="bpmv" style="font-family:var(--mono)"></span></span><input type="range" id="bpm" min="40" max="180" step="1"></div>
+          <div class="field"><span class="label">Tonalitate</span><select id="key"></select></div>
+          <div class="field"><span class="label">Scară / mod</span><select id="mode"></select></div>
+          <div class="field"><span class="label">Energie</span><input type="range" id="energy" min="0" max="100" value="50"></div>
+          <div class="field"><span class="label">Variantă (seed)</span><div style="display:flex;gap:6px"><input type="number" id="seed" min="1" max="999999"><button class="btn" id="reseed" title="Variantă nouă" aria-label="Variantă nouă">↻</button></div></div>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="h-inst">
+        <h2 id="h-inst">Instrumente pe piste</h2>
+        <div class="tracks" id="tracks"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="h-nat">
+        <h2 id="h-nat">Natură, frecvențe și spațiu</h2>
+        <div class="nat" id="nat"></div>
+        <div class="row">
+          <div class="field"><span class="label">Frecvență / binaural</span><select id="hz"></select></div>
+          <div class="field"><span class="label">Volum frecvență</span><input type="range" id="hzv" min="0" max="100" value="25"></div>
+          <div class="field"><span class="label">Reverb (sală)</span><input type="range" id="rev" min="0" max="100"></div>
+          <div class="field"><span class="label">Fade in / out (s)</span><div style="display:flex;gap:6px"><input type="number" id="fin" min="0" max="30" value="3"><input type="number" id="fout" min="0" max="60" value="6"></div></div>
+        </div>
+        <p class="note">Binauralele funcționează doar cu căști. Frecvențele solfeggio sunt un ton pur pus sub muzică; efectele lor asupra sănătății nu sunt dovedite științific, dar sunt un format popular pe YouTube.</p>
+      </section>
+
+      <section class="panel" aria-labelledby="h-ai">
+        <h2 id="h-ai">Prompt pentru AI (variantă cu voce sau sunet de studio)</h2>
+        <p class="note">Setările tale, traduse într-o descriere în engleză pentru Suno sau pentru generatorul de melodii din AI Personal. Folosește-l când vrei voce, versuri sau sunet înregistrat real.</p>
+        <textarea id="prompt" rows="3" readonly></textarea>
+        <div><button class="btn" id="copy">Copiază promptul</button></div>
+      </section>
+
+      <section class="panel" aria-labelledby="h-cmp">
+        <h2 id="h-cmp">Față de site-urile de exemplu</h2>
+        <div class="scroll"><table class="cmp" id="cmp"></table></div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<div class="transport">
+  <div class="tin">
+    <button class="btn primary" id="play">▶ Ascultă</button>
+    <div class="now"><b id="nowName">—</b><small id="nowInfo"></small><div class="prog"><i id="bar"></i></div></div>
+    <canvas id="viz" width="360" height="80" aria-hidden="true"></canvas>
+    <select id="fmt" class="fmt" aria-label="Format"></select>
+    <button class="btn" id="dl">⬇ Descarcă</button>
+    <button class="btn primary" id="toCadru" hidden title="Generează și pune muzica direct ca fundal în proiectul din Cadru Studio">＋ În video (Cadru)</button>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.1/build/mp4-muxer.js" async></script>
+<script src="https://cdn.jsdelivr.net/npm/webm-muxer@5.1.3/build/webm-muxer.js" async></script>
+<script>
+"use strict";
+/* ================== UTILITARE ================== */
+const SR = 48000;
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function h32(a,b){let h=(a|0)*374761393+(b|0)*668265263;h=(h^(h>>>13))*1274126177;h^=h>>>16;return (h>>>0)/4294967296}
+const mtof = m => 440*Math.pow(2,(m-69)/12);
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+function vnoise(t,seed){const i=Math.floor(t),f=t-i,u=f*f*(3-2*f);return h32(i,seed)*(1-u)+h32(i+1,seed)*u}
+
+/* ================== INSTRUMENTE ================== */
+const INST={}; const IGROUPS=[];
+function I(g,id,n,e,r){INST[id]=Object.assign({id,n,e,g},r); if(!IGROUPS.includes(g))IGROUPS.push(g);}
+// Clape
+I('Clape','piano','Pian de concert','grand piano',{t:'piano',soft:0});
+I('Clape','feltpiano','Pian cu fetru (soft)','soft felt piano',{t:'piano',soft:1});
+I('Clape','rhodes','Pian electric Rhodes','Rhodes electric piano',{t:'fm',ratio:1,index:1.1,idec:.35,dec:5,sus:0,rel:.25,r2:14,gain:.32,trem:[4.5,.12]});
+I('Clape','wurli','Wurlitzer','Wurlitzer electric piano',{t:'fm',ratio:1,index:2.2,idec:.25,dec:3.5,sus:0,rel:.15,gain:.26});
+I('Clape','organ','Orgă Hammond','Hammond organ',{t:'osc',w:'organ',cut:12,atk:.01,dec:.1,sus:1,rel:.08,vib:[6.2,8,0],gain:.13});
+I('Clape','churchorgan','Orgă de biserică','pipe organ',{t:'osc',w:'pipe',vo:2,dt:4,cut:10,atk:.08,dec:.2,sus:1,rel:.35,gain:.12,sub:.4});
+I('Clape','harpsichord','Clavecin','harpsichord',{t:'ks',g:.997,br:1,lp:7000,gain:.5,dbl:1});
+I('Clape','celesta','Celestă','celesta',{t:'modal',p:[[1,1,1],[4,.22,.35],[10,.05,.12]],dec:2.2,atk:.002,gain:.28});
+I('Clape','accordion','Acordeon','accordion',{t:'osc',w:'reed',vo:2,dt:9,cut:9,atk:.05,dec:.1,sus:.9,rel:.12,gain:.12,trem:[5,.08]});
+// Percuție melodică
+I('Percuție melodică','musicbox','Cutie muzicală','music box',{t:'modal',p:[[1,1,1],[2,.25,.6],[5.4,.14,.22],[8.93,.06,.12]],dec:2.6,atk:.001,gain:.24});
+I('Percuție melodică','glock','Glockenspiel','glockenspiel',{t:'modal',p:[[1,1,1],[2.76,.35,.45],[5.4,.18,.3],[8.93,.08,.2]],dec:2.2,atk:.001,gain:.22});
+I('Percuție melodică','vibes','Vibrafon','vibraphone',{t:'modal',p:[[1,1,1],[4,.28,.35],[10,.06,.12]],dec:3.6,atk:.002,gain:.28,trem:[5.5,.25]});
+I('Percuție melodică','marimba','Marimbă','marimba',{t:'modal',p:[[1,1,1],[4,.28,.18],[9.2,.06,.08]],dec:.9,atk:.002,gain:.36});
+I('Percuție melodică','xylo','Xilofon','xylophone',{t:'modal',p:[[1,1,1],[3,.3,.3],[6.1,.12,.15]],dec:.45,atk:.001,gain:.3});
+I('Percuție melodică','kalimba','Kalimba','kalimba',{t:'modal',p:[[1,1,1],[5.9,.22,.14],[2.01,.08,.35],[11.4,.05,.06]],dec:1.4,atk:.001,gain:.32});
+I('Percuție melodică','handpan','Handpan','handpan',{t:'modal',p:[[1,1,1],[2,.5,.55],[3,.22,.4],[4.02,.08,.3]],dec:3.4,atk:.004,gain:.3,det:.6});
+I('Percuție melodică','steeldrum','Steel drum','steel drum',{t:'modal',p:[[1,1,1],[2,.6,.45],[3,.35,.35],[4,.2,.3],[5.03,.14,.22]],dec:1.1,atk:.002,gain:.24});
+I('Percuție melodică','tubular','Clopote tubulare','tubular bells',{t:'modal',p:[[1,1,1],[2.76,.55,.7],[5.4,.4,.5],[8.93,.25,.4],[13.3,.12,.3]],dec:6,atk:.002,gain:.18});
+I('Percuție melodică','bowl','Bol tibetan','tibetan singing bowl',{t:'modal',p:[[1,1,1],[2.71,.45,.8],[5.15,.25,.6],[8.43,.12,.45]],dec:14,atk:.06,gain:.22,det:1.2});
+I('Percuție melodică','crystalbowl','Bol de cristal','crystal singing bowl',{t:'modal',p:[[1,1,1],[3.01,.12,.7],[2,.05,.8]],dec:16,atk:.6,gain:.24,det:.5});
+// Corzi ciupite
+I('Corzi ciupite','guitar','Chitară acustică','acoustic steel-string guitar',{t:'ks',g:.996,br:.55,lp:6000,gain:.55});
+I('Corzi ciupite','nylon','Chitară clasică (nylon)','nylon classical guitar',{t:'ks',g:.995,br:.32,lp:3800,gain:.6});
+I('Corzi ciupite','eguitar','Chitară electrică clean','clean electric guitar',{t:'ks',g:.997,br:.45,lp:3200,gain:.5,chorus:1});
+I('Corzi ciupite','harp','Harpă','concert harp',{t:'ks',g:.997,br:.38,lp:5000,gain:.55});
+I('Corzi ciupite','koto','Koto','koto',{t:'ks',g:.994,br:.75,lp:7000,gain:.5});
+I('Corzi ciupite','ukulele','Ukulele','ukulele',{t:'ks',g:.991,br:.55,lp:5000,gain:.5});
+I('Corzi ciupite','banjo','Banjo','banjo',{t:'ks',g:.985,br:.95,lp:8000,gain:.45});
+I('Corzi ciupite','sitar','Sitar','sitar',{t:'ks',g:.998,br:.95,lp:9000,gain:.4,dbl:1});
+I('Corzi ciupite','tambal','Țambal','cimbalom',{t:'ks',g:.997,br:.8,lp:8000,gain:.42,dbl:1});
+I('Corzi ciupite','oud','Oud / lăută','oud',{t:'ks',g:.993,br:.5,lp:4000,gain:.55});
+I('Corzi ciupite','pizz','Pizzicato corzi','string pizzicato',{t:'ks',g:.982,br:.3,lp:2500,gain:.7});
+// Corzi cu arcuș
+I('Corzi cu arcuș','strings','Ansamblu de corzi','lush string ensemble',{t:'osc',w:'sawtooth',vo:3,dt:12,cut:4,q:.5,atk:.45,dec:.5,sus:.85,rel:.9,vib:[5,6,.4],gain:.1,wide:1});
+I('Corzi cu arcuș','violin','Vioară','solo violin',{t:'osc',w:'sawtooth',vo:1,cut:6,q:1.2,atk:.08,dec:.2,sus:.85,rel:.25,vib:[5.6,18,.25],gain:.12});
+I('Corzi cu arcuș','cello','Violoncel','cello',{t:'osc',w:'sawtooth',vo:2,dt:5,cut:5,q:1,atk:.12,dec:.3,sus:.85,rel:.4,vib:[5,12,.3],gain:.13});
+I('Corzi cu arcuș','tremstr','Corzi tremolo (cinematic)','tremolo strings',{t:'osc',w:'sawtooth',vo:3,dt:10,cut:4,atk:.3,dec:.3,sus:.9,rel:.6,gain:.09,trem:[11,.6],wide:1});
+// Suflători
+I('Suflători','flute','Flaut','flute',{t:'osc',w:'flute',cut:6,atk:.06,dec:.2,sus:.85,rel:.18,vib:[5,10,.3],br:.25,gain:.2});
+I('Suflători','panflute','Nai (flaut de pan)','pan flute',{t:'osc',w:'sine',cut:8,atk:.05,dec:.2,sus:.8,rel:.25,vib:[5.5,14,.2],br:.55,glide:1,gain:.22});
+I('Suflători','shakuhachi','Shakuhachi','shakuhachi',{t:'osc',w:'flute',cut:5,atk:.12,dec:.3,sus:.75,rel:.35,vib:[4.2,22,.4],br:.7,glide:2,gain:.2});
+I('Suflători','ocarina','Ocarină','ocarina',{t:'osc',w:'sine',cut:6,atk:.04,dec:.2,sus:.85,rel:.15,vib:[5,7,.3],br:.15,gain:.24});
+I('Suflători','whistle','Fluier / tin whistle','tin whistle',{t:'osc',w:'flute',cut:10,atk:.03,dec:.1,sus:.85,rel:.1,vib:[6,12,.15],br:.2,gain:.15});
+I('Suflători','clarinet','Clarinet','clarinet',{t:'osc',w:'clar',cut:5,q:.8,atk:.05,dec:.2,sus:.85,rel:.15,vib:[5,5,.4],br:.06,gain:.14});
+I('Suflători','oboe','Oboi','oboe',{t:'osc',w:'oboe',cut:7,q:1.5,atk:.05,dec:.2,sus:.85,rel:.15,vib:[5.4,9,.3],gain:.1});
+I('Suflători','sax','Saxofon','saxophone',{t:'osc',w:'sawtooth',cut:4,q:2,fenv:1.2,fatk:.08,fdec:.4,atk:.05,dec:.3,sus:.8,rel:.2,vib:[5,14,.35],br:.12,glide:1,gain:.12});
+I('Suflători','trumpet','Trompetă','trumpet',{t:'osc',w:'brass',cut:5,q:1,fenv:1.5,fatk:.06,fdec:.3,atk:.04,dec:.2,sus:.8,rel:.15,vib:[5.5,8,.4],gain:.1});
+I('Suflători','horn','Corn francez','french horn',{t:'osc',w:'brass',vo:2,dt:6,cut:2.5,q:.7,fenv:.8,fatk:.15,atk:.12,dec:.3,sus:.85,rel:.4,gain:.11});
+I('Suflători','brass','Secțiune de alămuri','brass section',{t:'osc',w:'brass',vo:3,dt:10,cut:3.5,fenv:1.4,fatk:.1,fdec:.5,atk:.07,dec:.3,sus:.85,rel:.3,gain:.09,wide:.8});
+// Voci (sintetizate, fără cuvinte)
+I('Voci','choiraah','Cor „aah”','choir aah',{t:'osc',w:'sawtooth',vo:3,dt:14,form:'a',atk:.5,dec:.5,sus:.9,rel:1,vib:[5,10,.4],gain:.14,wide:1});
+I('Voci','choirooh','Cor „ooh”','choir ooh',{t:'osc',w:'sawtooth',vo:3,dt:12,form:'o',atk:.6,dec:.5,sus:.9,rel:1.2,vib:[4.6,8,.4],gain:.16,wide:1});
+// Sintetizatoare și pad-uri
+I('Sintetizatoare','warmpad','Pad cald','warm analog pad',{t:'osc',w:'sawtooth',vo:3,dt:14,cut:2.2,cutA:0,q:.6,atk:1.6,dec:1,sus:.9,rel:2.5,gain:.09,wide:1,lfo:[.15,.35]});
+I('Sintetizatoare','glasspad','Pad de sticlă','glassy pad',{t:'osc',w:'triangle',vo:3,dt:9,cut:10,atk:1.2,dec:1,sus:.85,rel:2.5,gain:.16,wide:1,oct:.3});
+I('Sintetizatoare','darkpad','Pad întunecat','dark cinematic pad',{t:'osc',w:'sawtooth',vo:3,dt:18,cut:1.2,q:2,atk:2,dec:1,sus:.9,rel:3,gain:.12,wide:1,lfo:[.08,.5]});
+I('Sintetizatoare','airpad','Pad eteric (shimmer)','ethereal shimmer pad',{t:'osc',w:'sine',vo:3,dt:7,cut:12,atk:2.2,dec:1,sus:.9,rel:3.5,gain:.2,wide:1,oct:.45,br:.08});
+I('Sintetizatoare','lead','Synth lead','synth lead',{t:'osc',w:'square',vo:2,dt:7,cut:6,q:2,fenv:.8,fatk:.02,fdec:.3,atk:.01,dec:.2,sus:.75,rel:.15,vib:[5.5,10,.3],glide:.5,gain:.08});
+I('Sintetizatoare','pluck','Synth pluck','synth pluck',{t:'osc',w:'sawtooth',vo:2,dt:8,cut:1.5,q:3,fenv:6,fatk:.003,fdec:.18,atk:.003,dec:.35,sus:0,rel:.12,gain:.13,wide:.6});
+I('Sintetizatoare','supersaw','Supersaw','supersaw',{t:'osc',w:'sawtooth',vo:5,dt:22,cut:7,q:.6,atk:.02,dec:.3,sus:.8,rel:.3,gain:.06,wide:1});
+I('Sintetizatoare','chip','Chiptune 8-bit','8-bit chiptune square',{t:'osc',w:'pulse',cut:30,atk:.002,dec:.1,sus:.7,rel:.05,gain:.07});
+I('Sintetizatoare','arpsynth','Arpegiator analog','analog arpeggiator synth',{t:'osc',w:'square',cut:2,q:4,fenv:5,fatk:.003,fdec:.12,atk:.003,dec:.2,sus:0,rel:.1,gain:.08});
+// Bas
+I('Bas','subbass','Bas sub (sinus)','sub bass',{t:'osc',w:'sine',cut:6,atk:.02,dec:.3,sus:.9,rel:.2,gain:.5,bass:1});
+I('Bas','upright','Contrabas','upright acoustic bass',{t:'ks',g:.993,br:.18,lp:1200,gain:1.1,bass:1});
+I('Bas','ebass','Bas electric','electric bass',{t:'osc',w:'sawtooth',cut:2.2,q:1,fenv:1.2,fatk:.005,fdec:.25,atk:.005,dec:.6,sus:.55,rel:.1,gain:.24,sub:.6,bass:1});
+I('Bas','synthbass','Bas synth','analog synth bass',{t:'osc',w:'sawtooth',vo:2,dt:6,cut:2,q:4,fenv:3,fatk:.005,fdec:.2,atk:.005,dec:.3,sus:.6,rel:.1,gain:.15,sub:.7,bass:1});
+I('Bas','bass808','Bas 808','808 bass',{t:'osc',w:'sine',cut:8,atk:.005,dec:1.8,sus:.4,rel:.25,gain:.55,glide:2,drive:1,bass:1});
+
+const WAVES={organ:[1,1,.75,.8,.35,.5,0,.3,0,.2,0,.15],pipe:[1,.5,.6,.2,.35,.1,.2,.05,.1],reed:[1,.75,.85,.5,.6,.45,.35,.3,.25,.2,.15,.12],clar:[1,0,.75,0,.5,0,.32,0,.2,0,.12],oboe:[.6,1,.85,.6,.5,.4,.3,.25,.2,.15,.1],flute:[1,.2,.08,.03],brass:[1,.85,.75,.65,.55,.48,.4,.33,.27,.22,.18,.14,.1],piano:[1,.55,.32,.24,.16,.11,.08,.06,.045,.03,.022,.016],pulse:(()=>{const a=[];for(let k=1;k<=30;k++)a.push(Math.abs(Math.sin(Math.PI*k*.25))/k);return a})()};
+const FORM={a:[[800,6,1],[1150,7,.6],[2900,9,.25],[3900,10,.1]],o:[[450,7,1],[800,8,.35],[2830,10,.08]]};
+const waveCache=new WeakMap();
+function setWave(c,o,w){
+  if(['sine','square','sawtooth','triangle'].includes(w)){o.type=w;return}
+  let m=waveCache.get(c); if(!m){m={};waveCache.set(c,m)}
+  if(!m[w]){const h=WAVES[w];const re=new Float32Array(h.length+1),im=new Float32Array(h.length+1);h.forEach((a,i)=>im[i+1]=a);m[w]=c.createPeriodicWave(re,im)}
+  o.setPeriodicWave(m[w]);
+}
+let NOISE=null;
+function noiseBuf(){ if(!NOISE){const n=SR*2;NOISE=new AudioBuffer({length:n,sampleRate:SR,numberOfChannels:1});const d=NOISE.getChannelData(0);const r=mulberry32(99);for(let i=0;i<n;i++)d[i]=r()*2-1;} return NOISE; }
+function env(g,t,a,dc,s,r,d,pk){
+  g.setValueAtTime(0,t); g.linearRampToValueAtTime(pk,t+a);
+  if(s<1) g.setTargetAtTime(pk*s,t+a,Math.max(.004,dc/3));
+  const e=t+Math.max(d,a+.01); g.setTargetAtTime(0,e,Math.max(.005,r/3));
+  return e+r*1.6+.05;
+}
+function vOsc(c,out,t,f,d,v,p,rnd){
+  const amp=c.createGain(); amp.gain.value=0; let pre;
+  if(p.form){ pre=c.createGain(); FORM[p.form].forEach(([fr,q,a])=>{const b=c.createBiquadFilter();b.type='bandpass';b.frequency.value=fr*(1+(rnd-.5)*.04);b.Q.value=q;const g=c.createGain();g.gain.value=a*4;pre.connect(b);b.connect(g);g.connect(amp)}); }
+  else { const fl=c.createBiquadFilter(); fl.type='lowpass'; fl.Q.value=p.q||.7; const cut=Math.min(16000,f*(p.cut||8)*(.55+.6*v)+200);
+    if(p.fenv){const a=p.fatk||.01;fl.frequency.setValueAtTime(cut*.5,t);fl.frequency.linearRampToValueAtTime(Math.min(17000,cut*(1+p.fenv)),t+a);fl.frequency.setTargetAtTime(cut,t+a,(p.fdec||.3)/3)} else fl.frequency.value=cut;
+    if(p.lfo){const l=c.createOscillator();l.frequency.value=p.lfo[0]*(.8+.4*rnd);const lg=c.createGain();lg.gain.value=cut*p.lfo[1];l.connect(lg);lg.connect(fl.frequency);l.start(t);l.stop(t+d+(p.rel||.3)*2+.1)}
+    pre=fl; fl.connect(amp); }
+  const rel=p.rel||.3, stop=t+Math.max(d,(p.atk||.01)+.01)+rel*1.6+.06;
+  let vib=null;
+  if(p.vib){const l=c.createOscillator();l.frequency.value=p.vib[0]*(.9+.2*rnd);const lg=c.createGain();lg.gain.setValueAtTime(0,t);lg.gain.linearRampToValueAtTime(f*(Math.pow(2,p.vib[1]/1200)-1),t+(p.vib[2]||.2)+.35);l.connect(lg);l.start(t);l.stop(stop);vib=lg}
+  const vo=p.vo||1;
+  const mk=(freq,gain,pan)=>{const o=c.createOscillator();setWave(c,o,p.w);o.frequency.value=freq;
+    if(p.glide&&gain===1){o.frequency.setValueAtTime(freq*Math.pow(2,-p.glide/12),t);o.frequency.exponentialRampToValueAtTime(freq,t+.07)}
+    if(vib)vib.connect(o.frequency);
+    let n=o; if(gain!==1){const g=c.createGain();g.gain.value=gain;o.connect(g);n=g}
+    if(pan){const pn=c.createStereoPanner();pn.pan.value=pan;n.connect(pn);n=pn}
+    n.connect(pre);o.start(t);o.stop(stop);return o};
+  for(let i=0;i<vo;i++){const k=vo>1?(i/(vo-1)-.5)*2:0;const o=mk(f,1,p.wide&&vo>1?k*.6*p.wide:0);o.detune.value=k*(p.dt||8)+(rnd-.5)*5}
+  if(p.sub) mk(f/2,p.sub,0);
+  if(p.oct) mk(f*2,p.oct,(rnd-.5)*.8);
+  if(p.br){const s=c.createBufferSource();s.buffer=noiseBuf();s.loop=true;const b=c.createBiquadFilter();b.type='bandpass';b.frequency.value=Math.min(12000,f*1.5);b.Q.value=1.5;const g=c.createGain();g.gain.value=p.br*1.2;s.connect(b);b.connect(g);g.connect(pre);s.start(t,rnd*1.5);s.stop(stop)}
+  const pk=v*(p.gain||.2)/Math.sqrt(vo);
+  env(amp.gain,t,p.atk||.01,p.dec||.2,p.sus??.8,rel,d,pk);
+  let last=amp;
+  if(p.trem){const tg=c.createGain();tg.gain.value=1-p.trem[1]/2;const l=c.createOscillator();l.frequency.value=p.trem[0];const lg=c.createGain();lg.gain.value=p.trem[1]/2;l.connect(lg);lg.connect(tg.gain);l.start(t);l.stop(stop);amp.connect(tg);last=tg}
+  if(p.drive){const ws=c.createWaveShaper();ws.curve=driveCurve();const g=c.createGain();g.gain.value=.6;last.connect(ws);ws.connect(g);last=g}
+  last.connect(out);
+}
+let DRIVE=null;function driveCurve(){if(!DRIVE){DRIVE=new Float32Array(1024);for(let i=0;i<1024;i++){const x=i/511.5-1;DRIVE[i]=Math.tanh(2.5*x)}}return DRIVE}
+function vPiano(c,out,t,f,d,v,p,rnd){
+  const soft=p.soft, amp=c.createGain(), fl=c.createBiquadFilter(); fl.type='lowpass';
+  const tau=clamp(4.2*Math.pow(130/f,.55),.5,9)*(soft?.85:1);
+  const c0=Math.min(15000,f*(soft?2.6:5)*(.5+v*1.1)+(soft?300:900));
+  fl.frequency.setValueAtTime(c0,t); fl.frequency.setTargetAtTime(Math.max(f*1.6,c0*.35),t+.01,tau*.4);
+  const stop=t+Math.min(d,tau*4)+.9;
+  for(const dt of [-1.6,1.4]){const o=c.createOscillator();setWave(c,o,'piano');o.frequency.value=f;o.detune.value=dt+(rnd-.5)*1.5;o.connect(fl);o.start(t);o.stop(stop)}
+  if(f<300){const o=c.createOscillator();o.type='sine';o.frequency.value=f;const g=c.createGain();g.gain.value=.5;o.connect(g);g.connect(fl);o.start(t);o.stop(stop)}
+  const hs=c.createBufferSource();hs.buffer=noiseBuf();const hb=c.createBiquadFilter();hb.type='bandpass';hb.frequency.value=Math.min(f*5,6000);hb.Q.value=1;const hg=c.createGain();hg.gain.setValueAtTime(soft?.05*v:.14*v,t);hg.gain.setTargetAtTime(0,t,.008);hs.connect(hb);hb.connect(hg);hg.connect(amp);hs.start(t,rnd);hs.stop(t+.06);
+  fl.connect(amp); const pk=v*p.gain, a=soft?.012:.003;
+  amp.gain.setValueAtTime(0,t); amp.gain.linearRampToValueAtTime(pk,t+a);
+  amp.gain.setTargetAtTime(pk*.45,t+a,.18);
+  amp.gain.setTargetAtTime(0,t+a+.5,tau);
+  amp.gain.setTargetAtTime(0,t+Math.max(d,a+.02),soft?.16:.09);
+  amp.connect(out);
+}
+function vFM(c,out,t,f,d,v,p,rnd){
+  const car=c.createOscillator();car.frequency.value=f;const mod=c.createOscillator();mod.frequency.value=f*p.ratio;
+  const mg=c.createGain();const ix=p.index*f*(.4+v);mg.gain.setValueAtTime(ix,t);mg.gain.setTargetAtTime(ix*.08,t,p.idec);
+  mod.connect(mg);mg.connect(car.frequency);const amp=c.createGain();car.connect(amp);
+  const pk=v*(p.gain||.25), stop=env(amp.gain,t,p.atk||.003,p.dec,p.sus,p.rel,d,pk)+.1;
+  car.start(t);mod.start(t);car.stop(stop);mod.stop(stop);
+  if(p.r2){const o=c.createOscillator();o.frequency.value=Math.min(f*p.r2,16000);const g=c.createGain();g.gain.setValueAtTime(.12*v*pk,t);g.gain.setTargetAtTime(0,t,.05);o.connect(g);g.connect(amp);o.start(t);o.stop(t+.4)}
+  let last=amp; if(p.trem){const tg=c.createGain();tg.gain.value=1-p.trem[1]/2;const l=c.createOscillator();l.frequency.value=p.trem[0];const lg=c.createGain();lg.gain.value=p.trem[1]/2;l.connect(lg);lg.connect(tg.gain);l.start(t);l.stop(stop);amp.connect(tg);last=tg}
+  last.connect(out);
+}
+function vModal(c,out,t,f,d,v,p,rnd){
+  const amp=c.createGain();amp.gain.value=v*(p.gain||.2);amp.connect(out);
+  const lf=clamp(Math.pow(400/f,.35),.5,2.2);
+  const add=(fr,a,dm)=>{if(fr>17000)return;const o=c.createOscillator();o.type='sine';o.frequency.value=fr;const g=c.createGain();const dec=p.dec*dm*lf;
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(a,t+(p.atk||.002));g.gain.setTargetAtTime(0,t+(p.atk||.002),dec/3);
+    o.connect(g);g.connect(amp);o.start(t);o.stop(t+dec*1.6+.1)};
+  for(const [r,a,dm] of p.p){add(f*r,a,dm); if(p.det)add(f*r+p.det*(1+rnd),a*.6,dm)}
+  if(p.trem){const l=c.createOscillator();l.frequency.value=p.trem[0];const lg=c.createGain();lg.gain.value=v*(p.gain||.2)*p.trem[1];l.connect(lg);lg.connect(amp.gain);l.start(t);l.stop(t+p.dec*1.6)}
+}
+const KSC=new Map();
+function ksBuffer(m,p){
+  const key=p.id+':'+m; if(KSC.has(key))return KSC.get(key);
+  const f=mtof(m), D=SR/f-.5, N=Math.floor(D), fr=D-N;
+  const g=Math.pow(p.g,48000/SR); const t60=Math.min(p.max||7,Math.log(.001)/Math.log(g)/f);
+  const len=Math.max(N+4,Math.floor(t60*SR));
+  const buf=new AudioBuffer({length:len,sampleRate:SR,numberOfChannels:1}); const y=buf.getChannelData(0);
+  const r=mulberry32(m*131+p.id.length*7+(p.id.charCodeAt(0)<<8));
+  const strings=p.dbl?2:1;
+  for(let s=0;s<strings;s++){
+    const tmp=new Float32Array(len); const Ds=SR/(f*(1+s*.0025))-.5, Ns=Math.floor(Ds), frs=Ds-Ns;
+    let lp=0,prev=0; const a=.08+.9*p.br;
+    for(let i=0;i<Ns+2;i++){const x=r()*2-1;lp+=a*(x-lp);tmp[i]=lp-prev*.0;prev=lp}
+    let mean=0;for(let i=0;i<Ns+2;i++)mean+=tmp[i];mean/=Ns+2;for(let i=0;i<Ns+2;i++)tmp[i]-=mean;
+    for(let n=Ns+2;n<len;n++){const A=tmp[n-Ns],B=tmp[n-Ns-1],C=tmp[n-Ns-2];tmp[n]=g*((1-frs)*.5*(A+B)+frs*.5*(B+C))}
+    for(let n=0;n<len;n++)y[n]+=tmp[n];
+  }
+  let pk=0;for(let n=0;n<Math.min(len,SR*.2);n++)pk=Math.max(pk,Math.abs(y[n]));const k=pk>0?.9/pk:1;
+  const fade=Math.min(len,Math.floor(SR*.05));for(let n=0;n<len;n++){y[n]*=k;if(n>len-fade)y[n]*=(len-n)/fade}
+  KSC.set(key,buf); return buf;
+}
+function vKS(c,out,t,f,d,v,p,rnd,m){
+  const buf=ksBuffer(Math.round(m),p); const s=c.createBufferSource();s.buffer=buf;
+  const g=c.createGain();g.gain.setValueAtTime(v*(p.gain||.5),t);const e=t+Math.max(d,.05);g.gain.setTargetAtTime(0,e,p.bass?.05:.12);
+  const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=Math.min(16000,(p.lp||6000)*(.6+.5*v));
+  s.connect(lp);lp.connect(g);
+  if(p.chorus){const dl=c.createDelay(.05);dl.delayTime.value=.012;const l=c.createOscillator();l.frequency.value=.8;const lg=c.createGain();lg.gain.value=.003;l.connect(lg);lg.connect(dl.delayTime);const dg=c.createGain();dg.gain.value=.6;lp.connect(dl);dl.connect(dg);dg.connect(g);l.start(t);l.stop(e+.6)}
+  g.connect(out);s.start(t);s.stop(Math.min(t+buf.duration,e+.6));
+}
+function playNoteX(c,out,ev){return playNote(c,out,ev)}
+function playNote(c,out,ev){
+  const p=INST[ev.i]; if(!p)return; const f=mtof(ev.m);
+  switch(p.t){case'piano':return vPiano(c,out,ev.tc,f,ev.d,ev.v,p,ev.x);case'fm':return vFM(c,out,ev.tc,f,ev.d,ev.v,p,ev.x);case'modal':return vModal(c,out,ev.tc,f,ev.d,ev.v,p,ev.x);case'ks':return vKS(c,out,ev.tc,f,ev.d,ev.v,p,ev.x,ev.m);default:return vOsc(c,out,ev.tc,f,ev.d,ev.v,p,ev.x)}
+}
+
+/* ================== TOBE (sintetizate în JS) ================== */
+const KITS={
+  acoustic:{n:'Acustic',k:{t:'kick',f0:110,f1:48,tp:.04,ta:.32,click:.4},s:{t:'snare',tone:190,ta:.18,n:.8},h:{t:'hat',ta:.045},o:{t:'hat',ta:.28},c:{t:'clap'},r:{t:'rim'},p:{t:'tom',f:150},q:{t:'shaker'},t:{t:'tom',f:90},y:{t:'cym',ta:1.6}},
+  lofi:{n:'Lo-fi (prăfuit)',lp:.18,k:{t:'kick',f0:95,f1:46,tp:.05,ta:.3,click:.15},s:{t:'snare',tone:170,ta:.16,n:.6},h:{t:'hat',ta:.04,hp:.5},o:{t:'hat',ta:.2},c:{t:'clap'},r:{t:'rim'},p:{t:'tom',f:140},q:{t:'shaker'},t:{t:'tom',f:90},y:{t:'cym',ta:1.2}},
+  electronic:{n:'Electronic',k:{t:'kick',f0:160,f1:50,tp:.03,ta:.28,click:.6},s:{t:'snare',tone:220,ta:.14,n:1},h:{t:'hat',ta:.03,hp:.85},o:{t:'hat',ta:.22,hp:.85},c:{t:'clap'},r:{t:'rim'},p:{t:'tom',f:180},q:{t:'shaker'},t:{t:'tom',f:100},y:{t:'cym',ta:2}},
+  k808:{n:'808 / Trap',k:{t:'kick',f0:120,f1:42,tp:.05,ta:.7,click:.3},s:{t:'clap'},h:{t:'hat',ta:.025,hp:.9},o:{t:'hat',ta:.18,hp:.9},c:{t:'clap'},r:{t:'rim'},p:{t:'tom',f:200},q:{t:'shaker'},t:{t:'tom',f:80},y:{t:'cym',ta:1.5}},
+  jazz:{n:'Jazz (perii)',k:{t:'kick',f0:90,f1:50,tp:.04,ta:.22,click:.1},s:{t:'brush'},h:{t:'hat',ta:.05},o:{t:'hat',ta:.25},c:{t:'brush'},r:{t:'ride'},p:{t:'tom',f:160},q:{t:'shaker'},t:{t:'tom',f:100},y:{t:'ride'}},
+  hand:{n:'Percuție de mână',k:{t:'tom',f:70,ta:.35},s:{t:'conga',f:330},h:{t:'shaker'},o:{t:'tamb'},c:{t:'clap'},r:{t:'clave'},p:{t:'conga',f:220},q:{t:'shaker'},t:{t:'conga',f:150},y:{t:'tamb'}},
+  epic:{n:'Epic / taiko',k:{t:'taiko',f:55},s:{t:'snare',tone:180,ta:.25,n:1},h:{t:'hat',ta:.05},o:{t:'hat',ta:.3},c:{t:'clap'},r:{t:'rim'},p:{t:'tom',f:110,ta:.5},q:{t:'shaker'},t:{t:'taiko',f:75},y:{t:'cym',ta:3}},
+  ethnic:{n:'Etnic (darbuka)',k:{t:'doum'},s:{t:'tek'},h:{t:'tek',soft:1},o:{t:'tamb'},c:{t:'clap'},r:{t:'tek'},p:{t:'tek'},q:{t:'tamb'},t:{t:'doum'},y:{t:'tamb'}},
+  chip:{n:'8-bit',k:{t:'chipk'},s:{t:'chipn',ta:.12},h:{t:'chipn',ta:.03},o:{t:'chipn',ta:.15},c:{t:'chipn',ta:.1},r:{t:'chipn',ta:.02},p:{t:'chipk'},q:{t:'chipn',ta:.02},t:{t:'chipk'},y:{t:'chipn',ta:.6}},
+};
+const DRC=new Map();
+function drumBuffer(kit,vk){
+  const key=kit+vk; if(DRC.has(key))return DRC.get(key);
+  const K=KITS[kit], o=K[vk]; const r=mulberry32(key.length*977+key.charCodeAt(0)*31+key.charCodeAt(key.length-1));
+  const len=Math.floor(SR*({kick:1,taiko:2.2,cym:3.5,ride:2.5,tom:1,doum:1.2}[o.t]||.6)); const y=new Float32Array(len);
+  let ph=0,lp=0,lp2=0,hp=0;
+  for(let i=0;i<len;i++){const t=i/SR;const w=r()*2-1;let s=0;
+    switch(o.t){
+      case'kick':{const f=o.f1+(o.f0-o.f1)*Math.exp(-t/o.tp);ph+=2*Math.PI*f/SR;s=Math.sin(ph)*Math.exp(-t/o.ta)+(t<.005?w*o.click*(1-t/.005):0);break}
+      case'chipk':{const f=50+150*Math.exp(-t/.03);ph+=f/SR;s=(ph%1<.5?.7:-.7)*Math.exp(-t/.12);break}
+      case'chipn':{s=(Math.floor(i/6)%2?1:-1)*(h32(Math.floor(i/6),7)>.5?1:-1)*.5*Math.exp(-t/(o.ta||.1));break}
+      case'snare':{ph+=2*Math.PI*o.tone/SR;lp+=.5*(w-lp);hp=w-lp;s=Math.sin(ph)*.6*Math.exp(-t/.05)+hp*o.n*Math.exp(-t/o.ta);break}
+      case'clap':{lp+=.35*(w-lp);const b=w-lp;let e=0;for(const o2 of[0,.011,.022])if(t>=o2)e=Math.max(e,Math.exp(-(t-o2)/.008));e=Math.max(e*.9,t>.022?.55*Math.exp(-(t-.022)/.12):0);s=b*e;break}
+      case'hat':{lp+=.6*(w-lp);hp=w-lp;lp2+=.7*(hp-lp2);s=(o.hp?hp:lp2)*.7*Math.exp(-t/o.ta);break}
+      case'cym':{lp+=.5*(w-lp);hp=w-lp;s=hp*.45*(Math.min(1,t/.01))*Math.exp(-t/o.ta);break}
+      case'ride':{lp+=.5*(w-lp);hp=w-lp;let m=0;for(const fr of[3110,4570,5210,6830])m+=Math.sin(2*Math.PI*fr*t);s=(hp*.25+m*.06)*Math.exp(-t/.9)+(t<.003?w*.3:0);break}
+      case'brush':{lp+=.3*(w-lp);s=lp*.9*Math.min(1,t/.025)*Math.exp(-t/.16);break}
+      case'rim':{ph+=2*Math.PI*1750/SR;s=Math.sin(ph)*Math.exp(-t/.018)+(t<.002?w*.5:0);break}
+      case'clave':{ph+=2*Math.PI*2500/SR;s=Math.sin(ph)*Math.exp(-t/.035);break}
+      case'tom':{const f=o.f*(1+.35*Math.exp(-t/.05));ph+=2*Math.PI*f/SR;s=Math.sin(ph)*Math.exp(-t/(o.ta||.3))+(t<.004?w*.2:0);break}
+      case'conga':{const f=o.f*(1+.15*Math.exp(-t/.02));ph+=2*Math.PI*f/SR;s=Math.sin(ph)*Math.exp(-t/.17)+(t<.004?w*.25:0);break}
+      case'taiko':{const f=o.f*(1+.5*Math.exp(-t/.06));ph+=2*Math.PI*f/SR;lp+=.08*(w-lp);s=Math.sin(ph)*Math.exp(-t/.7)+lp*1.5*Math.exp(-t/.25);break}
+      case'shaker':{lp+=.6*(w-lp);hp=w-lp;s=hp*.6*Math.min(1,t/.012)*Math.exp(-t/.06);break}
+      case'tamb':{lp+=.6*(w-lp);hp=w-lp;s=hp*.6*(.6+.4*Math.sin(2*Math.PI*28*t))*Math.exp(-t/.18);break}
+      case'doum':{const f=85*(1+.3*Math.exp(-t/.03));ph+=2*Math.PI*f/SR;s=Math.sin(ph)*Math.exp(-t/.35);break}
+      case'tek':{ph+=2*Math.PI*620/SR;lp+=.5*(w-lp);hp=w-lp;s=(Math.sin(ph)*.6+hp*.5)*Math.exp(-t/.045)*(o.soft?.5:1);break}
+    }
+    if(K.lp){lp2=(o.t==='hat')?lp2:lp2; }
+    y[i]=s;
+  }
+  if(K.lp){let z=0;for(let i=0;i<len;i++){z+=K.lp*(y[i]-z)*4;y[i]=z*.9}}
+  const buf=new AudioBuffer({length:len,sampleRate:SR,numberOfChannels:1});buf.copyToChannel(y,0);DRC.set(key,buf);return buf;
+}
+const DPAN={k:0,s:.05,h:.25,o:.25,c:-.05,r:-.3,p:-.35,q:.4,t:-.2,y:.15};
+function playDrum(c,out,ev,kit){const b=drumBuffer(kit,ev.k);if(!c._dp)c._dp={};let p=c._dp[ev.k];if(!p){p=c.createStereoPanner();p.pan.value=DPAN[ev.k]||0;p.connect(out);c._dp[ev.k]=p}const s=c.createBufferSource();s.buffer=b;const g=c.createGain();g.gain.value=ev.v*.55*(KITS[kit].cal||1);s.connect(g);g.connect(p);s.start(ev.tc)}
+
+const PAT={
+  pop:{n:'Pop',k:'X.......X.x.....',s:'....X.......X...',h:'x.x.x.x.x.x.x.x.'},
+  ballad:{n:'Baladă',k:'X.......X.......',s:'....x.......x...',h:'x...x...x...x...'},
+  chill:{n:'Chill',k:'X.......x.X.....',s:'....o.......o...',h:'-.-.-.-.-.-.-.-.'},
+  lofi:{n:'Lo-fi',k:'X.....x...X.....',s:'....X.......X..-',h:'x.o.x.o.x.o.x.o.'},
+  boombap:{n:'Boom bap',k:'X......xX.x.....',s:'....X.......X...',h:'x.x.x.x.x.x.x.x-'},
+  rock:{n:'Rock',k:'X.......X.X.....',s:'....X.......X...',h:'x.x.x.x.x.x.x.x.',y:'X...............'},
+  house:{n:'House',k:'X...X...X...X...',c:'....X.......X...',o:'..x...x...x...x.',h:'x.x.x.x.x.x.x.x.'},
+  disco:{n:'Disco',k:'X...X...X...X...',s:'....X.......X...',o:'..x...x...x...x.',h:'xxxxxxxxxxxxxxxx'},
+  synthwave:{n:'Synthwave',k:'X...X...X...X...',s:'....X.......X...',h:'x.x.x.x.x.x.x.x.'},
+  trap:{n:'Trap',k:'X......X..X.....',c:'........X.......',h:'x-x-x-x-xxxxx-x-'},
+  dnb:{n:'Drum & bass',k:'X.........X.....',s:'....X..-....X...',h:'x.x.x.x.x.x.x.x.'},
+  funk:{n:'Funk',k:'X..x..x...X..x..',s:'....X..x.x..X...',h:'xxxxxxxxxxxxxxxx'},
+  jazz:{n:'Swing (ride)',r:'X...X.x.X...X.x.',h:'....x.......x...',k:'-...-...-...-...',s:'....o.......o..-'},
+  bossa:{n:'Bossa nova',k:'X..xX..xX..xX..x',r:'x..x..x...x..x..',q:'xoxoxoxoxoxoxoxo'},
+  reggae:{n:'Reggae one-drop',k:'........X.......',r:'........X.......',h:'x.x.x.x.x.x.x.x.'},
+  afro:{n:'Afrobeat',k:'X..x..X...X..x..',q:'xoxoxoxoxoxoxoxo',p:'..x..x.x..x..xx.',r:'....x.......x...'},
+  hand:{n:'Percuție de mână',p:'X..x..x.X..x..x.',q:'xoxoxoxoxoxoxoxo',t:'X.......X.......'},
+  cinematic:{n:'Cinematic',t:'X.....x.X.x.....',p:'....x.......x.x.',y:'X...............'},
+  epic:{n:'Epic (în crescendo)',t:'X..xX..xX.x.XxXx',k:'X...X...X...X...',s:'....X.......X...',y:'X...............'},
+  ethnic:{n:'Ritm oriental',k:'X.....X...X.....',s:'....x..x....x.xx',q:'x.x.x.x.x.x.x.x.'},
+  hora:{n:'Horă',k:'X...X...X...X...',s:'..x...x...x...x.',q:'x.x.x.x.x.x.x.x.'},
+  march:{n:'Marș',k:'X...X...X...X...',s:'x.xxx.x.x.xxx.x.'},
+  chip:{n:'8-bit',k:'X...x...X...x...',s:'....X.......X...',h:'x.x.x.x.x.x.x.x.'},
+  waltz:{n:'Vals (3/4)',k:'X...........',s:'....x...x...',h:'x.x.x.x.x.x.',ts:3},
+  soft:{n:'Foarte discret',k:'X.......-.......',h:'-...-...-...-...'},
+};
+const PV={X:1,x:.75,o:.5,'-':.3};
+
+const CAL={"piano":0.708,"feltpiano":0.752,"rhodes":0.557,"wurli":0.671,"organ":1.529,"churchorgan":1.026,"harpsichord":2.483,"celesta":0.716,"accordion":2.228,"musicbox":0.761,"glock":0.891,"vibes":0.545,"marimba":0.87,"xylo":1.466,"kalimba":0.788,"handpan":0.415,"steeldrum":1.077,"tubular":0.607,"bowl":0.332,"crystalbowl":0.335,"guitar":1.77,"nylon":1.35,"eguitar":1.486,"harp":1.37,"koto":2.21,"ukulele":2.496,"banjo":3.338,"sitar":3.222,"tambal":2.68,"oud":2.072,"pizz":2.091,"strings":1.855,"violin":1.72,"cello":1.615,"tremstr":2.732,"flute":0.707,"panflute":0.683,"shakuhachi":0.77,"ocarina":0.595,"whistle":0.956,"clarinet":1.22,"oboe":2.552,"sax":1.762,"trumpet":2.881,"horn":2.797,"brass":3.876,"choiraah":1.02,"choirooh":0.998,"warmpad":1.846,"glasspad":0.913,"darkpad":1.26,"airpad":0.511,"lead":1.625,"pluck":7.078,"supersaw":4.675,"chip":2.908,"arpsynth":6.775,"subbass":0.302,"upright":0.597,"ebass":1.236,"synthbass":1.87,"bass808":0.274,"KIT_acoustic":0.409,"KIT_lofi":0.524,"KIT_electronic":0.478,"KIT_k808":0.35,"KIT_jazz":0.548,"KIT_hand":0.393,"KIT_epic":0.269,"KIT_ethnic":0.422,"KIT_chip":0.573};
+for(const id in INST){const P=INST[id];const def={piano:P.soft?.2:.22,fm:.25,modal:.2,ks:.5,osc:.2}[P.t];P.gain=(P.gain||def)*(CAL[id]||1)}
+for(const k in KITS)KITS[k].cal=CAL['KIT_'+k]||1;
+/* ================== TEORIE ================== */
+const MODES={major:['Major (luminos)',[0,2,4,5,7,9,11]],minor:['Minor (melancolic)',[0,2,3,5,7,8,10]],dorian:['Doric (cald, jazzy)',[0,2,3,5,7,9,10]],lydian:['Lidic (visător)',[0,2,4,6,7,9,11]],mixolydian:['Mixolidic (folk)',[0,2,4,5,7,9,10]],phrygian:['Frigic (întunecat)',[0,1,3,5,7,8,10]],harmonic:['Minor armonic (dramatic)',[0,2,3,5,7,8,11]],hijaz:['Hijaz (oriental)',[0,1,4,5,7,8,10]],romanian:['Minor românesc (doină)',[0,2,3,6,7,9,10]],insen:['In-sen (japonez)',[0,1,5,7,10]],hirajoshi:['Hirajoshi (japonez)',[0,2,3,7,8]],pentmaj:['Pentatonic major',[0,2,4,7,9]],pentmin:['Pentatonic minor',[0,3,5,7,10]],blues:['Blues',[0,3,5,6,7,10]],wholetone:['Ton întreg (vis)',[0,2,4,6,8,10]]};
+const KEYS=['Do','Do#','Re','Mi♭','Mi','Fa','Fa#','Sol','La♭','La','Si♭','Si'];
+const PROG={calm:[[1,5,6,4],[1,4,1,5],[6,4,1,5],[1,6,4,5],[4,1,5,6],[1,3,4,1]],dream:[[1,2,1,2],[1,4,1,4],[1,6,4,4],[4,5,3,6]],minor:[[1,6,3,7],[1,4,6,5],[1,7,6,7],[1,4,1,5],[6,7,1,1]],sad:[[6,4,1,5],[6,3,4,1],[1,5,6,3]],jazz:[[2,5,1,6],[1,6,2,5],[3,6,2,5],[4,3,2,1],[1,4,3,6]],blues:[[1,1,1,1,4,4,1,1,5,4,1,5]],pop:[[1,5,6,4],[6,4,1,5],[1,4,6,5],[4,1,5,6]],epic:[[1,6,3,7],[1,7,6,7],[6,7,1,1],[1,3,7,4],[1,6,7,1]],drone:[[1],[1,1,4,1],[1,1,7,1]],modal:[[1,2],[1,7],[1,4],[1,7,4,1]],lofi:[[2,5,1,6],[4,3,2,1],[1,6,4,5],[4,5,3,6]],dark:[[1,2,1,7],[1,6,1,2],[1,1,2,1]],folk:[[1,4,5,1],[1,5,1,4],[1,4,1,5]],xmas:[[1,4,5,1],[1,6,2,5],[1,1,4,5]]};
+
+/* ================== STILURI ================== */
+const STYLES=[]; const CATS=[];
+function S(cat,n,desc,o){STYLES.push(Object.assign({cat,n,desc,id:STYLES.length},o));if(!CATS.includes(cat))CATS.push(cat)}
+// o: bpm, ts, mode, pent, prog, ch:[inst,pat], me:[inst,dens,grid], ba:[inst,pat], pa, ar:[inst,pat,dens], dr:[kit,pat], sw, rv, nat:{}, hz, s7, en
+const R='Relaxare și somn',MD='Meditație și spa',ST='Studiu și focus',PN='Pian',CI='Cinematic și orchestral',JZ='Jazz, blues și lounge',EL='Electronic și chill',PO='Pop, rock și urban',WO='World și etnic',KI='Copii',HO='Sărbători',GA='Gaming',NA='Natură pură';
+S(R,'Somn profund','Pian cu fetru foarte lent, pad cald, ploaie fină',{bpm:[48,56],mode:'major',prog:'calm',ch:['feltpiano','broken'],me:['feltpiano',.22,1],pa:'warmpad',rv:.75,nat:{rain:.35},en:'deep sleep ambient, very slow'});
+S(R,'Pian pentru somn','Pian solo, note rare și pedală lungă',{bpm:[52,60],mode:'major',pent:1,prog:'calm',ch:['feltpiano','broken'],me:['feltpiano',.3,1],rv:.7,en:'sleep piano'});
+S(R,'Ploaie la fereastră','Pian rar peste ploaie și pad de sticlă',{bpm:[56,64],mode:'minor',prog:'sad',ch:['feltpiano','sparse'],me:['feltpiano',.25,2],pa:'glasspad',rv:.7,nat:{rain:.6},en:'rainy window piano'});
+S(R,'Noapte liniștită','Celestă și pad cald, greieri în depărtare',{bpm:[54,62],mode:'lydian',prog:'dream',ch:['warmpad','pad'],me:['celesta',.3,2],ar:['musicbox','sparkle',.25],rv:.8,nat:{crickets:.3},en:'quiet night ambient'});
+S(R,'Cântec de leagăn','Cutie muzicală în 3/4, foarte blând',{bpm:[60,72],ts:3,mode:'major',pent:1,prog:'calm',ch:['harp','waltz'],me:['musicbox',.45,1],pa:'warmpad',rv:.65,en:'lullaby music box'});
+S(R,'Valuri de ocean','Pad eteric, harpă rară, valuri',{bpm:[50,58],mode:'lydian',prog:'dream',pa:'airpad',ch:['harp','sparse'],rv:.85,nat:{ocean:.7},en:'ocean waves ambient'});
+S(R,'Pădure magică','Kalimba, flaut, păsări și pârâu',{bpm:[64,72],mode:'major',pent:1,prog:'calm',ch:['kalimba','arpUp'],me:['flute',.3,2],pa:'warmpad',rv:.6,nat:{birds:.35,stream:.35},en:'magical forest'});
+S(R,'Ninsoare','Glockenspiel, corzi lente, vânt de iarnă',{bpm:[58,66],mode:'major',prog:'calm',ch:['strings','pad'],me:['glock',.3,2],ar:['celesta','sparkle',.2],rv:.75,nat:{wind:.3},en:'gentle snowfall'});
+S(R,'Șemineu de iarnă','Chitară nylon și Rhodes lângă foc',{bpm:[66,76],mode:'major',prog:'lofi',s7:1,ch:['nylon','broken'],me:['rhodes',.3,2],ba:['upright','root'],rv:.5,nat:{fire:.5},en:'cozy fireplace acoustic'});
+S(R,'Unde delta 432 Hz','Dronă profundă, bol tibetan, binaural delta',{bpm:[40,48],mode:'major',prog:'drone',pa:'airpad',ch:['bowl','sparse'],rv:.9,hz:'b2',en:'delta wave 432Hz drone'});
+S(R,'Relaxare după stres','Pian și corzi, melodie caldă',{bpm:[60,68],mode:'major',prog:'calm',ch:['piano','broken'],me:['strings',.25,1],pa:'warmpad',rv:.65,en:'stress relief piano and strings'});
+// Meditație
+S(MD,'Boluri tibetane','Boluri rare peste dronă, 432 Hz',{bpm:[40,50],mode:'pentmaj',prog:'drone',ch:['bowl','sparse'],pa:'darkpad',rv:.9,hz:'s432',en:'tibetan singing bowls'});
+S(MD,'Meditație zen','Shakuhachi și koto, scară in-sen',{bpm:[50,60],mode:'insen',prog:'drone',ch:['koto','sparse'],me:['shakuhachi',.2,1],pa:'airpad',rv:.8,nat:{stream:.25},en:'zen meditation shakuhachi koto'});
+S(MD,'Yoga','Handpan, sitar și percuție discretă',{bpm:[70,80],mode:'dorian',prog:'modal',ch:['handpan','arpUD'],me:['sitar',.25,2],pa:'warmpad',dr:['hand','hand'],rv:.6,en:'yoga handpan'});
+S(MD,'Spa și masaj','Pad cald, harpă și vibrafon, apă curgătoare',{bpm:[56,64],mode:'major',prog:'calm',s7:1,ch:['harp','arpUp'],me:['vibes',.25,1],pa:'warmpad',rv:.75,nat:{stream:.4},en:'spa massage'});
+S(MD,'Chakra 528 Hz','Bol de cristal și pad, ton 528 Hz',{bpm:[44,52],mode:'lydian',prog:'drone',ch:['crystalbowl','sparse'],pa:'glasspad',rv:.9,hz:'s528',en:'528Hz chakra healing'});
+S(MD,'Respirație ghidată','Pad care urcă și coboară, 6 respirații pe minut',{bpm:[40,44],mode:'major',prog:'drone',pa:'airpad',ch:['glasspad','pad'],rv:.85,en:'breathing meditation'});
+S(MD,'Cristal și lumină','Boluri de cristal, clopoței de vânt',{bpm:[50,56],mode:'lydian',prog:'dream',ch:['crystalbowl','sparse'],ar:['celesta','sparkle',.15],pa:'glasspad',rv:.9,nat:{chimes:.4},en:'crystal light'});
+S(MD,'Reiki','Pad eteric, harpă, 639 Hz',{bpm:[48,56],mode:'major',pent:1,prog:'dream',ch:['harp','sparse'],pa:'airpad',me:['flute',.15,1],rv:.85,hz:'s639',en:'reiki healing'});
+S(MD,'Templu','Cor „ooh”, boluri, dronă joasă',{bpm:[44,52],mode:'dorian',prog:'modal',pa:'choirooh',ch:['bowl','sparse'],rv:.95,en:'temple choir'});
+S(MD,'Vindecare 396 Hz','Pad întunecat și pian rar, 396 Hz',{bpm:[46,54],mode:'minor',prog:'drone',ch:['feltpiano','sparse'],pa:'darkpad',rv:.85,hz:'s396',en:'396Hz healing'});
+S(MD,'Theta pentru meditație','Pad și handpan, binaural theta',{bpm:[50,56],mode:'pentmin',prog:'drone',ch:['handpan','sparse'],pa:'warmpad',rv:.85,hz:'b6',en:'theta binaural'});
+// Studiu
+S(ST,'Lo-fi hip hop','Rhodes jazzy, tobe prăfuite, bas cald',{bpm:[72,86],mode:'dorian',prog:'lofi',s7:1,ch:['rhodes','comp'],me:['vibes',.22,2],ba:['ebass','rootfifth'],dr:['lofi','lofi'],sw:.58,rv:.4,nat:{vinyl:.25},en:'lofi hip hop beat'});
+S(ST,'Lo-fi ploios','Pian lo-fi, ploaie și vinil',{bpm:[70,80],mode:'minor',prog:'lofi',s7:1,ch:['feltpiano','comp'],me:['vibes',.25,2],ba:['subbass','root'],dr:['lofi','lofi'],sw:.58,rv:.45,nat:{rain:.4,vinyl:.25},en:'rainy lofi'});
+S(ST,'Lo-fi jazzy','Chitară clean, pian, contrabas',{bpm:[78,88],mode:'dorian',prog:'jazz',s7:1,ch:['eguitar','comp'],me:['rhodes',.35,2],ba:['upright','walking'],dr:['lofi','boombap'],sw:.6,rv:.35,nat:{vinyl:.2},en:'jazzy lofi'});
+S(ST,'Chillhop','Pluck, Rhodes, groove relaxat',{bpm:[84,94],mode:'major',prog:'lofi',s7:1,ch:['rhodes','comp'],me:['pluck',.4,4],ba:['ebass','octave'],dr:['lofi','boombap'],sw:.56,rv:.35,en:'chillhop'});
+S(ST,'Focus ambient','Pad lung, arpegiu lent, fără tobe',{bpm:[60,70],mode:'lydian',prog:'dream',pa:'glasspad',ar:['pluck','arpUp',.6],ba:['subbass','root'],rv:.7,en:'ambient focus'});
+S(ST,'Deep work','Puls minimal de synth, concentrare',{bpm:[100,112],mode:'minor',prog:'modal',ch:['arpsynth','pulse8'],pa:'darkpad',ba:['synthbass','root'],dr:['electronic','soft'],rv:.5,en:'deep work minimal electronic'});
+S(ST,'Cafenea cu pian','Trio de jazz: pian, contrabas, perii',{bpm:[90,110],mode:'major',prog:'jazz',s7:1,ch:['piano','comp'],me:['piano',.45,2],ba:['upright','walking'],dr:['jazz','jazz'],sw:.62,rv:.35,nat:{cafe:.2},en:'coffee shop jazz piano'});
+S(ST,'Pian de studiu','Pian minimalist, repetitiv, liniștit',{bpm:[66,76],mode:'minor',prog:'sad',ch:['piano','broken'],me:['piano',.3,2],rv:.55,en:'study piano'});
+S(ST,'Noapte la birou','Rhodes, ploaie, tobe lo-fi discrete',{bpm:[68,78],mode:'minor',prog:'lofi',s7:1,ch:['rhodes','pad'],me:['wurli',.25,2],ba:['subbass','root'],dr:['lofi','chill'],sw:.58,rv:.5,nat:{rain:.35},en:'late night study'});
+S(ST,'Citit în bibliotecă','Corzi și pian, fundal discret',{bpm:[62,70],mode:'major',prog:'calm',ch:['piano','alberti'],pa:'strings',rv:.6,en:'library reading'});
+// Pian
+S(PN,'Pian romantic','Melodie expresivă cu acompaniament larg',{bpm:[64,76],mode:'minor',prog:'minor',ch:['piano','broken'],me:['piano',.5,2],rv:.55,en:'romantic piano'});
+S(PN,'Pian minimalist','Figuri repetate, armonie simplă',{bpm:[70,84],mode:'minor',prog:'sad',ch:['piano','alberti'],me:['piano',.25,1],rv:.5,en:'minimalist piano'});
+S(PN,'Pian sentimental','Baladă lentă, emoție',{bpm:[60,70],mode:'major',prog:'sad',s7:1,ch:['piano','broken'],me:['piano',.4,2],pa:'strings',rv:.6,en:'emotional piano ballad'});
+S(PN,'Pian de dimineață','Luminos, optimist, ritm ușor',{bpm:[84,96],mode:'major',prog:'pop',ch:['piano','arpUp'],me:['piano',.45,2],rv:.45,en:'morning piano'});
+S(PN,'Pian și corzi','Pian pe fundal de ansamblu de corzi',{bpm:[66,76],mode:'major',prog:'calm',ch:['piano','broken'],me:['piano',.4,2],pa:'strings',ba:['cello','root'],rv:.6,en:'piano and strings'});
+S(PN,'Baladă jazz la pian','Acorduri de septimă, swing lent',{bpm:[60,72],mode:'major',prog:'jazz',s7:1,ch:['piano','comp'],me:['piano',.4,2],ba:['upright','root'],sw:.6,rv:.45,en:'jazz piano ballad'});
+S(PN,'Nocturnă','Vals lent în minor, 3/4',{bpm:[56,66],ts:3,mode:'minor',prog:'minor',ch:['piano','waltz'],me:['piano',.4,2],rv:.6,en:'piano nocturne'});
+S(PN,'Pian cinematic','Pian grav, pad întunecat, construcție lentă',{bpm:[60,72],mode:'minor',prog:'epic',ch:['piano','ostinato'],me:['piano',.25,1],pa:'darkpad',ba:['cello','root'],rv:.7,en:'cinematic piano'});
+// Cinematic
+S(CI,'Trailer epic','Taiko, alămuri, corzi ostinato, cor',{bpm:[84,96],mode:'minor',prog:'epic',ch:['tremstr','ostinato'],me:['brass',.3,1],pa:'choiraah',ba:['cello','root'],dr:['epic','epic'],rv:.6,en:'epic trailer'});
+S(CI,'Aventură','Corzi energice, corn, percuție',{bpm:[100,116],mode:'major',prog:'epic',ch:['strings','ostinato'],me:['horn',.4,2],ba:['cello','rootfifth'],dr:['epic','cinematic'],rv:.55,en:'adventure orchestral'});
+S(CI,'Fantezie','Harpă, flaut, celestă, corzi',{bpm:[72,84],mode:'lydian',prog:'dream',ch:['harp','arpUD'],me:['flute',.4,2],pa:'strings',ar:['celesta','sparkle',.2],rv:.7,en:'fantasy orchestral'});
+S(CI,'Emoționant','Corzi lente, pian, crescendo',{bpm:[60,70],mode:'major',prog:'sad',ch:['piano','broken'],me:['violin',.3,1],pa:'strings',ba:['cello','root'],rv:.7,en:'emotional cinematic'});
+S(CI,'Suspans întunecat','Pad grav, puls, frigic',{bpm:[70,84],mode:'phrygian',prog:'dark',ch:['pizz','ostinato'],pa:'darkpad',ba:['cello','root'],dr:['epic','cinematic'],rv:.7,en:'dark suspense'});
+S(CI,'Spațiu cosmic','Pad-uri vaste, arpegiu sclipitor',{bpm:[60,72],mode:'lydian',prog:'dream',pa:'airpad',ch:['glasspad','pad'],ar:['arpsynth','arpUp',.7],ba:['subbass','root'],rv:.9,en:'cosmic space ambient'});
+S(CI,'Eroic','Alămuri, marș, tobe',{bpm:[96,110],mode:'major',prog:'epic',ch:['strings','pulse8'],me:['brass',.4,2],ba:['cello','rootfifth'],dr:['epic','march'],rv:.55,en:'heroic orchestral'});
+S(CI,'Documentar natură','Corzi, pian, flaut, larg',{bpm:[72,84],mode:'major',prog:'calm',ch:['piano','arpUp'],me:['flute',.35,2],pa:'strings',ba:['cello','root'],rv:.6,en:'nature documentary'});
+S(CI,'Basm','Celestă, pizzicato, clarinet',{bpm:[96,108],mode:'major',prog:'folk',ch:['pizz','waltz'],ts:3,me:['clarinet',.45,2],ar:['celesta','sparkle',.2],rv:.5,en:'fairy tale'});
+S(CI,'Triumf','Final mare: cor, alămuri, taiko',{bpm:[88,100],mode:'major',prog:'epic',ch:['brass','block'],me:['choiraah',.3,1],pa:'strings',ba:['cello','root'],dr:['epic','epic'],rv:.6,en:'triumphant finale'});
+S(CI,'Mister','Clopote, corzi tremolo, ton întreg',{bpm:[60,70],mode:'wholetone',prog:'modal',ch:['tremstr','pad'],me:['celesta',.25,1],ba:['cello','root'],rv:.8,en:'mystery'});
+// Jazz
+S(JZ,'Jazz lounge','Rhodes, contrabas, perii, vibrafon',{bpm:[88,100],mode:'dorian',prog:'jazz',s7:1,ch:['rhodes','comp'],me:['vibes',.45,2],ba:['upright','walking'],dr:['jazz','jazz'],sw:.62,rv:.4,en:'jazz lounge'});
+S(JZ,'Jazz de noapte','Saxofon lent, pian, ploaie de oraș',{bpm:[64,74],mode:'minor',prog:'jazz',s7:1,ch:['piano','comp'],me:['sax',.35,2],ba:['upright','walking'],dr:['jazz','jazz'],sw:.62,rv:.5,nat:{rain:.2},en:'late night jazz saxophone'});
+S(JZ,'Bossa nova','Chitară nylon, flaut, ritm brazilian',{bpm:[120,135],mode:'major',prog:'jazz',s7:1,ch:['nylon','strum'],me:['flute',.4,2],ba:['upright','rootfifth'],dr:['jazz','bossa'],rv:.35,en:'bossa nova'});
+S(JZ,'Smooth jazz','Saxofon, Rhodes, groove moale',{bpm:[84,96],mode:'major',prog:'lofi',s7:1,ch:['rhodes','comp'],me:['sax',.45,2],ba:['ebass','octave'],dr:['acoustic','chill'],rv:.4,en:'smooth jazz'});
+S(JZ,'Blues lent','12 măsuri, orgă și chitară',{bpm:[60,72],mode:'blues',prog:'blues',s7:1,ch:['organ','pad'],me:['eguitar',.4,2],ba:['ebass','walking'],dr:['acoustic','ballad'],sw:.64,rv:.4,en:'slow blues'});
+S(JZ,'Swing','Big band ușor: alămuri, walking bass',{bpm:[132,160],mode:'major',prog:'jazz',s7:1,ch:['piano','comp'],me:['trumpet',.45,2],ba:['upright','walking'],dr:['jazz','jazz'],sw:.66,rv:.35,en:'swing jazz'});
+S(JZ,'Cafea de dimineață','Jazz vesel la chitară și pian',{bpm:[100,116],mode:'major',prog:'jazz',s7:1,ch:['eguitar','comp'],me:['piano',.45,2],ba:['upright','walking'],dr:['jazz','jazz'],sw:.6,rv:.35,en:'morning coffee jazz'});
+S(JZ,'Lounge de hotel','Vibrafon, pian electric, catifelat',{bpm:[90,104],mode:'dorian',prog:'jazz',s7:1,ch:['wurli','comp'],me:['vibes',.4,2],ba:['ebass','rootfifth'],dr:['jazz','bossa'],rv:.45,en:'hotel lounge'});
+// Electronic
+S(EL,'Chillout','Pad, pluck, bas moale, tobe line',{bpm:[90,100],mode:'minor',prog:'calm',ch:['warmpad','pad'],me:['pluck',.4,2],ba:['subbass','root'],dr:['electronic','chill'],rv:.6,en:'chillout'});
+S(EL,'Deep house','Kick constant, acorduri jazzy, bas',{bpm:[118,124],mode:'dorian',prog:'lofi',s7:1,ch:['rhodes','offbeat'],me:['pluck',.3,4],ba:['synthbass','octave'],dr:['electronic','house'],rv:.45,en:'deep house'});
+S(EL,'Synthwave','Anii 80: supersaw, bas pe optimi',{bpm:[96,110],mode:'minor',prog:'epic',ch:['supersaw','pad'],me:['lead',.4,2],ba:['synthbass','synth8'],ar:['arpsynth','arpUp',.8],dr:['electronic','synthwave'],rv:.55,en:'synthwave retro 80s'});
+S(EL,'Retrowave de noapte','Lent, nostalgic, condus noaptea',{bpm:[80,90],mode:'minor',prog:'sad',ch:['warmpad','pad'],me:['lead',.3,2],ba:['synthbass','synth8'],dr:['electronic','synthwave'],rv:.6,en:'night drive retrowave'});
+S(EL,'Ambient electronic','Texturi, arpegii, fără ritm',{bpm:[70,80],mode:'lydian',prog:'dream',pa:'glasspad',ar:['pluck','arpUD',.7],ba:['subbass','root'],rv:.8,en:'ambient electronic'});
+S(EL,'Downtempo','Groove lent, bas cald, pad',{bpm:[84,94],mode:'dorian',prog:'modal',s7:1,ch:['rhodes','comp'],me:['flute',.25,2],ba:['subbass','rootfifth'],dr:['lofi','boombap'],sw:.55,rv:.5,en:'downtempo'});
+S(EL,'Trap instrumental','808, hi-hat rapid, pian întunecat',{bpm:[136,150],mode:'harmonic',prog:'dark',ch:['piano','sparse'],me:['glock',.3,2],ba:['bass808','trap'],dr:['k808','trap'],rv:.4,en:'dark trap beat'});
+S(EL,'Drum & bass lichid','Ritm rapid, pad-uri, bas rulant',{bpm:[170,176],mode:'minor',prog:'lofi',s7:1,ch:['warmpad','pad'],me:['rhodes',.3,2],ba:['subbass','root'],dr:['electronic','dnb'],rv:.5,en:'liquid drum and bass'});
+S(EL,'Techno minimal','Puls hipnotic, puține elemente',{bpm:[122,128],mode:'phrygian',prog:'drone',ch:['arpsynth','pulse8'],ba:['synthbass','synth8'],dr:['electronic','house'],rv:.4,en:'minimal techno'});
+S(EL,'Chillwave','Nostalgic, estompat, vară',{bpm:[88,98],mode:'major',prog:'pop',s7:1,ch:['warmpad','pad'],me:['glasspad',.3,2],ba:['synthbass','octave'],dr:['lofi','synthwave'],rv:.65,en:'chillwave'});
+S(EL,'Electro pop','Energic, sintetizatoare luminoase',{bpm:[112,124],mode:'major',prog:'pop',ch:['pluck','pulse8'],me:['lead',.5,2],ba:['synthbass','synth8'],dr:['electronic','pop'],rv:.4,en:'electro pop'});
+S(EL,'EDM festival','Supersaw mare, ritm de club',{bpm:[124,128],mode:'minor',prog:'pop',ch:['supersaw','offbeat'],me:['lead',.5,4],ba:['synthbass','octave'],dr:['electronic','house'],rv:.45,en:'festival EDM'});
+// Pop
+S(PO,'Pop optimist','Pian, chitară, ritm pop',{bpm:[100,116],mode:'major',prog:'pop',ch:['guitar','strum'],me:['piano',.45,2],ba:['ebass','rootfifth'],dr:['acoustic','pop'],rv:.35,en:'upbeat pop'});
+S(PO,'Vlog fericit','Ukulele, glockenspiel, palme',{bpm:[108,120],mode:'major',pent:1,prog:'pop',ch:['ukulele','strum'],me:['glock',.45,2],ba:['ebass','root'],dr:['acoustic','house'],rv:.3,en:'happy vlog ukulele'});
+S(PO,'Corporate motivațional','Pian, pluck, construcție',{bpm:[110,122],mode:'major',prog:'pop',ch:['piano','pulse8'],me:['pluck',.4,4],pa:'strings',ba:['ebass','synth8'],dr:['electronic','pop'],rv:.4,en:'corporate motivational'});
+S(PO,'Rock ușor','Chitară electrică, bas, tobe',{bpm:[110,128],mode:'mixolydian',prog:'folk',ch:['eguitar','strum'],me:['lead',.35,2],ba:['ebass','synth8'],dr:['acoustic','rock'],rv:.3,en:'soft rock'});
+S(PO,'Indie acustic','Chitară acustică, pian, folk',{bpm:[92,108],mode:'major',prog:'folk',ch:['guitar','strum'],me:['whistle',.35,2],ba:['upright','rootfifth'],dr:['acoustic','ballad'],rv:.4,en:'indie acoustic folk'});
+S(PO,'Funk groove','Bas sincopat, clavinet, alămuri',{bpm:[100,112],mode:'dorian',prog:'modal',s7:1,ch:['wurli','offbeat'],me:['brass',.35,4],ba:['ebass','funk'],dr:['acoustic','funk'],rv:.3,en:'funk groove'});
+S(PO,'Disco','Kick pe fiecare timp, corzi, bas octave',{bpm:[116,124],mode:'minor',prog:'pop',s7:1,ch:['strings','offbeat'],me:['piano',.4,2],ba:['ebass','octave'],dr:['acoustic','disco'],rv:.35,en:'disco'});
+S(PO,'Hip hop boom bap','Sample de pian, tobe grele',{bpm:[86,94],mode:'minor',prog:'lofi',ch:['piano','comp'],me:['strings',.2,1],ba:['ebass','root'],dr:['lofi','boombap'],sw:.56,rv:.35,en:'boom bap hip hop'});
+S(PO,'R&B lent','Rhodes, bas sub, ritm lent',{bpm:[66,76],mode:'minor',prog:'lofi',s7:1,ch:['rhodes','pad'],me:['glasspad',.3,2],ba:['subbass','root'],dr:['k808','chill'],rv:.5,en:'slow R&B'});
+// World
+S(WO,'Doină românească','Nai și țambal, minor românesc, liber',{bpm:[56,66],mode:'romanian',prog:'drone',ch:['tambal','sparse'],me:['panflute',.4,2],pa:'strings',ba:['upright','root'],rv:.6,en:'romanian doina pan flute cimbalom'});
+S(WO,'Horă','Țambal, acordeon, vioară, ritm de horă',{bpm:[120,138],mode:'harmonic',prog:'folk',ch:['accordion','offbeat'],me:['violin',.55,4],ar:['tambal','arpUD',.6],ba:['upright','rootfifth'],dr:['acoustic','hora'],rv:.35,en:'romanian hora folk'});
+S(WO,'Celtic','Harpă, fluier, modal doric',{bpm:[84,100],mode:'dorian',prog:'folk',ch:['harp','arpUD'],me:['whistle',.45,2],pa:'strings',dr:['hand','hand'],rv:.5,en:'celtic'});
+S(WO,'Japonia tradițională','Koto și shakuhachi',{bpm:[60,72],mode:'hirajoshi',prog:'drone',ch:['koto','arpUD'],me:['shakuhachi',.3,2],rv:.6,en:'traditional japanese'});
+S(WO,'China (guzheng)','Pentatonic, coarde ciupite, flaut',{bpm:[66,80],mode:'pentmaj',prog:'drone',ch:['koto','arpUp'],me:['flute',.4,2],pa:'warmpad',rv:.6,en:'chinese guzheng'});
+S(WO,'India','Sitar, dronă, tabla',{bpm:[76,90],mode:'mixolydian',prog:'drone',ch:['sitar','arpUD'],me:['flute',.4,4],pa:'warmpad',dr:['hand','hand'],rv:.5,en:'indian sitar'});
+S(WO,'Orient','Oud, darbuka, scara hijaz',{bpm:[90,104],mode:'hijaz',prog:'drone',ch:['oud','arpUD'],me:['flute',.45,4],ba:['upright','root'],dr:['ethnic','ethnic'],rv:.45,en:'middle eastern oud'});
+S(WO,'Africa','Kalimba, percuție de mână, marimbă',{bpm:[100,116],mode:'pentmaj',prog:'folk',ch:['kalimba','arpUp'],me:['marimba',.5,4],ba:['ebass','root'],dr:['hand','afro'],rv:.35,en:'african kalimba'});
+S(WO,'Caraibe','Steel drum, ritm însorit',{bpm:[96,110],mode:'major',prog:'pop',ch:['guitar','offbeat'],me:['steeldrum',.5,4],ba:['ebass','reggae'],dr:['hand','afro'],rv:.35,en:'caribbean steel drum'});
+S(WO,'Reggae','Skank pe contratimp, bas profund',{bpm:[70,80],mode:'major',prog:'folk',ch:['organ','offbeat'],me:['flute',.3,2],ba:['ebass','reggae'],dr:['acoustic','reggae'],rv:.4,en:'roots reggae'});
+S(WO,'Flamenco','Chitară nylon, frigic, palme',{bpm:[100,120],mode:'phrygian',prog:'dark',ch:['nylon','strum'],me:['nylon',.5,4],dr:['hand','hand'],rv:.35,en:'flamenco guitar'});
+S(WO,'Balcanic','Alămuri, acordeon, ritm rapid',{bpm:[130,150],mode:'hijaz',prog:'folk',ch:['accordion','offbeat'],me:['trumpet',.55,4],ba:['ebass','rootfifth'],dr:['acoustic','hora'],rv:.3,en:'balkan brass'});
+S(WO,'Anzi','Nai andin, chitară, charango',{bpm:[84,100],mode:'minor',pent:1,prog:'minor',ch:['guitar','strum'],me:['panflute',.45,2],ba:['upright','rootfifth'],dr:['hand','hand'],rv:.4,en:'andean pan flute'});
+// Copii
+S(KI,'Joacă veselă','Xilofon, ukulele, ritm săltăreț',{bpm:[112,126],mode:'major',pent:1,prog:'pop',ch:['ukulele','strum'],me:['xylo',.5,2],ba:['ebass','rootfifth'],dr:['acoustic','pop'],rv:.3,en:'playful kids'});
+S(KI,'Desene animate','Pizzicato, clarinet, fagot',{bpm:[110,124],mode:'major',prog:'folk',ch:['pizz','block'],me:['clarinet',.5,2],ba:['upright','rootfifth'],rv:.35,en:'cartoon'});
+S(KI,'Leagăn pentru bebeluși','Cutie muzicală, foarte încet',{bpm:[56,66],ts:3,mode:'major',pent:1,prog:'calm',ch:['celesta','waltz'],me:['musicbox',.4,1],pa:'warmpad',rv:.7,en:'baby lullaby'});
+S(KI,'Aventuri pentru copii','Orchestră mică, vesel',{bpm:[100,112],mode:'major',prog:'pop',ch:['strings','pulse8'],me:['glock',.45,2],ba:['pizz','rootfifth'],dr:['acoustic','march'],rv:.4,en:'kids adventure'});
+S(KI,'Ora de povești','Harpă, celestă, liniștit',{bpm:[66,76],mode:'lydian',prog:'dream',ch:['harp','arpUD'],me:['celesta',.35,2],pa:'warmpad',rv:.65,en:'bedtime story'});
+// Sărbători
+S(HO,'Crăciun magic','Celestă, glockenspiel, corzi, zurgălăi',{bpm:[84,96],mode:'major',prog:'xmas',ch:['strings','pad'],me:['celesta',.45,2],ar:['glock','sparkle',.3],ba:['pizz','rootfifth'],dr:['hand','soft'],rv:.6,nat:{bells:.3},en:'magical christmas'});
+S(HO,'Colind','Cor și orgă de biserică',{bpm:[66,76],mode:'major',prog:'xmas',ch:['churchorgan','pad'],me:['choiraah',.35,1],rv:.85,en:'christmas carol choir organ'});
+S(HO,'Iarnă la cabană','Chitară, pian, foc și vânt',{bpm:[70,80],mode:'major',prog:'xmas',s7:1,ch:['nylon','broken'],me:['feltpiano',.35,2],rv:.55,nat:{fire:.45,wind:.2},en:'winter cabin'});
+S(HO,'Revelion','Pop festiv, energic',{bpm:[118,126],mode:'major',prog:'pop',ch:['piano','offbeat'],me:['brass',.45,2],ba:['ebass','octave'],dr:['acoustic','disco'],rv:.4,en:'new year party'});
+S(HO,'Paște liniștit','Clopote, cor „ooh”, orgă',{bpm:[60,70],mode:'major',prog:'calm',ch:['churchorgan','pad'],me:['tubular',.25,1],pa:'choirooh',rv:.85,en:'peaceful easter'});
+// Gaming
+S(GA,'Chiptune 8-bit','Pătrate, arpegii rapide, retro',{bpm:[132,150],mode:'major',prog:'pop',ch:['chip','arpUp'],me:['chip',.6,4],ba:['chip','synth8'],dr:['chip','chip'],rv:.15,en:'8-bit chiptune'});
+S(GA,'Sat RPG','Harpă, flaut, liniștit',{bpm:[84,96],mode:'mixolydian',prog:'folk',ch:['harp','arpUD'],me:['ocarina',.45,2],ba:['upright','rootfifth'],rv:.45,en:'RPG village'});
+S(GA,'Luptă cu boss-ul','Corzi rapide, alămuri, tobe',{bpm:[140,160],mode:'harmonic',prog:'epic',ch:['tremstr','ostinato'],me:['brass',.5,4],ba:['synthbass','synth8'],dr:['epic','epic'],rv:.4,en:'boss battle'});
+S(GA,'Puzzle relaxant','Marimbă, pluck, bas moale',{bpm:[96,108],mode:'major',pent:1,prog:'calm',ch:['marimba','arpUp'],me:['pluck',.35,2],ba:['subbass','rootfifth'],dr:['electronic','soft'],rv:.4,en:'relaxing puzzle game'});
+S(GA,'Explorare spațială','Synth, arpegiu, mister',{bpm:[90,100],mode:'lydian',prog:'modal',pa:'airpad',ar:['arpsynth','arpUD',.8],me:['glasspad',.25,1],ba:['synthbass','root'],dr:['electronic','soft'],rv:.7,en:'space exploration'});
+// Natură
+S(NA,'Doar ploaie','Ploaie constantă, fără muzică',{bpm:[60,60],mode:'major',prog:'calm',nat:{rain:.8},en:'rain sounds'});
+S(NA,'Furtună','Ploaie puternică și tunete',{bpm:[60,60],mode:'major',prog:'calm',nat:{storm:.8},en:'thunderstorm'});
+S(NA,'Ocean','Valuri care vin și pleacă',{bpm:[60,60],mode:'major',prog:'calm',nat:{ocean:.9},en:'ocean waves'});
+S(NA,'Pârâu de munte','Apă curgătoare și păsări',{bpm:[60,60],mode:'major',prog:'calm',nat:{stream:.8,birds:.3},en:'mountain stream'});
+S(NA,'Cascadă','Apă care cade, constant',{bpm:[60,60],mode:'major',prog:'calm',nat:{waterfall:.85},en:'waterfall'});
+S(NA,'Foc de tabără','Trosnete și foc mocnit',{bpm:[60,60],mode:'major',prog:'calm',nat:{fire:.85,crickets:.2},en:'campfire'});
+S(NA,'Pădure dimineața','Păsări, vânt ușor',{bpm:[60,60],mode:'major',prog:'calm',nat:{birds:.7,wind:.2},en:'morning forest birds'});
+S(NA,'Noapte în pădure','Greieri, bufniță, vânt',{bpm:[60,60],mode:'major',prog:'calm',nat:{night:.8},en:'night forest'});
+S(NA,'Zgomot maro','Pentru somn și concentrare',{bpm:[60,60],mode:'major',prog:'calm',nat:{brown:.7},en:'brown noise'});
+S(NA,'Zgomot roz','Mai luminos decât maro',{bpm:[60,60],mode:'major',prog:'calm',nat:{pink:.6},en:'pink noise'});
+S(NA,'Zgomot alb','Acoperă zgomotele din jur',{bpm:[60,60],mode:'major',prog:'calm',nat:{white:.45},en:'white noise'});
+
+const NATURE={rain:'Ploaie',storm:'Furtună cu tunete',ocean:'Valuri de ocean',stream:'Pârâu',waterfall:'Cascadă',wind:'Vânt',fire:'Foc / șemineu',birds:'Păsări',crickets:'Greieri',night:'Noapte în pădure',chimes:'Clopoței de vânt',bells:'Zurgălăi',cafe:'Murmur de cafenea',vinyl:'Vinil (trosnet)',white:'Zgomot alb',pink:'Zgomot roz',brown:'Zgomot maro'};
+const HZ={'':'Fără',s174:'174 Hz',s285:'285 Hz',s396:'396 Hz (eliberare)',s417:'417 Hz',s432:'432 Hz',s528:'528 Hz („iubire”)',s639:'639 Hz',s741:'741 Hz',s852:'852 Hz',s963:'963 Hz',b2:'Binaural delta 2 Hz (somn)',b6:'Binaural theta 6 Hz (meditație)',b10:'Binaural alfa 10 Hz (relaxare)',b16:'Binaural beta 16 Hz (focus)',b40:'Binaural gamma 40 Hz'};
+
+/* ================== COMPOZITOR ================== */
+const ROLES=[
+  {k:'ch',n:'Acorduri',d:'armonia de bază',pats:{pad:'Susținut',broken:'Pian desfăcut',arpUp:'Arpegiu urcător',arpUD:'Arpegiu sus-jos',alberti:'Bas Alberti',block:'Acorduri pe timp',comp:'Comping sincopat',strum:'Ciupit/strum',offbeat:'Pe contratimp',waltz:'Vals',pulse8:'Puls pe optimi',ostinato:'Ostinato',sparse:'Note rare'}},
+  {k:'me',n:'Melodie',d:'tema principală'},
+  {k:'ba',n:'Bas',d:'fundația',pats:{root:'Notă lungă',rootfifth:'Fundamentală + cvintă',walking:'Walking (jazz)',octave:'Octave',synth8:'Optimi',reggae:'Reggae',funk:'Funk',trap:'808 trap'}},
+  {k:'pa',n:'Pad / fundal',d:'covor sonor'},
+  {k:'ar',n:'Ornamente',d:'arpegii, sclipiri',pats:{arpUp:'Arpegiu urcător',arpUD:'Arpegiu sus-jos',sparkle:'Sclipiri rare'}},
+  {k:'dr',n:'Tobe',d:'ritmul'},
+];
+function buildSong(cfg){
+  const rng=mulberry32(cfg.seed*7919+13); const R=()=>rng(); const pick=a=>a[Math.floor(R()*a.length)];
+  const st=STYLES[cfg.style]; const bpm=cfg.bpm; const ts=(cfg.dr&&PAT[cfg.dr.pat]&&PAT[cfg.dr.pat].ts)||st.ts||4;
+  const spb=60/bpm, bar=spb*ts, dur=cfg.dur; const E=cfg.energy;
+  const iv=MODES[cfg.mode][1], L=iv.length; const root=48+cfg.key;
+  const idx2m=(i)=>root+12*Math.floor(i/L)+iv[((i%L)+L)%L];
+  const m2idx=(m)=>{let best=0,bd=99;for(let i=-L*3;i<L*5;i++){const d=Math.abs(idx2m(i)-m);if(d<bd){bd=d;best=i}}return best};
+  const penta=(i)=>{if(!st.pent||L!==7)return true;const dg=((i%L)+L)%L;const minorish=iv[2]===3;return minorish?!(dg===1||dg===5):!(dg===3||dg===6)};
+  const chordIdx=(deg,sev)=>{const b=deg-1;const a=[b,b+2,b+4];if(sev&&L>=6)a.push(b+6);return a};
+  const ev=[]; const add=(o)=>{o.x=R();ev.push(o)};
+  const hum=(t)=>t+(R()-.5)*.014;
+  const progs=PROG[st.prog]||PROG.calm;
+  // forma
+  const nBars=Math.max(2,Math.ceil(dur/bar));
+  const secs=[]; let b=0;
+  const introN=dur>40?Math.min(4,Math.max(2,Math.round(8/bar))):1;
+  secs.push({type:'intro',from:0,n:introN}); b=introN;
+  const cycle=['A','B','A','C'];let ci=0;
+  while(b<nBars){const t=cycle[ci%cycle.length];let n=t==='C'?4:8;if(nBars-b<=introN+1){secs.push({type:'outro',from:b,n:nBars-b});break}n=Math.min(n,nBars-b-1);secs.push({type:t,from:b,n});b+=n;ci++}
+  const prev={ch:null};
+  // per secțiune
+  let motifA=null,motifB=null;
+  const grid=(st.me&&st.me[2])||2;
+  const mkMotif=(dens)=>{const steps=ts*grid*2;const m=[];let i=0;let cur=0;while(i<steps){const strong=(i%grid===0);const p=strong?dens*1.4+.15:dens*.9;if(R()<p){let len=1;while(i+len<steps&&R()<.55-dens*.3)len++;const r=R();cur+=r<.45?(R()<.5?1:-1):r<.7?0:r<.88?(R()<.5?2:-2):(R()<.5?3:-3);cur=clamp(cur,-4,6);m.push({s:i,l:len,d:cur});i+=len}else i++}if(!m.length)m.push({s:0,l:grid*2,d:0});return m};
+  const lastPitch={me:72};
+  for(const sec of secs){
+    const prog=pick(progs); const inten={intro:.55,A:.8,B:1,C:.6,outro:.5}[sec.type]*(.6+E*.6);
+    if(sec.type==='A'&&!motifA)motifA=mkMotif(st.me?st.me[1]*(.6+E*.8):0);
+    if(sec.type==='B'||!motifB)motifB=mkMotif(st.me?st.me[1]*(.7+E*.8):0);
+    const motif=sec.type==='B'?motifB:motifA;
+    for(let bi=0;bi<sec.n;bi++){
+      const B=sec.from+bi, t0=B*bar; if(t0>=dur-.5)break;
+      const cps=(prog.length>=8||bar<1.6)?1:1;
+      const deg=prog[(bi*cps)%prog.length]; const cidx=chordIdx(deg,st.s7&&cfg.s7!==false);
+      const cm=cidx.map(i=>idx2m(i));
+      // voicing aproape de 60
+      const voice=(center)=>{const out=cm.map(m=>{let x=m;while(x<center-6)x+=12;while(x>center+6)x-=12;return x}).sort((a,b)=>a-b);return out};
+      const rootM=(lo)=>{let x=cm[0];while(x<lo)x+=12;while(x>=lo+12)x-=12;return x};
+      const last=bi===sec.n-1&&sec.type==='outro';
+      // PAD
+      if(cfg.pa&&cfg.pa.i){ const v=voice(62); for(const m of v)add({t:t0,d:bar*1.02,m,v:.55*inten,i:cfg.pa.i,r:'pa'}); }
+      // ACORDURI
+      if(cfg.ch&&cfg.ch.i&&!(sec.type==='intro'&&cfg.pa&&cfg.pa.i&&bi===0&&introN>1)){
+        const I0=cfg.ch.i, pat=cfg.ch.pat, v=voice(60), vel=.7*inten; const beat=spb;
+        const bass=rootM(43), hi=v;
+        const seq=(notes,step,len,velm=1,off=0)=>{let k=0;for(let s=off;s<bar-1e-6;s+=step){const m=notes[k%notes.length];add({t:hum(t0+s),d:len,m,v:vel*velm*(.85+R()*.25),i:I0,r:'ch'});k++}};
+        const broken=[bass,bass+7,bass+12,hi[1]+12>bass+12?hi[1]:hi[1]+12,hi[2]||hi[0]+12,hi[1]];
+        switch(pat){
+          case'pad':for(const m of v)add({t:t0,d:bar*1.0,m,v:vel*.8,i:I0,r:'ch'});break;
+          case'broken':{const step=ts===3?beat:beat/2;const n=Math.round(bar/step);for(let k=0;k<n;k++){add({t:hum(t0+k*step),d:bar-k*step+.2,m:broken[k%broken.length],v:vel*(k===0?1:.75),i:I0,r:'ch'})}break}
+          case'arpUp':seq(v.concat([v[0]+12]),beat/2,beat*1.5);break;
+          case'arpUD':seq(v.concat([v[0]+12,v[v.length-1]]).concat(v.slice(1).reverse()),beat/2,beat*1.4);break;
+          case'alberti':seq([bass+12,hi[2]||hi[1],hi[1],hi[2]||hi[1]],beat/2,beat*.9);break;
+          case'block':for(let s=0;s<ts;s+=(E>.6?1:2))for(const m of v)add({t:hum(t0+s*beat),d:beat*.85,m,v:vel*(s===0?1:.8),i:I0,r:'ch'});break;
+          case'comp':{const pos=ts===3?[0,1.5]:pick([[0,1.5,2.5],[0,2.5],[.5,2,3.5],[0,1.5,3]]);for(const p of pos)for(const m of v)add({t:hum(t0+p*beat),d:beat*(p===0?1.6:.9),m,v:vel*(.8+R()*.2),i:I0,r:'ch'});break}
+          case'strum':{const pos=ts===3?[0,1,2]:[0,1,1.5,2.5,3,3.5];pos.forEach((p,j)=>{const down=j%2===0;const ns=down?v.concat([v[0]+12]):v.slice().reverse();ns.forEach((m,k)=>add({t:hum(t0+p*beat)+k*.012,d:beat*.95,m,v:vel*(down?.9:.65),i:I0,r:'ch'}))});break}
+          case'offbeat':for(let s=0;s<ts;s++)for(const m of v)add({t:hum(t0+(s+.5)*beat),d:beat*.35,m,v:vel*.8,i:I0,r:'ch'});break;
+          case'waltz':{add({t:hum(t0),d:beat*1.5,m:bass,v:vel,i:I0,r:'ch'});for(let s=1;s<ts;s++)for(const m of v)add({t:hum(t0+s*beat),d:beat*.8,m,v:vel*.6,i:I0,r:'ch'});break}
+          case'pulse8':for(let s=0;s<ts*2;s++)for(const m of v)add({t:hum(t0+s*beat/2),d:beat*.4,m,v:vel*(s%2?.6:.85),i:I0,r:'ch'});break;
+          case'ostinato':seq([bass+12,bass+19,bass+24,bass+19],beat/4,beat*.3,.8);break;
+          case'sparse':{const k=Math.max(1,Math.round(ts/2));for(let s=0;s<ts;s+=k){if(R()<.75){const m=pick(v.concat([v[0]+12,bass+12]));add({t:hum(t0+s*beat+(R()<.3?beat/2:0)),d:bar*1.2,m,v:vel*(.6+R()*.4),i:I0,r:'ch'})}}break}
+        }
+      }
+      // BAS
+      if(cfg.ba&&cfg.ba.i&&sec.type!=='intro'){
+        const I0=cfg.ba.i, rt=rootM(36), vel=.8*inten, beat=spb;
+        const n=(t,d,m,vv=1)=>add({t:hum(t),d,m,v:vel*vv,i:I0,r:'ba'});
+        switch(cfg.ba.pat){
+          case'root':n(t0,bar*.98,rt);break;
+          case'rootfifth':n(t0,bar/2*.95,rt);n(t0+bar/2,bar/2*.9,rt+7,.85);break;
+          case'walking':{const tones=[rt,rt+(iv[2]||4),rt+7,rt+(iv[5]||9)];for(let s=0;s<ts;s++){let m=s===0?rt:tones[Math.floor(R()*4)];if(s===ts-1){m=rt+(R()<.5?-1:1)}n(t0+s*beat,beat*.9,m,s===0?1:.8)}break}
+          case'octave':for(let s=0;s<ts*2;s++)n(t0+s*beat/2,beat*.4,rt+(s%2?12:0),s%2?.7:1);break;
+          case'synth8':for(let s=0;s<ts*2;s++)n(t0+s*beat/2,beat*.45,rt,s%2?.75:1);break;
+          case'reggae':n(t0+beat*.0,beat*.9,rt);n(t0+beat*1.5,beat*.4,rt+7,.7);n(t0+beat*2,beat*.9,rt+12,.8);n(t0+beat*3,beat*.5,rt+7,.7);break;
+          case'funk':for(const [p,o,l] of [[0,0,.4],[.75,12,.2],[1.5,0,.3],[2.5,7,.3],[3,10,.2],[3.5,12,.3]])if(p<ts)n(t0+p*beat,beat*l,rt+o,o?0.75:1);break;
+          case'trap':n(t0,beat*1.4,rt);n(t0+beat*1.75,beat*.7,rt,.8);if(R()<.5)n(t0+beat*2.75,beat*1,rt+(R()<.5?7:12),.8);break;
+        }
+      }
+      // ORNAMENTE
+      if(cfg.ar&&cfg.ar.i&&(sec.type==='A'||sec.type==='B'||(sec.type==='C'&&R()<.5))){
+        const I0=cfg.ar.i,dens=(st.ar?st.ar[2]:.5)*(.5+E),beat=spb,vel=.5*inten;const hv=voice(79);
+        if(cfg.ar.pat==='sparkle'){for(let s=0;s<ts*2;s++)if(R()<dens*.35)add({t:hum(t0+s*beat/2),d:beat*2,m:pick(hv.concat(hv.map(x=>x+12))),v:vel*(.6+R()*.4),i:I0,r:'ar',pan:(R()-.5)*1.2})}
+        else{const seqN=cfg.ar.pat==='arpUD'?hv.concat([hv[0]+12]).concat(hv.slice(1).reverse()):hv.concat([hv[0]+12]);const step=dens>.6?beat/4:beat/2;let k=0;for(let s=0;s<bar-1e-6;s+=step){add({t:t0+s,d:step*1.6,m:seqN[k%seqN.length],v:vel*(k%4===0?1:.7),i:I0,r:'ar',pan:k%2?.35:-.35});k++}}
+      }
+      // MELODIE
+      if(cfg.me&&cfg.me.i&&motif&&motif.length&&(sec.type==='A'||sec.type==='B'||(sec.type==='outro'&&bi===0))){
+        const I0=cfg.me.i, stepT=spb/grid, half=bi%2, center=sec.type==='B'?76:72, vel=.85*inten;
+        const cset=new Set(cidx.map(i=>((i%L)+L)%L));
+        const baseIdx=m2idx(center)+(sec.type==='B'?0:0)+((bi%4===2&&sec.type==='A')?1:0);
+        for(const nt of motif){if(Math.floor(nt.s/(ts*grid))!==half)continue;const s=nt.s-half*ts*grid;
+          let ix=baseIdx+nt.d; const strong=s%grid===0&&(s/grid)%(ts===3?3:2)===0;
+          if(strong){let bst=ix,bd=9;for(let dd=-2;dd<=2;dd++){const j=ix+dd;if(cset.has(((j%L)+L)%L)&&Math.abs(dd)<bd){bd=Math.abs(dd);bst=j}}ix=bst}
+          let guard=0;while(!penta(ix)&&guard++<3)ix++;
+          let m=idx2m(ix);
+          const isLastBar=bi===sec.n-1; let d=nt.l*stepT*.95;
+          if(isLastBar&&nt===motif[motif.length-1]){m=idx2m(m2idx(center));d=bar*.9}
+          add({t:hum(t0+s*stepT),d,m,v:vel*(strong?1:.8)*(.85+R()*.2),i:I0,r:'me',pan:.1});
+        }
+      }
+      // TOBE
+      if(cfg.dr&&cfg.dr.kit&&cfg.dr.pat&&!(sec.type==='intro')&&!(sec.type==='C'&&E<.7)&&!(sec.type==='outro'&&bi>0)){
+        const P=PAT[cfg.dr.pat]; const steps=(P.ts||4)*4; const stepT=bar/steps;
+        for(const vk of ['k','s','h','o','c','r','p','q','t','y']){const s=P[vk];if(!s)continue;
+          for(let i=0;i<steps&&i<s.length;i++){const ch=s[i];if(ch==='.')continue;if(vk==='y'&&bi%4!==0)continue;
+            let tt=t0+i*stepT; if(cfg.sw&&i%2===1)tt+=stepT*(cfg.sw-.5)*2;
+            if(vk==='h'&&E<.35&&i%4!==0)continue;
+            add({t:hum(tt),d:.1,i:'drum',k:vk,v:PV[ch]*inten*(.85+R()*.2),r:'dr'})}}
+      }
+    }
+  }
+  ev.sort((a,b)=>a.t-b.t);
+  let look=3;for(const k of ['ch','me','ba','pa','ar']){const p=cfg[k]&&INST[cfg[k].i];if(!p)continue;let tl=(p.rel||.3)*1.6+bar*1.3;if(p.t==='modal')tl=Math.max(tl,p.dec*1.2);if(p.t==='piano')tl=Math.max(tl,bar*1.3+1);look=Math.max(look,tl)}
+  return {ev,dur,bar,bpm,ts,look:Math.min(LOOK,look+1.5+cfg.rev*4)};
+}
+
+/* ================== NATURĂ + FRECVENȚE (JS, continuu în timp absolut) ================== */
+function renderNature(cfg,s,len){
+  const L=new Float32Array(len),Rr=new Float32Array(len);
+  const n0=Math.round(s*SR), warm=Math.floor(SR*1.5);
+  const layers=Object.entries(cfg.nat||{}).filter(([k,v])=>v>0);
+  for(const [k,vol] of layers){
+    const g=vol*.9;
+    // stări de filtru, încălzite înainte de fereastră
+    let pk=[0,0,0,0,0,0,0],pk2=[0,0,0,0,0,0,0],br=0,br2=0,l1=0,l2=0,l3=0,l4=0;
+    const seedK=k.length*1000+k.charCodeAt(0);
+    for(let j=-warm;j<len;j++){
+      const n=n0+j, t=n/SR; const w1=h32(n,seedK)*2-1, w2=h32(n,seedK+1)*2-1;
+      // pink (Kellet) L/R
+      pk[0]=.99886*pk[0]+w1*.0555179;pk[1]=.99332*pk[1]+w1*.0750759;pk[2]=.969*pk[2]+w1*.153852;pk[3]=.8665*pk[3]+w1*.3104856;pk[4]=.55*pk[4]+w1*.5329522;pk[5]=-.7616*pk[5]-w1*.016898;const pinkL=(pk[0]+pk[1]+pk[2]+pk[3]+pk[4]+pk[5]+pk[6]+w1*.5362)*.11;pk[6]=w1*.115926;
+      pk2[0]=.99886*pk2[0]+w2*.0555179;pk2[1]=.99332*pk2[1]+w2*.0750759;pk2[2]=.969*pk2[2]+w2*.153852;pk2[3]=.8665*pk2[3]+w2*.3104856;pk2[4]=.55*pk2[4]+w2*.5329522;pk2[5]=-.7616*pk2[5]-w2*.016898;const pinkR=(pk2[0]+pk2[1]+pk2[2]+pk2[3]+pk2[4]+pk2[5]+pk2[6]+w2*.5362)*.11;pk2[6]=w2*.115926;
+      br=(br+.02*w1)/1.02;br2=(br2+.02*w2)/1.02;const brL=br*3.5,brR=br2*3.5;
+      let a=0,b=0;
+      switch(k){
+        case'white':a=w1*.25;b=w2*.25;break;
+        case'pink':a=pinkL;b=pinkR;break;
+        case'brown':a=brL;b=brR;break;
+        case'rain':case'storm':{l1+=.35*(pinkL-l1);l2+=.35*(pinkR-l2);const hpL=pinkL-l1*.6,hpR=pinkR-l2*.6;const sw=.8+.2*vnoise(t*.3,seedK);a=hpL*.9*sw;b=hpR*.9*sw;
+          if(k==='storm'){a=a*1.3+brL*.6;b=b*1.3+brR*.6;}
+          // picături
+          const slot=Math.floor(n/96);const hv=h32(slot,seedK+5);if(hv<(k==='storm'?.5:.3)){const st0=slot*96,dt=(n-st0)/SR;const f=2000+h32(slot,9)*4000;const e=Math.exp(-dt/.006);const pan=h32(slot,10);const dv=Math.sin(2*Math.PI*f*dt)*e*.08*h32(slot,11);a+=dv*(1-pan);b+=dv*pan}
+          if(k==='storm'){const T=Math.floor(t/23);if(h32(T,77)<.6){const t0=T*23+h32(T,78)*10,dt=t-t0;if(dt>0&&dt<9){l3+=.004*(w1-l3);const e=(dt<.15?dt/.15:1)*Math.exp(-dt/2.2)*(1+.6*Math.sin(dt*7*h32(T,79)));a+=l3*14*e;b+=l3*14*e}}}
+          break}
+        case'ocean':{const sw1=Math.pow(.5+.5*Math.sin(2*Math.PI*t/11+.6*Math.sin(t*.13)),2.2),sw2=Math.pow(.5+.5*Math.sin(2*Math.PI*t/11+1.2+.6*Math.sin(t*.11)),2.2);l1+=.08*(pinkL-l1);l2+=.08*(pinkR-l2);a=(brL*.6+l1*1.6*sw1+(pinkL-l1)*.5*sw1*sw1)*(.25+.9*sw1);b=(brR*.6+l2*1.6*sw2+(pinkR-l2)*.5*sw2*sw2)*(.25+.9*sw2);break}
+        case'stream':{l1+=.25*(pinkL-l1);l2+=.25*(pinkR-l2);const m1=.5+.5*vnoise(t*9,seedK),m2=.5+.5*vnoise(t*9,seedK+3);a=(pinkL-l1)*1.3*m1+l1*.3;b=(pinkR-l2)*1.3*m2+l2*.3;
+          const slot=Math.floor(n/720);if(h32(slot,31)<.35){const st0=slot*720,dt=(n-st0)/SR;if(dt<.05){const f=500+h32(slot,32)*900;const ph=2*Math.PI*(f*dt+f*6*dt*dt);const dv=Math.sin(ph)*Math.exp(-dt/.012)*.15;const pan=h32(slot,33);a+=dv*(1-pan);b+=dv*pan}}break}
+        case'waterfall':{l1+=.5*(w1-l1);l2+=.5*(w2-l2);a=l1*.45+brL*.7+pinkL*.6;b=l2*.45+brR*.7+pinkR*.6;break}
+        case'wind':case'night':{const gust=.3+.7*Math.pow(vnoise(t*.12,seedK),2),gust2=.3+.7*Math.pow(vnoise(t*.12+4,seedK),2);const fc=.004+.03*vnoise(t*.08,seedK+2);l1+=fc*(w1-l1);l2+=(fc*.9)*(w2-l2);l3+=fc*(l1-l3);l4+=fc*(l2-l4);a=(l1-l3)*9*gust;b=(l2-l4)*9*gust2;
+          if(k==='night'){a*=.45;b*=.45;
+            for(const [cs,cf,pan] of [[0,4400,.25],[1,4900,.8]]){const per=.9+cs*.17;const ph=(t+cs*.31)%per;let e=0;for(let p=0;p<3;p++){const o=p*.045;if(ph>o&&ph<o+.025)e=Math.sin(Math.PI*(ph-o)/.025)}const cyc=Math.floor(t/per);if(h32(cyc,40+cs)<.75){const dv=Math.sin(2*Math.PI*cf*t)*e*.05;a+=dv*(1-pan);b+=dv*pan}}
+            const T=Math.floor(t/17);if(h32(T,55)<.4){const t0=T*17+h32(T,56)*8;for(const [o,dd] of [[0,.35],[.55,.6]]){const dt=t-t0-o;if(dt>0&&dt<dd){const e=Math.sin(Math.PI*dt/dd);const f=380-30*dt/dd;const dv=Math.sin(2*Math.PI*f*dt)*e*.07;a+=dv*.7;b+=dv*.3}}}}
+          break}
+        case'fire':{l1+=.02*(brL-l1);a=l1*2.4+brL*.4;b=l1*2.4+brR*.4;const slot=Math.floor(n/480);const hv=h32(slot,21);if(hv<.12){const st0=slot*480,dt=(n-st0)/SR;const amp=Math.pow(h32(slot,22),2)*.6;l2=w1-l2*.3;const e=Math.exp(-dt/(.002+h32(slot,23)*.006));const pan=h32(slot,24);const dv=w1*e*amp;a+=dv*(1-pan);b+=dv*pan}break}
+        case'birds':{const slot=Math.floor(t/.8);for(const sl of [slot,slot-1]){if(h32(sl,61)>.4)continue;const t0=sl*.8+h32(sl,62)*.5;const notes=2+Math.floor(h32(sl,63)*4);const base=2600+h32(sl,64)*2600;const pan=h32(sl,65);const typ=h32(sl,66);for(let q=0;q<notes;q++){const o=q*(.09+typ*.06);const dd=.06+typ*.05;const dt=t-t0-o;if(dt>0&&dt<dd){const e=Math.sin(Math.PI*dt/dd);const f=base*(1+(typ>.5?.25:-.15)*dt/dd)*(1+.08*Math.sin(2*Math.PI*35*dt));const dv=Math.sin(2*Math.PI*f*dt+q)*e*.06;a+=dv*(1-pan);b+=dv*pan}}}l1+=.01*(w1-l1);a+=l1*.4;b+=l1*.4;break}
+        case'crickets':{for(const [cs,cf,pan] of [[0,4500,.2],[1,4750,.85],[2,5100,.5]]){const per=.75+cs*.13;const ph=(t+cs*.27)%per;let e=0;for(let p=0;p<4;p++){const o=p*.04;if(ph>o&&ph<o+.022)e=Math.sin(Math.PI*(ph-o)/.022)}const dv=Math.sin(2*Math.PI*cf*t)*e*.045;a+=dv*(1-pan);b+=dv*pan}break}
+        case'chimes':case'bells':{const per=k==='bells'?.25:.6;const slot=Math.floor(t/per);const pent=[0,2,4,7,9];for(const sl of [slot,slot-1,slot-2,slot-3,slot-4,slot-5,slot-6,slot-7]){if(h32(sl,71)>(k==='bells'?.8:.5))continue;const t0=sl*per+h32(sl,72)*per*.5;const dt=t-t0;if(dt<0||dt>4)continue;const m=k==='bells'?90+pent[Math.floor(h32(sl,73)*5)]:79+pent[Math.floor(h32(sl,73)*5)]+12*Math.floor(h32(sl,74)*2);const f=mtof(m);const e=Math.exp(-dt/(k==='bells'?.25:1.4));const dv=(Math.sin(2*Math.PI*f*dt)+.3*Math.sin(2*Math.PI*f*2.76*dt)*Math.exp(-dt/.3))*e*.05;const pan=h32(sl,75);a+=dv*(1-pan);b+=dv*pan}if(k==='bells'){a*=.7;b*=.7}break}
+        case'cafe':{l1+=.05*(pinkL-l1);l2+=.05*(pinkR-l2);const m=.6+.4*vnoise(t*3,seedK);a=l1*1.4*m;b=l2*1.4*(1.2-m*.4);const slot=Math.floor(t/1.3);if(h32(slot,81)<.25){const dt=t-slot*1.3-h32(slot,82)*.5;if(dt>0&&dt<.6){const f=2200+h32(slot,83)*1500;const dv=Math.sin(2*Math.PI*f*dt)*Math.exp(-dt/.08)*.04;a+=dv;b+=dv*.6}}break}
+        case'vinyl':{l1+=.3*(w1-l1);a=(w1-l1)*.015;b=a;const slot=Math.floor(n/2400);if(h32(slot,91)<.25){const dt=(n-slot*2400-Math.floor(h32(slot,92)*2000))/SR;if(dt>=0&&dt<.003){const dv=(h32(n,93)*2-1)*.35*h32(slot,94);a+=dv;b+=dv}}break}
+      }
+      if(j>=0){L[j]+=a*g;Rr[j]+=b*g}
+    }
+  }
+  // frecvență
+  if(cfg.hz&&cfg.hzv>0){const v=cfg.hzv*.12;const fade=(t)=>Math.min(1,t/6);
+    if(cfg.hz[0]==='s'){const f=+cfg.hz.slice(1);for(let j=0;j<len;j++){const t=(n0+j)/SR;const am=.85+.15*Math.sin(2*Math.PI*t/9);const x=(Math.sin(2*Math.PI*f*t)+.35*Math.sin(Math.PI*f*t))*v*am*fade(t);L[j]+=x;Rr[j]+=x}}
+    else{const beat=+cfg.hz.slice(1);const fc=cfg.hz==='b2'?136.1:cfg.hz==='b6'?200:220;for(let j=0;j<len;j++){const t=(n0+j)/SR;L[j]+=Math.sin(2*Math.PI*fc*t)*v*1.2*fade(t);Rr[j]+=Math.sin(2*Math.PI*(fc+beat)*t)*v*1.2*fade(t)}}}
+  return [L,Rr];
+}
+
+
+/* ================== CACHE DE NOTE (randare o singură dată per instrument/notă) ================== */
+const NOTEC=new Map(); let NOTEC_BYTES=0;
+function ringLen(p,m){const f=mtof(m);
+  if(p.t==='piano'){const tau=clamp(4.2*Math.pow(130/f,.55),.5,9)*(p.soft?.85:1);return Math.min(9,.6+tau*3)}
+  if(p.t==='fm')return Math.min(9,p.dec*1.2+.3);
+  if(p.t==='modal'){const lf=clamp(Math.pow(400/f,.35),.5,2.2);return Math.min(12,p.dec*lf*1.25+.1)}
+  return 0}
+const bucket=d=>d<=1?1:d<=2?2:d<=4?4:d<=8?8:d<=12?12:16;
+async function prepareNotes(song,onProg){
+  const need=new Map();
+  for(const ev of song.ev){if(ev.i==='drum')continue;const p=INST[ev.i];if(!p||p.t==='ks')continue;
+    const m=Math.round(ev.m),layer=ev.v<.6?0:1,key=p.id+'|'+m+'|'+layer;
+    const sus=p.t==='osc'?bucket(Math.min(ev.d,16)):ringLen(p,m);
+    const have=NOTEC.get(key);if(have&&have.sus>=sus)continue;
+    const cur=need.get(key);if(!cur||cur.sus<sus)need.set(key,{p,m,layer,key,sus})}
+  const list=[...need.values()];if(!list.length)return;
+  if(NOTEC_BYTES>350e6){NOTEC.clear();NOTEC_BYTES=0}
+  let i=0;
+  while(i<list.length){
+    const batch=[];let tot=0;
+    while(i<list.length&&tot<90){const it=list[i];const tail=it.p.t==='osc'?(it.p.rel||.3)*1.6+.15:.05;it.slot=it.sus+tail;it.pos=tot;tot+=it.slot+.05;batch.push(it);i++}
+    const c=new OfflineAudioContext(2,Math.ceil(tot*SR)+SR,SR);
+    for(const it of batch){const d=it.p.t==='osc'?it.sus:it.sus+30;playNote(c,c.destination,{i:it.p.id,m:it.m,tc:it.pos,d:it.p.t==='osc'?it.sus:it.sus,v:it.layer?.85:.5,x:.5})}
+    const buf=await c.startRendering();
+    for(const it of batch){const a=Math.round(it.pos*SR),n=Math.round(it.slot*SR);const stereo=!!(it.p.wide||it.p.oct||it.p.det);
+      const nb=new AudioBuffer({length:n,sampleRate:SR,numberOfChannels:stereo?2:1});
+      for(let ch=0;ch<(stereo?2:1);ch++){const src=buf.getChannelData(ch).subarray(a,a+n);const dst=new Float32Array(src);
+        if(it.p.t!=='osc'){const fl=Math.floor(n*.18);for(let k=0;k<fl;k++)dst[n-1-k]*=k/fl}
+        else{const fl=Math.floor(SR*.03);for(let k=0;k<fl;k++)dst[n-1-k]*=k/fl}
+        nb.copyToChannel(dst,ch)}
+      NOTEC.set(it.key,{buf:nb,sus:it.sus,m:it.m,vref:it.layer?.85:.5});NOTEC_BYTES+=n*4*(stereo?2:1)}
+    if(onProg)onProg(i/list.length);
+  }
+}
+function playCached(c,out,ev){
+  const p=INST[ev.i];const m=Math.round(ev.m),layer=ev.v<.6?0:1;const it=NOTEC.get(p.id+'|'+m+'|'+layer);
+  if(!it){return playNote(c,out,ev)}
+  const s=c.createBufferSource();s.buffer=it.buf;s.playbackRate.value=Math.pow(2,((ev.m-m)+(ev.x-.5)*.05)/12);
+  const g=c.createGain();const gv=ev.v/it.vref;g.gain.value=gv;s.connect(g);g.connect(out);
+  const t=ev.tc,d=Math.max(.03,ev.d);let stop=t+it.buf.duration;
+  if(p.t==='osc'){if(d<it.sus-.01){const r=(p.rel||.3);g.gain.setValueAtTime(gv,t+d);g.gain.setTargetAtTime(0,t+d,Math.max(.005,r/3));stop=Math.min(stop,t+d+r*1.7+.05)}}
+  else if(p.t==='piano'||p.t==='fm'){const r=p.t==='piano'?(p.soft?.16:.09):Math.max(.03,(p.rel||.2)/3);if(d<it.buf.duration){g.gain.setValueAtTime(gv,t+d);g.gain.setTargetAtTime(0,t+d,r);stop=Math.min(stop,t+d+r*6)}}
+  s.start(t);s.stop(stop);
+}
+
+/* ================== RANDARE PE BUCĂȚI ================== */
+const LOOK=14; const IRC={};
+function makeIR(sec){const k=sec.toFixed(1);if(IRC[k])return IRC[k];const len=Math.floor(SR*sec);const b=new AudioBuffer({length:len,sampleRate:SR,numberOfChannels:2});for(let ch=0;ch<2;ch++){const d=b.getChannelData(ch);const r=mulberry32(1234+ch);let lp=0;for(let i=0;i<len;i++){const t=i/SR;const w=r()*2-1;lp+=(.5-.4*t/sec)*(w-lp);d[i]=(t<.012?0:lp)*Math.pow(1-t/sec,2.2)*Math.exp(-t*2.2/sec)}}IRC[k]=b;return b}
+const ROLE_REV={pa:.55,ch:.35,me:.4,ba:.05,ar:.5,dr:.12};
+async function renderRange(song,cfg,s,e){
+  if(!song.prepared){await prepareNotes(song,song.onProg);song.prepared=true}
+  const look=s>0?Math.min(song.look||LOOK,s):0; const t0=s-look; const len=Math.ceil((e-t0)*SR);
+  const c=new OfflineAudioContext(2,len,SR);
+  const master=c.createGain();master.gain.value=.9;
+  const comp=c.createDynamicsCompressor();comp.threshold.value=-16;comp.ratio.value=3;comp.attack.value=.01;comp.release.value=.25;comp.knee.value=10;
+  master.connect(comp);comp.connect(c.destination);
+  const rv=c.createConvolver();rv.buffer=makeIR(1.2+cfg.rev*2.6);const rvg=c.createGain();rvg.gain.value=cfg.rev*1.1;rv.connect(rvg);rvg.connect(master);
+  const dl=c.createDelay(2);dl.delayTime.value=(60/song.bpm)*.75;const fb=c.createGain();fb.gain.value=.3;const dlf=c.createBiquadFilter();dlf.type='lowpass';dlf.frequency.value=2500;const dlo=c.createGain();dlo.gain.value=.22;dl.connect(dlf);dlf.connect(fb);fb.connect(dl);dlf.connect(dlo);dlo.connect(master);
+  const bus={};for(const r of ['pa','ch','me','ba','ar','dr']){const g=c.createGain();g.gain.value=(cfg.vol[r]??.8)*1.25*({pa:.9,ch:1,me:1.4,ba:1,ar:.8,dr:1}[r]);g.connect(master);const sg=c.createGain();sg.gain.value=ROLE_REV[r];g.connect(sg);sg.connect(rv);if(r==='me'||r==='ar'){const dg=c.createGain();dg.gain.value=r==='me'?.5:.35;g.connect(dg);dg.connect(dl)}bus[r]=g}
+  // evenimente
+  const ev=song.ev; let lo=0,hi=ev.length;while(lo<hi){const m=(lo+hi)>>1;if(ev[m].t<t0)lo=m+1;else hi=m}
+  for(let i=lo;i<ev.length&&ev[i].t<e;i++){const x=ev[i];if(x.t>=song.dur-.05)continue;const o=Object.assign({},x,{tc:Math.max(0,x.t-t0)});const out=bus[x.r]||master;
+    if(x.pan){const p=c.createStereoPanner();p.pan.value=clamp(x.pan,-1,1);p.connect(out);if(x.i==='drum')playDrum(c,p,o,cfg.dr.kit);else if(INST[x.i].t==='ks')playNote(c,p,o);else playCached(c,p,o)}
+    else{if(x.i==='drum')playDrum(c,out,o,cfg.dr.kit);else if(INST[x.i].t==='ks')playNote(c,out,o);else playCached(c,out,o)}}
+  const buf=await c.startRendering();
+  const off=Math.round(look*SR), n=Math.round((e-s)*SR);
+  const Lm=buf.getChannelData(0).subarray(off,off+n),Rm=buf.getChannelData(1).subarray(off,off+n);
+  const [Ln,Rn]=renderNature(cfg,s,n);
+  const OL=new Float32Array(n),OR=new Float32Array(n);
+  const mv=cfg.musicOn?1:0;
+  for(let i=0;i<n;i++){const t=s+i/SR;let fg=1;if(cfg.fin>0&&t<cfg.fin)fg=Math.sin(Math.PI/2*t/cfg.fin);if(cfg.fout>0&&t>song.dur-cfg.fout)fg*=Math.max(0,Math.sin(Math.PI/2*(song.dur-t)/cfg.fout));
+    let a=(Lm[i]||0)*mv+Ln[i],b=(Rm[i]||0)*mv+Rn[i];a*=fg;b*=fg;OL[i]=Math.tanh(a*1.1)/1.05;OR[i]=Math.tanh(b*1.1)/1.05}
+  return [OL,OR];
+}
+
+/* ================== EXPORT ================== */
+function wavHeader(frames){const b=new ArrayBuffer(44),v=new DataView(b);const ws=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i))};const dataLen=frames*4;ws(0,'RIFF');v.setUint32(4,36+dataLen,true);ws(8,'WAVE');ws(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,2,true);v.setUint32(24,SR,true);v.setUint32(28,SR*4,true);v.setUint16(32,4,true);v.setUint16(34,16,true);ws(36,'data');v.setUint32(40,dataLen,true);return b}
+function toPCM(L,R){const o=new Int16Array(L.length*2);for(let i=0;i<L.length;i++){o[2*i]=clamp(L[i],-1,1)*32767;o[2*i+1]=clamp(R[i],-1,1)*32767}return o}
+async function makeEncoder(kind){
+  const codec=kind==='mp4'?'mp4a.40.2':'opus';
+  if(typeof AudioEncoder==='undefined')throw new Error('Browserul nu are encoder audio (WebCodecs). Folosește Chrome sau Edge.');
+  const conf={codec,sampleRate:SR,numberOfChannels:2,bitrate:kind==='mp4'?192000:160000};
+  const sup=await AudioEncoder.isConfigSupported(conf);if(!sup.supported)throw new Error(kind==='mp4'?'AAC nu e disponibil în acest browser.':'Opus nu e disponibil în acest browser.');
+  let muxer,target;
+  if(kind==='mp4'){if(!window.Mp4Muxer)throw new Error('Nu s-a încărcat componenta MP4. Verifică internetul și reîncarcă.');target=new Mp4Muxer.ArrayBufferTarget();muxer=new Mp4Muxer.Muxer({target,audio:{codec:'aac',sampleRate:SR,numberOfChannels:2},fastStart:'in-memory'})}
+  else{if(!window.WebMMuxer)throw new Error('Nu s-a încărcat componenta WebM. Verifică internetul și reîncarcă.');target=new WebMMuxer.ArrayBufferTarget();muxer=new WebMMuxer.Muxer({target,audio:{codec:'A_OPUS',sampleRate:SR,numberOfChannels:2}})}
+  let err=null;const enc=new AudioEncoder({output:(ch,meta)=>muxer.addAudioChunk(ch,meta),error:e=>{err=e}});enc.configure(conf);
+  let ts=0;
+  return {async push(L,R){for(let p=0;p<L.length;p+=SR){const n=Math.min(SR,L.length-p);const d=new Float32Array(n*2);d.set(L.subarray(p,p+n),0);d.set(R.subarray(p,p+n),n);const ad=new AudioData({format:'f32-planar',sampleRate:SR,numberOfFrames:n,numberOfChannels:2,timestamp:Math.round(ts*1e6/SR),data:d});enc.encode(ad);ad.close();ts+=n;while(enc.encodeQueueSize>8)await new Promise(r=>setTimeout(r,5));if(err)throw err}},
+    async done(){await enc.flush();enc.close();muxer.finalize();return new Blob([target.buffer],{type:kind==='mp4'?'video/mp4':'audio/webm'})}};
+}
+
+/* ================== UI ================== */
+const $=id=>document.getElementById(id);
+const state={style:0,seed:Math.floor(Math.random()*90000)+1000,cfg:null};
+let DL=null; const inArtifact=!!(window.claude&&window.claude.use);
+const DURS=[[30,'30 secunde'],[60,'1 minut'],[120,'2 minute'],[180,'3 minute'],[300,'5 minute'],[600,'10 minute'],[900,'15 minute'],[1800,'30 minute'],[3600,'1 oră'],[7200,'2 ore'],[10800,'3 ore']];
+function toast(msg,ms=4500){const t=$('toast');t.textContent=msg;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,ms)}
+function instOptions(sel,filter){sel.innerHTML='';const off=document.createElement('option');off.value='';off.textContent='— oprit —';sel.appendChild(off);for(const g of IGROUPS){const og=document.createElement('optgroup');og.label=g;for(const id in INST){if(INST[id].g!==g)continue;if(filter&&!filter(INST[id]))continue;const o=document.createElement('option');o.value=id;o.textContent=INST[id].n;og.appendChild(o)}if(og.children.length)sel.appendChild(og)}}
+function initUI(){
+  const nInst=Object.keys(INST).length, nKit=Object.keys(KITS).length;
+  $('stats').innerHTML='';[[STYLES.length,'stiluri'],[nInst,'instrumente'],[nKit,'seturi de tobe'],[Object.keys(NATURE).length,'sunete de natură'],[Object.keys(HZ).length-1,'frecvențe']].forEach(([n,l])=>{const d=document.createElement('div');d.className='stat';const b=document.createElement('b');b.textContent=n;d.appendChild(b);d.appendChild(document.createTextNode(l));$('stats').appendChild(d)});
+  DURS.forEach(([v,l])=>{const o=document.createElement('option');o.value=v;o.textContent=l;$('dur').appendChild(o)});$('dur').value=120;
+  const ka=document.createElement('option');ka.value='auto';ka.textContent='Automat';$('key').appendChild(ka);KEYS.forEach((k,i)=>{const o=document.createElement('option');o.value=i;o.textContent=k;$('key').appendChild(o)});
+  for(const m in MODES){const o=document.createElement('option');o.value=m;o.textContent=MODES[m][0];$('mode').appendChild(o)}
+  for(const h in HZ){const o=document.createElement('option');o.value=h;o.textContent=HZ[h];$('hz').appendChild(o)}
+  // categorii
+  const allc=['Toate'].concat(CATS);state.cat='Toate';
+  allc.forEach(c=>{const b=document.createElement('button');b.className='chip';b.textContent=c;b.setAttribute('aria-pressed',c==='Toate');b.onclick=()=>{state.cat=c;[...$('cats').children].forEach(x=>x.setAttribute('aria-pressed',x===b));renderStyles()};$('cats').appendChild(b)});
+  $('q').oninput=renderStyles;
+  // piste
+  for(const r of ROLES){const row=document.createElement('div');row.className='track';
+    const nm=document.createElement('div');nm.className='nm';nm.textContent=r.n;const sm=document.createElement('small');sm.textContent=r.d;nm.appendChild(sm);row.appendChild(nm);
+    const sel=document.createElement('select');sel.id='i_'+r.k;sel.setAttribute('aria-label',r.n+' instrument');
+    if(r.k==='dr'){const off=document.createElement('option');off.value='';off.textContent='— fără tobe —';sel.appendChild(off);for(const k in KITS){const o=document.createElement('option');o.value=k;o.textContent=KITS[k].n;sel.appendChild(o)}}
+    else instOptions(sel,r.k==='ba'?(p=>p.bass||['pizz','cello','chip','tuba'].includes(p.id)):null);
+    row.appendChild(sel);
+    const ps=document.createElement('select');ps.id='p_'+r.k;ps.setAttribute('aria-label',r.n+' model');
+    const pats=r.k==='dr'?Object.fromEntries(Object.entries(PAT).map(([k,v])=>[k,v.n])):r.pats;
+    if(pats){for(const k in pats){const o=document.createElement('option');o.value=k;o.textContent=pats[k];ps.appendChild(o)}}else{ps.disabled=true;const o=document.createElement('option');o.textContent=r.k==='me'?'compusă automat':'acord susținut';ps.appendChild(o)}
+    row.appendChild(ps);
+    const vr=document.createElement('input');vr.type='range';vr.min=0;vr.max=100;vr.value=80;vr.id='v_'+r.k;vr.setAttribute('aria-label','Volum '+r.n);row.appendChild(vr);
+    $('tracks').appendChild(row);[sel,ps,vr].forEach(x=>x.addEventListener('change',onChange));
+  }
+  // natură
+  for(const k in NATURE){const c=document.createElement('div');c.className='ncard';c.id='nc_'+k;const lb=document.createElement('label');const cb=document.createElement('input');cb.type='checkbox';cb.id='n_'+k;lb.appendChild(cb);lb.appendChild(document.createTextNode(NATURE[k]));const vr=document.createElement('input');vr.type='range';vr.min=0;vr.max=100;vr.value=50;vr.id='nv_'+k;vr.setAttribute('aria-label','Volum '+NATURE[k]);c.appendChild(lb);c.appendChild(vr);$('nat').appendChild(c);[cb,vr].forEach(x=>x.addEventListener('change',()=>{c.classList.toggle('on',cb.checked);onChange()}))}
+  ['dur','key','mode','energy','seed','hz','hzv','rev','fin','fout'].forEach(id=>$(id).addEventListener('change',onChange));
+  $('bpm').addEventListener('input',()=>{$('bpmv').textContent=$('bpm').value+' BPM'});$('bpm').addEventListener('change',onChange);
+  $('reseed').onclick=()=>{$('seed').value=Math.floor(Math.random()*900000)+1000;onChange()};
+  $('copy').onclick=async()=>{try{await navigator.clipboard.writeText($('prompt').value);toast('Prompt copiat.')}catch(e){$('prompt').select();toast('Selectat. Apasă Ctrl+C pentru copiere.')}};
+  // comparație
+  const rows=[['','Suno','AIMusicAI','ModifAI','Cadru Muzică'],
+    ['Stiluri','text liber + etichete','50+ stiluri','12 etichete + 12 exemple',STYLES.length+' stiluri gata făcute'],
+    ['Instrumente','doar descrise în text','doar descrise în text','doar descrise în text',nInst+' instrumente alese pe 6 piste + '+nKit+' seturi de tobe'],
+    ['Control','prompt, versuri, editare','tempo, tonalitate (plan Pro)','prompt, versuri','tempo, tonalitate, 15 scări, energie, volum pe pistă, reverb, fade'],
+    ['Natură / frecvențe','nu','nu','nu',Object.keys(NATURE).length+' sunete + '+(Object.keys(HZ).length-1)+' frecvențe și binaurale'],
+    ['Durată maximă','~8 min/piesă','~6 min','3 min','3 ore dintr-o bucată'],
+    ['Voce și versuri','da','da','da (10+ limbi)','nu (vezi Promptul pentru AI)'],
+    ['Sunet','realist, de studio','realist','realist','sintetizat (curat, dar se aude că e sintetizat)'],
+    ['Preț / drepturi','gratuit fără drepturi comerciale; Pro 8–10 $/lună','drepturi după plan','abonament','gratuit, nelimitat, tu deții tot']];
+  const tb=$('cmp');rows.forEach((r,i)=>{const tr=document.createElement('tr');r.forEach(c=>{const td=document.createElement(i?'td':'th');td.textContent=c;tr.appendChild(td)});tb.appendChild(tr)});
+  // formate
+  const fm=[];if(!inArtifact)fm.push(['wav','WAV (fără pierderi)']);fm.push(['mp4','MP4 audio (AAC)']);fm.push(['webm','WebM (Opus)']);
+  fm.forEach(([v,l])=>{const o=document.createElement('option');o.value=v;o.textContent=l;$('fmt').appendChild(o)});
+  $('play').onclick=togglePlay;$('dl').onclick=doExport;
+  if(inArtifact)aacOK().then(ok=>{if(!ok)$('fmt').value='webm'});
+  renderStyles();selectStyle(STYLES.findIndex(s=>s.n==='Pian pentru somn'));
+  if(inArtifact){window.claude.use('downloads').then(d=>{DL=d;if(!d){$('dl').disabled=true;$('dl').title='Descărcarea nu e disponibilă aici'}}).catch(()=>{})}
+}
+function renderStyles(){const q=$('q').value.trim().toLowerCase();const box=$('styles');box.innerHTML='';
+  for(const s of STYLES){if(state.cat!=='Toate'&&s.cat!==state.cat)continue;if(q&&!(s.n+' '+s.desc+' '+s.cat+' '+s.en).toLowerCase().includes(q))continue;
+    const b=document.createElement('button');b.className='st';b.setAttribute('role','option');b.setAttribute('aria-selected',s.id===state.style);
+    const t=document.createElement('b');t.textContent=s.n;const bp=document.createElement('span');bp.textContent=s.bpm[0]===s.bpm[1]?'natură':s.bpm[0]+'–'+s.bpm[1]+' BPM';const d=document.createElement('small');d.textContent=s.desc;b.append(t,bp,d);b.onclick=()=>selectStyle(s.id);box.appendChild(b)}
+  if(!box.children.length){const p=document.createElement('p');p.className='note';p.textContent='Niciun stil nu se potrivește. Încearcă alt cuvânt.';box.appendChild(p)}}
+function selectStyle(id){state.style=id;const s=STYLES[id];
+  [...$('styles').children].forEach(b=>{if(b.classList.contains('st'))b.setAttribute('aria-selected',b.querySelector('b').textContent===s.n)});
+  const r=mulberry32(state.seed);const bpm=Math.round(s.bpm[0]+(s.bpm[1]-s.bpm[0])*r());
+  $('bpm').value=bpm;$('bpmv').textContent=bpm+' BPM';$('mode').value=s.mode;$('key').value='auto';$('rev').value=Math.round((s.rv??.5)*100);
+  if(!$('seed').value)$('seed').value=state.seed;
+  const setR=(k,arr,defPat)=>{$('i_'+k).value=arr?(arr[0]||''):'';if($('p_'+k).disabled)return;if(arr&&arr[1]&&typeof arr[1]==='string')$('p_'+k).value=arr[1];else if(defPat)$('p_'+k).value=defPat};
+  setR('ch',s.ch,'pad');setR('me',s.me);setR('ba',s.ba,'root');$('i_pa').value=s.pa||'';setR('ar',s.ar,'sparkle');
+  $('i_dr').value=s.dr?s.dr[0]:'';$('p_dr').value=s.dr?s.dr[1]:'soft';
+  for(const k in NATURE){const on=!!(s.nat&&s.nat[k]);$('n_'+k).checked=on;$('nv_'+k).value=on?Math.round(s.nat[k]*100):50;$('nc_'+k).classList.toggle('on',on)}
+  $('hz').value=s.hz||'';
+  onChange();
+}
+function readCfg(){const s=STYLES[state.style];const seed=+$('seed').value||1;const kr=mulberry32(seed+5);
+  const cfg={style:state.style,seed,dur:+$('dur').value,bpm:+$('bpm').value,mode:$('mode').value,key:$('key').value==='auto'?Math.floor(kr()*12):+$('key').value,energy:+$('energy').value/100,rev:+$('rev').value/100,fin:+$('fin').value,fout:Math.min(+$('fout').value,+$('dur').value/3),hz:$('hz').value,hzv:+$('hzv').value/100,vol:{},nat:{},sw:s.sw||0};
+  for(const r of ROLES){cfg.vol[r.k]=+$('v_'+r.k).value/100}
+  cfg.ch={i:$('i_ch').value,pat:$('p_ch').value};cfg.me={i:$('i_me').value};cfg.ba={i:$('i_ba').value,pat:$('p_ba').value};cfg.pa={i:$('i_pa').value};cfg.ar={i:$('i_ar').value,pat:$('p_ar').value};cfg.dr={kit:$('i_dr').value,pat:$('p_dr').value};
+  for(const k in NATURE)if($('n_'+k).checked)cfg.nat[k]=+$('nv_'+k).value/100;
+  cfg.musicOn=!!(cfg.ch.i||cfg.me.i||cfg.ba.i||cfg.pa.i||cfg.ar.i||cfg.dr.kit);
+  return cfg}
+function onInfo(){const c=state.cfg||readCfg(),s=STYLES[c.style];$('nowName').textContent=s.n;$('nowInfo').textContent=(c.musicOn?KEYS[c.key]+' '+MODES[c.mode][0].split(' ')[0].toLowerCase()+' · '+c.bpm+' BPM · ':'')+(DURS.find(d=>d[0]===c.dur)||[0,c.dur+' s'])[1]+' · varianta '+c.seed}
+function onChange(){state.cfg=readCfg();const c=state.cfg,s=STYLES[c.style];
+  $('nowName').textContent=s.n;$('nowInfo').textContent=(c.musicOn?KEYS[c.key]+' '+MODES[c.mode][0].split(' ')[0].toLowerCase()+' · '+c.bpm+' BPM · ':'')+(DURS.find(d=>d[0]===c.dur)||[0,c.dur+' s'])[1]+' · varianta '+c.seed;
+  const names=['ch','me','ba','pa','ar'].map(k=>c[k].i&&INST[c[k].i]?INST[c[k].i].e:null).filter(Boolean);
+  const nat=Object.keys(c.nat).map(k=>NATURE[k].toLowerCase());
+  const mood=c.energy<.35?'calm, soft, gentle':c.energy>.7?'energetic, driving':'warm, relaxed';
+  $('prompt').value=`${s.en}, instrumental, no vocals. Instruments: ${names.join(', ')||'none'}${c.dr.kit?', '+KITS[c.dr.kit].n.toLowerCase()+' drums':''}. ${c.bpm} BPM, ${KEYS[c.key].replace('♭','b')} ${c.mode}, ${mood} mood${nat.length?'. Background: '+Object.keys(c.nat).join(', ')+' sounds':''}. High quality, seamless, suitable for a YouTube background.`;
+  if(player.playing)stopPlay();
+}
+
+/* ================== PLAYER ================== */
+const player={playing:false,ctx:null,an:null};
+async function togglePlay(){if(player.playing){stopPlay();return}
+  const cfg=readCfg();const song=buildSong(cfg);const ctx=new AudioContext({sampleRate:SR});await ctx.resume();
+  const an=ctx.createAnalyser();an.fftSize=256;an.connect(ctx.destination);
+  Object.assign(player,{playing:true,ctx,an,gen:(player.gen||0)+1});const gen=player.gen;
+  $('play').textContent='⏹ Stop';drawViz();
+  const chunk=20;let s=0;$('nowInfo').textContent='Pregătesc instrumentele…';const start0=performance.now();const song0=song;await prepareNotes(song0);song0.prepared=true;onInfo();const start=ctx.currentTime+.35;const maxDur=Math.min(song.dur,cfg.dur);
+  const tick=()=>{if(!player.playing||player.gen!==gen)return;const pos=ctx.currentTime-start;$('bar').style.width=clamp(pos/maxDur*100,0,100)+'%';if(pos>maxDur+.5){stopPlay();return}requestAnimationFrame(tick)};tick();
+  while(s<maxDur&&player.playing&&player.gen===gen){const e=Math.min(maxDur,s+chunk);const [L,R]=await renderRange(song,cfg,s,e);if(!player.playing||player.gen!==gen)return;
+    const b=ctx.createBuffer(2,L.length,SR);b.copyToChannel(L,0);b.copyToChannel(R,1);const src=ctx.createBufferSource();src.buffer=b;src.connect(an);src.start(start+s);s=e;
+    while(player.playing&&player.gen===gen&&start+s-ctx.currentTime>chunk*1.5)await new Promise(r=>setTimeout(r,300))}
+}
+function stopPlay(){player.playing=false;if(player.ctx){player.ctx.close().catch(()=>{});player.ctx=null}$('play').textContent='▶ Ascultă';$('bar').style.width='0'}
+function drawViz(){const cv=$('viz'),g=cv.getContext('2d');const data=new Uint8Array(128);const step=()=>{g.clearRect(0,0,cv.width,cv.height);if(!player.playing||!player.an)return;player.an.getByteFrequencyData(data);const n=48,w=cv.width/n;for(let i=0;i<n;i++){const v=data[Math.floor(i*1.6)]/255;const h=Math.max(2,v*cv.height);g.fillStyle=i%2?'#7cc4b4':'#f2a541';g.fillRect(i*w+1,cv.height-h,w-2,h)}requestAnimationFrame(step)};step()}
+
+async function doExport(){
+  if(player.playing)stopPlay();
+  const cfg=readCfg();let fmt=$('fmt').value;const song=buildSong(cfg);const total=cfg.dur;
+  if(fmt==='wav'&&total>3600){toast('WAV de peste 1 oră ar avea peste 600 MB. Alege MP4 pentru durate lungi.');return}
+  const btn=$('dl');btn.disabled=true;const t0=performance.now();
+  const name=(STYLES[cfg.style].n.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-zA-Z0-9]+/g,'_')+'_'+cfg.seed).toLowerCase();
+  try{
+    if(fmt==='mp4'&&!(await aacOK())){fmt='webm';$('fmt').value='webm';toast('Browserul tău nu poate crea MP4/AAC. Export în WebM (Opus), pe care îl acceptă YouTube și CapCut.',6000)}
+    let enc=null;const parts=[];if(fmt==='wav')parts.push(wavHeader(Math.round(total*SR)));else enc=await makeEncoder(fmt);
+    const chunk=60;for(let s=0;s<total;s+=chunk){const e=Math.min(total,s+chunk);const [L,R]=await renderRange(song,cfg,s,e);
+      if(enc)await enc.push(L,R);else parts.push(toPCM(L,R));
+      const pr=e/total;$('bar').style.width=(pr*100)+'%';const el=(performance.now()-t0)/1000;const eta=el/pr-el;btn.textContent=`⏳ ${Math.round(pr*100)}% · ~${Math.ceil(eta)} s`;await new Promise(r=>setTimeout(r,0))}
+    const blob=enc?await enc.done():new Blob(parts,{type:'audio/wav'});
+    const fname=name+'.'+fmt;
+    if(DL){await DL.save({filename:fname,data:blob});toast('Fișier salvat: '+fname)}
+    else{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fname;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},4000);toast('Descărcat: '+fname+' ('+(blob.size/1048576).toFixed(1)+' MB)')}
+  }catch(e){const c=e&&e.code;toast(c==='declined'?'Salvarea a fost anulată.':c==='rejected_extension'?'Formatul nu e permis aici. Încearcă MP4.':'Nu s-a putut exporta: '+(e&&e.message||e),7000)}
+  finally{btn.disabled=false;btn.textContent='⬇ Descarcă';$('bar').style.width='0'}
+}
+async function aacOK(){try{return typeof AudioEncoder!=='undefined'&&(await AudioEncoder.isConfigSupported({codec:'mp4a.40.2',sampleRate:SR,numberOfChannels:2,bitrate:192000})).supported}catch(e){return false}}
+window.CM={buildSong,renderRange,readCfg,STYLES,INST,selectStyle,wavHeader,toPCM,SR};
+initUI();
+
+/* ================== PUNTE CĂTRE CADRU STUDIO ================== */
+const CADRU=(()=>{try{return window.parent!==window&&typeof window.parent.cadruAddAudio==='function'?window.parent:null}catch(e){return null}})();
+async function toCadru(){
+  if(player.playing)stopPlay();
+  const cfg=readCfg();const btn=$('toCadru');btn.disabled=true;const t0=performance.now();
+  try{
+    const song=buildSong(cfg);const total=cfg.dur;let opus=false;
+    try{opus=typeof AudioEncoder!=='undefined'&&!!window.WebMMuxer&&(await AudioEncoder.isConfigSupported({codec:'opus',sampleRate:SR,numberOfChannels:2,bitrate:160000})).supported}catch(e){}
+    if(!opus&&total>3600)throw new Error('Pentru peste o oră e nevoie de Chrome sau Edge (encoder Opus).');
+    const enc=opus?await makeEncoder('webm'):null;const parts=opus?null:[wavHeader(Math.round(total*SR))];
+    for(let s=0;s<total;s+=60){const e=Math.min(total,s+60);const [L,R]=await renderRange(song,cfg,s,e);if(enc)await enc.push(L,R);else parts.push(toPCM(L,R));
+      const pr=e/total;$('bar').style.width=(pr*100)+'%';const el=(performance.now()-t0)/1000;btn.textContent=`⏳ ${Math.round(pr*100)}% · ~${Math.ceil(el/pr-el)} s`;await new Promise(r=>setTimeout(r,0))}
+    const blob=enc?await enc.done():new Blob(parts,{type:'audio/wav'});
+    const name=STYLES[cfg.style].n+' · '+cfg.seed+(enc?'.webm':'.wav');
+    CADRU.cadruAddAudio(blob,name);toast('Muzica e în Cadru, ca fundal al videoului.');
+  }catch(e){toast('Nu s-a putut trimite în Cadru: '+(e&&e.message||e),7000)}
+  finally{btn.disabled=false;btn.textContent='＋ În video (Cadru)';$('bar').style.width='0'}
+}
+if(CADRU){$('toCadru').hidden=false;$('toCadru').onclick=toCadru;
+  try{const d=CADRU.cadruVideoDuration&&CADRU.cadruVideoDuration();if(d>5){const sec=Math.ceil(d);const o=document.createElement('option');o.value=sec;o.textContent='Cât videoul ('+Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0')+')';$('dur').prepend(o);$('dur').value=sec;onChange()}}catch(e){}}
+</script>
+
+</body>
+</html>
