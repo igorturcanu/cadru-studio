@@ -64,6 +64,7 @@ aside.right { border-right: 0; border-left: 1px solid var(--line); }
 .walkhint { position: absolute; top: 46px; left: 10px; z-index: 2; max-width: min(420px, calc(100% - 20px)); display: flex; gap: 8px; align-items: center; background: rgba(20,28,38,.8); color: #fff; font-size: 12px; line-height: 1.35; border-radius: 8px; padding: 6px 9px; }
 .walkhint[hidden] { display: none; }
 .walkhint .pad { display: flex; flex-direction: column; gap: 3px; }
+.walkhint #walkDoor { white-space: nowrap; touch-action: auto; }
 .walkhint .pad .chip { padding: 3px 10px; color: #1d2733; touch-action: none; user-select: none; }
 .vlabel { font-weight: 700; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); background: rgba(255,255,255,.85); border-radius: 6px; padding: 4px 8px; }
 .field { display: grid; grid-template-columns: 96px 1fr; align-items: center; gap: 8px; margin: 7px 0; }
@@ -133,6 +134,12 @@ table.qty small { color: var(--muted); }
 .pj .acts { display: flex; gap: 4px; padding: 0 8px 8px; }
 .pj figcaption { display: block; } .pj figcaption b { display: block; font-size: 13px; } .pj figcaption small { color: var(--muted); }
 .dialog.wide { width: min(1000px, 100%); }
+.tplgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr)); gap: 12px; }
+.tpl { box-sizing: border-box; min-width: 0; }
+.tpl { display: flex; flex-direction: column; gap: 4px; text-align: left; background: var(--panel, #fff); border: 1px solid var(--line, #ddd); border-radius: 12px; padding: 8px; cursor: pointer; color: inherit; font: inherit; }
+.tpl:hover, .tpl:focus-visible { border-color: var(--accent, #2f6fde); box-shadow: 0 2px 12px rgba(0,0,0,.12); }
+.tpl img, .tpl .ph { width: 100%; aspect-ratio: 16/10; object-fit: cover; border-radius: 8px; background: #e9eef2; display: grid; place-items: center; font-size: 42px; color: #8a96a3; }
+.tpl b { font-size: 14px; } .tpl small { font-size: 12px; opacity: .75; line-height: 1.35; }
 .sheet { color: #1d2733; font-size: 13px; }
 .sheet .sh-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; border-bottom: 2px solid var(--brand); padding-bottom: 10px; margin-bottom: 14px; }
 .sheet h1 { font-size: 22px; margin: 0; } .sheet .brand { color: var(--brand); font-weight: 700; }
@@ -187,7 +194,8 @@ table.cost small { display: block; color: var(--muted); font-size: 11px; }
 @media (max-width: 600px) {
   .top { gap: 6px; padding-left: 8px; padding-right: 8px; }
   .top .hide-s { display: none; }
-  .top input.name { width: 96px; }
+  .top input.name { width: 64px; min-width: 0; }
+  .top .tbtn { padding-left: 7px; padding-right: 7px; }
   #langSel { max-width: 58px; }
   #camBtns, #viewBtns { flex-wrap: wrap; }
   #v3d .overlay.br { bottom: 50px; }
@@ -209,13 +217,7 @@ table.cost small { display: block; color: var(--muted); font-size: 11px; }
       <button class="tbtn" id="undo" title="Anulează (Ctrl+Z)">↶</button>
       <button class="tbtn" id="redo" title="Refă (Ctrl+Y)">↷</button>
     </div>
-    <select id="template" class="hide-m" aria-label="Șabloane">
-      <option value="" data-i18n>Șabloane…</option>
-      <option value="apartament" data-i18n>Apartament 2 camere</option>
-      <option value="casa" data-i18n>Casă cu grădină</option>
-      <option value="casa_etaj" data-i18n>Casă cu etaj și grădină</option>
-      <option value="gol" data-i18n>Plan gol</option>
-    </select>
+    <button class="tbtn" id="btnTpl">🏠<span class="hide-m"> <span data-i18n>Modele de case</span></span></button>
     <div class="grp">
       <button class="tbtn" id="btnProj">📁<span class="hide-m"> <span data-i18n>Proiecte</span></span></button>
       <button class="tbtn" id="btnCost">💶<span class="hide-s"> <span data-i18n>Costuri</span></span></button>
@@ -286,7 +288,7 @@ table.cost small { display: block; color: var(--muted); font-size: 11px; }
         <div class="overlay tl"><span class="vlabel" data-i18n>Vedere 3D</span></div>
         <div class="walkhint" id="walkHint" hidden>
           <span><b data-i18n>Mod persoană</b><span class="txt"> · </span><span class="txt" data-i18n>Trage ca să te rotești 360°. Rotița, W/S sau săgețile te duc înainte și înapoi. Dublu-clic pe podea ca să mergi acolo.</span></span>
-          <span class="pad"><button class="chip" data-walk="w" aria-label="↑">▲</button><button class="chip" data-walk="s" aria-label="↓">▼</button></span>
+          <span class="pad"><button class="chip" id="walkDoor">🚪 Ieși afară</button><button class="chip" data-walk="w" aria-label="↑">▲</button><button class="chip" data-walk="s" aria-label="↓">▼</button></span>
         </div>
         <div class="overlay tr" id="camBtns">
           <button class="chip on" data-cam="persp" data-i18n>Perspectivă</button>
@@ -391,6 +393,16 @@ table.cost small { display: block; color: var(--muted); font-size: 11px; }
     <div class="body">
       <div class="row noprint" style="margin:0 0 14px"><button class="btn primary" id="shPrint">🖨 <span data-i18n>Tipărește / Salvează PDF</span></button><span class="hint" id="shStatus"></span></div>
       <div class="sheet" id="sheet"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="mTpl" role="dialog" aria-modal="true" aria-labelledby="mTplT">
+  <div class="dialog wide">
+    <header><h2 id="mTplT">🏠 <span data-i18n>Modele de case</span></h2><button class="x" data-close>×</button></header>
+    <div class="body">
+      <p class="hint" style="margin:0 0 12px" data-i18n>Alege un model și apoi modifică-l: apasă pe un perete ca să-i schimbi lungimea, grosimea și înălțimea sau să adaugi ușă și fereastră. Proiectul deschis acum se păstrează în Proiecte.</p>
+      <div class="tplgrid" id="tplGrid"></div>
     </div>
   </div>
 </div>

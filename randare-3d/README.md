@@ -25,7 +25,12 @@ Sait de prezentare + editor web pentru randări 3D de case, construit după mode
 - **Scări:** dreaptă, în L, în U, în spirală, cu trepte în consolă și scară de pod; urcă singure până la nivelul de deasupra și fac gol în planșeu.
 - **Scurgerea apei:** glafuri exterioare cu lăcrimar (aluminiu, piatră, tablă), pervaz interior, culoarea tâmplăriei, jgheaburi și burlane în 5 culori.
 - **Grădină:** unelte pentru alei (6 materiale) și zone (gazon, flori, pietriș, terasă, pavaj, iaz), plus copaci, brad, pom fructifer, gard viu, gard, bancă, pergolă și iluminat de grădină care se aprinde seara.
-- **Calculator de costuri:** cantitățile din proiect (toate nivelurile) se transformă în listă de cumpărături cu prețuri orientative pentru Olanda (€) și Republica Moldova (lei), cu interval minim–maxim, prețuri proprii salvate, manoperă estimată, lista magazinelor și tipărire PDF. Prețurile din `js/costs.js` sunt aproximative (noiembrie 2026).
+- **Calculator de costuri:** cantitățile din proiect (toate nivelurile) se transformă în listă de cumpărături cu prețuri orientative pentru 7 țări: Republica Moldova, România, Olanda, Germania, Franța, Marea Britanie și Rusia (țara implicită urmează limba paginii), cu interval minim–maxim, prețuri proprii salvate, manoperă estimată, 16 unelte de construcție cu bifă, lista magazinelor și tipărire PDF.
+- **Prețuri actualizate:** pagina citește `preturi.json` la fiecare deschidere, deci prețurile noi apar fără o versiune nouă a codului. Fișierul se regenerează cu `node randare-3d/tools/preturi-export.mjs AAAA-LL-ZZ`, iar o sarcină programată săptămânală verifică prețurile și propune actualizarea printr-un pull request.
+- **Modele de case:** galerie cu imagini: vilă cu hol dublu înalt (scară imperială, scară rulantă, lift, candelabru, garaj dublu, piscină, fântână), casă modernă cu acoperiș plat, bloc de locuințe P+3 cu 8 apartamente, duplex, casă mică, plus modelele vechi (`?sablon=vila`, `casa_moderna`, `bloc`, `duplex`, `casa_mica`).
+- **Porți, garduri și lumini:** poartă pietonală, poartă auto culisantă, gard metalic, gard din zidărie, stâlp cu lampă, aplice, spoturi încastrate, candelabru, balcon în consolă, balustradă din sticlă, coloane.
+- **Pereți dintr-un clic:** clic pe perete și scrii lungimea, grosimea și înălțimea; butoane pentru fereastră, ușă, ușă dublă, glisantă și de balcon, puse automat în primul loc liber; dublu-clic pe un perete deschide direct mărimile.
+- **Ieși afară / Intră în casă:** în modul persoană un buton te scoate prin cea mai apropiată ușă exterioară sau te bagă înapoi în casă.
 - **Proiectele mele:** mai multe proiecte salvate în browser, cu miniatură, deschidere, dublare și ștergere; un șablon deschis devine proiect nou și nu-l înlocuiește pe cel curent.
 - **Fișă client:** o pagină cu randarea 3D, planul, camerele și cantitățile de materiale, cu câmpuri pentru client și observații; se tipărește sau se salvează ca PDF.
 - **Proiecte:** salvare automată în browser, anulare/refacere, export/import `.json`, galerie „Randările mele” (IndexedDB).
@@ -35,7 +40,7 @@ Sait de prezentare + editor web pentru randări 3D de case, construit după mode
 - Randarea nu e fotorealistă cu ray tracing în cloud: e o randare WebGL în browser, îmbunătățită prin acumulare de cadre.
 - Mobilierul e modelat din forme simple, nu un catalog de mii de modele 3D.
 - Fără conturi, plăți sau proiecte în cloud: prețurile de pe pagină sunt orientative și butoanele duc în editor.
-- Un singur nivel (scara e decorativă); fără import din CAD sau din imagini.
+- Fără import din CAD sau din imagini; pe scări nu se urcă efectiv în modul persoană (se schimbă nivelul cu butoanele).
 - Cantitățile de materiale sunt estimări fără pierderi și fără fundație.
 
 ## Viteză
