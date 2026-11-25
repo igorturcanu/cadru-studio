@@ -36,6 +36,13 @@ Sait de prezentare + editor web pentru randări 3D de case, construit după mode
 - **Fațade:** acoperiș plat cu streașină lată, lambriu de lemn dedesubt și bandă LED care se aprinde seara; acoperiș jos în patru ape cu streașină de 95 cm; perete de sticlă (3,6 m), ușă de garaj secțională; sticla reflectă cerul; finisaj de fațadă (lemn, piatră, cărămidă) doar pe partea de afară a peretelui.
 - **Decor interior:** draperii, plantă mare (ficus), vază cu flori, cărți, oglindă rotundă; în modelele noi camerele sunt mobilate complet.
 - **Video tur:** butonul 🎬 înregistrează un clip (20–60 s, 720p, 1080p sau 9:16): camera zboară în jurul casei, se apropie de ușă, intră și se uită de jur împrejur. Se descarcă ca .mp4 sau .webm.
+- **Ferestre și uși cu formă:** fereastră rotundă, arcuită, înclinată, triunghiulară, panoramică (fără montant), cu grilaj și cu obloane; ușă pivot din lemn, ușă cu sticlă, ușă clasică cu panouri, ușă arcuită. Zidăria se închide în jurul formei, cu ramă și sticlă pe contur.
+- **Acoperișuri moderne:** într-o apă (pantă de 10° cu pereții ridicați sub ea), în două ape fără streașină; învelitoare din țiglă, tablă fălțuită sau șindrilă bituminoasă.
+- **Decor de fațadă:** soclu din piatră, ancadramente albe la ferestre, brâu sub streașină, streșini din lemn cu LED între etaje (fiecare cu bifă), copertină de sticlă peste ușă, lamele verticale din lemn, jardiniere, trepte de intrare, număr de casă luminos, ușă de garaj din lemn.
+- **Birou de lucru:** bibliotecă cu dulapuri și cărți, birou cu sertare, monitor și lampă, scaun ergonomic, colț de lectură.
+- **Bucătărie și scară cu LED:** bandă LED sub corpurile suspendate și la plintă, insulă cu lamele de lemn pe spate, scară cu trepte în consolă luminată sub fiecare treaptă.
+- **Grădină:** alee din dale prin iarbă, vatră de foc, canapea de exterior în L, spoturi încastrate în sol.
+- **Modele noi (runda 5):** casă modernă cu etaj și streșini din lemn, casă cu acoperiș din tablă, casă cu acoperiș într-o apă, vilă clasică cu ferestre arcuite (`?sablon=etaj_modern`, `casa_tabla`, `casa_o_apa`, `vila_clasica`); casa cu grădină și casa mică au acum soclu de piatră, obloane și uși clasice.
 - **Proiectele mele:** mai multe proiecte salvate în browser, cu miniatură, deschidere, dublare și ștergere; un șablon deschis devine proiect nou și nu-l înlocuiește pe cel curent.
 - **Fișă client:** o pagină cu randarea 3D, planul, camerele și cantitățile de materiale, cu câmpuri pentru client și observații; se tipărește sau se salvează ca PDF.
 - **Proiecte:** salvare automată în browser, anulare/refacere, export/import `.json`, galerie „Randările mele” (IndexedDB).
