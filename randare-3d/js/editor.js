@@ -3344,7 +3344,8 @@ async function plan3D(li, W = 1600, S = 10) {
     const cv = await renderPhoto(W, H, S, null, true);
     const cam = camera.clone(); cam.aspect = W / H; cam.updateProjectionMatrix(); cam.updateMatrixWorld();
     const pr = (x, y, z) => { const v = new THREE.Vector3(x, z, y).project(cam); return [(v.x + 1) / 2 * W, (1 - v.y) / 2 * H]; };
-    const g = cv.getContext('2d'), fs = Math.round(W / 64);
+    // planurile mici (două pe rând în planșă) primesc etichete mai mari, ca să rămână lizibile după micșorare
+    const g = cv.getContext('2d'), fs = Math.round(W / (W < 1700 ? 42 : 60));
     // cote generale: lățimea sus, adâncimea în stânga
     g.strokeStyle = 'rgba(255,255,255,0.95)'; g.fillStyle = '#fff'; g.lineWidth = Math.max(2, W / 800); g.font = `600 ${fs}px system-ui, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
     g.shadowColor = 'rgba(0,0,0,0.65)'; g.shadowBlur = 6;
@@ -3401,19 +3402,31 @@ async function frontView(W = 2000, S = 12) {
     const e = entranceSide();
     if (e) {
       const h = houseBounds(), hx = (h.x1 + h.x2) / 2, hz = (h.y1 + h.y2) / 2, R = Math.max(h.x2 - h.x1, h.y2 - h.y1);
-      const D = R * 1.05 + 4, side = 0.42;
-      let cx = hx + e.nx * D - e.ny * D * side, cz = hz + e.ny * D + e.nx * D * side;
-      // dacă între cameră și casă e un gard sau un zid, camera intră în curte, chiar în spatele lui
-      const FENCES = /^(gard|perete_led|perete_nise|poarta)/;
-      let best = 1;
-      for (const it of P.levels[0].items) {
-        if (!FENCES.test(it.type)) continue;
-        const dx = Math.cos(it.rot * DEG) * it.w / 2, dy = Math.sin(it.rot * DEG) * it.w / 2, ax = it.x - dx, ay = it.y - dy, bx = it.x + dx, by = it.y + dy;
-        const rx = hx - cx, ry = hz - cz, sx = bx - ax, sy = by - ay, den = rx * sy - ry * sx; if (Math.abs(den) < 1e-6) continue;
-        const tt = ((ax - cx) * sy - (ay - cz) * sx) / den, u = ((ax - cx) * ry - (ay - cz) * rx) / den;
-        if (tt > 0 && tt < best && u >= 0 && u <= 1) best = tt;
-      }
-      if (best < 1) { const L = Math.hypot(hx - cx, hz - cz), k = Math.min(0.9, best + 1.2 / L); cx += (hx - cx) * k; cz += (hz - cz) * k; }
+      const D = R * 0.8 + 3, FENCES = /^(gard|perete_led|perete_nise|poarta)/, BULKY = /^(masina|copac|brad|pom|mesteacan|palmier|fantana|pergola|tuia)/;
+      // camera stă în fața intrării, puțin într-o parte; alege partea din care nu acoperă nimic casa (mașini, copaci)
+      const place = (side) => {
+        let cx = hx + e.nx * D - e.ny * D * side, cz = hz + e.ny * D + e.nx * D * side;
+        // dacă între cameră și casă e un gard sau un zid, camera intră în curte, chiar în spatele lui
+        let best = 1;
+        for (const it of P.levels[0].items) {
+          if (!FENCES.test(it.type)) continue;
+          const dx = Math.cos(it.rot * DEG) * it.w / 2, dy = Math.sin(it.rot * DEG) * it.w / 2, ax = it.x - dx, ay = it.y - dy, bx = it.x + dx, by = it.y + dy;
+          const rx = hx - cx, ry = hz - cz, sx = bx - ax, sy = by - ay, den = rx * sy - ry * sx; if (Math.abs(den) < 1e-6) continue;
+          const tt = ((ax - cx) * sy - (ay - cz) * sx) / den, u = ((ax - cx) * ry - (ay - cz) * rx) / den;
+          if (tt > 0 && tt < best && u >= 0 && u <= 1) best = tt;
+        }
+        if (best < 1) { const L = Math.hypot(hx - cx, hz - cz), k = Math.min(0.9, best + 1.2 / L); cx += (hx - cx) * k; cz += (hz - cz) * k; }
+        // cât de mult acoperă obiectele mari vederea: cele aproape de cameră contează mai mult
+        let block = 0;
+        for (const it of P.levels[0].items) {
+          if (!BULKY.test(it.type)) continue;
+          const rx = hx - cx, ry = hz - cz, L2 = rx * rx + ry * ry, t0 = Math.max(0, Math.min(1, ((it.x - cx) * rx + (it.y - cz) * ry) / L2));
+          const d = Math.hypot(cx + rx * t0 - it.x, cz + ry * t0 - it.y), r = Math.max(it.w, it.d) / 2 + 1 + (1 - t0) * 2.5;
+          if (d < r && t0 < 0.75) block += (1 - t0) * 2;
+        }
+        return { cx, cz, block };
+      };
+      const cand = [0.42, -0.42, 0.15, -0.15].map(place).sort((a, b) => a.block - b.block)[0], cx = cand.cx, cz = cand.cz;
       camera.position.set(cx, 1.7, cz);
       const top = Math.max(...P.levels.map((L, i) => levelElev(i) + levelTop(L)));
       // casa trebuie să încapă toată în cadru, și când camera a trebuit să intre în spatele gardului
