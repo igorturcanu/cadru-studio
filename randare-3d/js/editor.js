@@ -497,7 +497,7 @@ function templateDuplex() {
 // finisaj pe pereții de pe o linie (fațade cu lemn sau piatră)
 function facade(x1, y1, x2, y2, finish, color) {
   const on = (x, y) => Math.abs((x2 - x1) * (y - y1) - (y2 - y1) * (x - x1)) < 0.02 && x >= Math.min(x1, x2) - 0.02 && x <= Math.max(x1, x2) + 0.02 && y >= Math.min(y1, y2) - 0.02 && y <= Math.max(y1, y2) + 0.02;
-  for (const w of P.walls) if (on(w.x1, w.y1) && on(w.x2, w.y2)) { w.finish = finish; if (color) w.color = color; }
+  for (const w of P.walls) if (on(w.x1, w.y1) && on(w.x2, w.y2)) { w.facade = finish; if (color) w.facadeColor = color; }
 }
 // plantări de grădină reutilizate de modele: rând de iarbă decorativă cu bolovani, lavandă, arbori
 function plantRow(x1, y, x2, step = 1.1) { for (let x = x1, i = 0; x <= x2; x += step, i++) addItem(i % 4 === 3 ? 'bolovan' : 'iarba_decorativa', x, y + (i % 2) * 0.35, i * 37 % 360, i % 4 === 3 ? { w: 0.9 + (i % 3) * 0.3, d: 0.7, h: 0.5 } : {}); }
@@ -1413,7 +1413,10 @@ function buildLevel3D(li, isTop, isCur) {
     const grp = new THREE.Group();
     grp.position.set((w.x1 + w.x2) / 2, 0, (w.y1 + w.y2) / 2); grp.rotation.y = -ang;
     const fin = WALL_FINISHES[w.finish || P.env.finish] ? (w.finish || P.env.finish) : 'vopsea';
-    const wm = wallMaterial(fin, w.color || P.env.wallColor), fsz = WALL_FINISHES[fin].size;
+    const outSide = exteriorSide(w), fac = outSide && WALL_FINISHES[w.facade] ? w.facade : null;
+    // fațada (lemn, piatră…) doar pe partea de afară; înăuntru rămâne finisajul camerei
+    const wm0 = wallMaterial(fin, w.color || P.env.wallColor), fsz = WALL_FINISHES[fac || fin].size;
+    const wm = fac ? [wm0, wm0, wm0, wm0, wm0, wm0].map((m2, i) => (i === (outSide > 0 ? 4 : 5) ? wallMaterial(fac, w.facadeColor || w.color || P.env.wallColor) : m2)) : wm0;
     const piece = (u0, u1, y0, y1) => {
       if (u1 - u0 < 0.001 || y1 - y0 < 0.001) return;
       const geo = new THREE.BoxGeometry(u1 - u0, y1 - y0, t);
@@ -1425,7 +1428,6 @@ function buildLevel3D(li, isTop, isCur) {
     const ops = P.openings.filter((o) => o.wall === w.id).sort((a, b) => a.pos - b.pos);
     // la etaje peretele continuă în jos pe grosimea planșeului, ca fațada să fie continuă
     if (li > 0 && !P.env.cutaway) piece(-L / 2 - t / 2, L / 2 + t / 2, -SLAB, 0);
-    const outSide = exteriorSide(w);
     let u = -L / 2 - t / 2;
     for (const o of ops) {
       const a = o.pos - o.w / 2 - L / 2, b = o.pos + o.w / 2 - L / 2;
@@ -2043,6 +2045,7 @@ function renderProps() {
       ${num(t('Lungime'), 'len', wallLen(w), 0.05, 0.1)}${num(t('Grosime'), 't', w.t, 0.01, 0.05, 1)}${num(t('Înălțime'), 'h', w.h, 0.05, 0.5, 8)}
       <div class="row" style="margin-top:0">${[0.1, 0.15, 0.25, 0.3, 0.4].map((v) => `<button class="btn sm" data-thick="${v}">${Math.round(v * 100)} cm</button>`).join('')}</div>
       <h3 style="margin-top:14px">${t('Finisaj')}</h3>${finishButtons(w.finish || P.env.finish, 'data-wfin')}
+      ${exteriorSide(w) ? `<h3 style="margin-top:14px">${t('Fațadă (doar afară)')}</h3><div class="row" style="margin:0 0 6px"><button class="btn${w.facade ? '' : ' on'}" data-wfac="">${t('La fel ca înăuntru')}</button></div>${finishButtons(w.facade || '', 'data-wfac')}` : ''}
       ${colorRow(t('Culoare'), 'color', w.color || P.env.wallColor, WALL_COLORS.map(([c, n]) => `<button class="sw ${((w.color || P.env.wallColor) === c) ? 'on' : ''}" style="background:${c}" title="${t(n)}" data-wc="${c}"></button>`).join(''))}
       <p class="hint">${t('Culoarea colorează vopseaua și faianța. Cărămida, piatra, lemnul și betonul au culoarea lor.')}</p>
       <h3 style="margin-top:14px">${t('Adaugă în perete')}</h3>
@@ -2123,6 +2126,7 @@ function envHTML(collapsed) {
     <div class="field"><label>${t('Expunere')}</label><input type="range" data-env="exposure" min="0.4" max="2" step="0.05" value="${e.exposure}"></div>
     <div class="field"><label>${t('Lămpi')}</label><select data-env="lights"><option value="auto" ${e.lights === 'auto' ? 'selected' : ''}>${t('Automat (seara)')}</option><option value="on" ${e.lights === 'on' ? 'selected' : ''}>${t('Aprinse')}</option><option value="off" ${e.lights === 'off' ? 'selected' : ''}>${t('Stinse')}</option></select></div>
     <div class="field"><label>${t('Tavan mereu')}</label><input type="checkbox" data-env="ceiling" ${e.ceiling ? 'checked' : ''} style="justify-self:start"></div>
+    <div class="field"><label>${t('Iarbă 3D')}</label><input type="checkbox" data-env="grass3d" ${e.grass3d !== false ? 'checked' : ''} style="justify-self:start"></div>
   </div>
   <div class="sec"><h3>${t('Acoperiș')}</h3>
     <div class="field"><label>${t('Tip')}</label><select data-env="roof">${roofOpts.map(([v, n]) => `<option value="${v}" ${e.roof === v ? 'selected' : ''}>${t(n)}</option>`).join('')}</select></div>
@@ -2275,6 +2279,7 @@ function bindProps(obj) {
   props.querySelectorAll('[data-wc]').forEach((b) => b.addEventListener('click', () => { obj.color = b.dataset.wc === P.env.wallColor ? null : b.dataset.wc; changed(); }));
   props.querySelectorAll('[data-thick]').forEach((b) => b.addEventListener('click', () => { obj.t = +b.dataset.thick; changed(); }));
   props.querySelectorAll('[data-wfin]').forEach((b) => b.addEventListener('click', () => { obj.finish = b.dataset.wfin; changed(); }));
+  props.querySelectorAll('[data-wfac]').forEach((b) => b.addEventListener('click', () => { if (b.dataset.wfac) obj.facade = b.dataset.wfac; else delete obj.facade; changed(); }));
   props.querySelectorAll('[data-rfin]').forEach((b) => b.addEventListener('click', () => { for (const w of roomWalls(obj)) w.finish = b.dataset.rfin; changed(); toast(t('Finisaj aplicat pe pereții camerei.')); }));
   props.querySelectorAll('[data-envfin]').forEach((b) => b.addEventListener('click', () => { P.env.finish = b.dataset.envfin; for (const w of P.walls) delete w.finish; changed(); }));
   props.querySelectorAll('[data-floor]').forEach((b) => b.addEventListener('click', () => { obj.floor = b.dataset.floor; changed(); }));
@@ -2295,7 +2300,7 @@ function bindProps(obj) {
     const apply = (final) => {
       P.env[k] = inp.type === 'checkbox' ? inp.checked : inp.tagName === 'SELECT' ? inp.value : parseFloat(inp.value);
       if (k === 'hour') { const hh = Math.floor(P.env.hour), mm = Math.round((P.env.hour - hh) * 60); const l = $('#hourLbl'); if (l) l.textContent = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`; }
-      if (k === 'ceiling' || k === 'roof' || k === 'gutters') rebuild3D();
+      if (k === 'ceiling' || k === 'roof' || k === 'gutters' || k === 'grass3d') rebuild3D();
       if (k === 'gutters') renderProps();
       if (k === 'structure' || k === 'partition') renderProps();
       applyEnv(); draw2D();
