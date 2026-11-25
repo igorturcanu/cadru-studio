@@ -45,6 +45,9 @@ Sait de prezentare + editor web pentru randări 3D de case, construit după mode
 - **Modele noi (runda 5):** casă modernă cu etaj și streșini din lemn, casă cu acoperiș din tablă, casă cu acoperiș într-o apă, vilă clasică cu ferestre arcuite (`?sablon=etaj_modern`, `casa_tabla`, `casa_o_apa`, `vila_clasica`); casa cu grădină și casa mică au acum soclu de piatră, obloane și uși clasice.
 - **Proiectele mele:** mai multe proiecte salvate în browser, cu miniatură, deschidere, dublare și ștergere; un șablon deschis devine proiect nou și nu-l înlocuiește pe cel curent.
 - **Fișă client:** o pagină cu randarea 3D, planul, camerele și cantitățile de materiale, cu câmpuri pentru client și observații; se tipărește sau se salvează ca PDF.
+- **Planșă de prezentare:** din fișa client, butonul „Descarcă planșa de prezentare” compune o singură imagine: casa văzută din față, dinspre intrare (camera trece de gard dacă e nevoie), apoi fiecare nivel randat de sus, mobilat și fără tavan, cu numele camerelor, suprafețele și cotele generale, plus lista camerelor.
+- **Curte de lux (runda 6):** perete cu cascadă și bazin, pergolă de aluminiu cu lamele și LED, gard din lamele de lemn cu aplice și iederă, zid de grădină cu LED care spală zidul, zid cu nișe rotunde luminate, iaz cu nuferi, balansoar ou, felinare din ratan (pe jos și suspendate), pietre rotunde de călcat, bordură din pietriș alb, bandă LED pe marginea aleii, palmier, șezlong. Model nou: casă parter cu curte de lux luminată (`?sablon=curte_lux`).
+- **Porți în gard:** golurile pentru porți se calculează acum după poziția porții, așa că poarta nu se mai suprapune cu gardul.
 - **Proiecte:** salvare automată în browser, anulare/refacere, export/import `.json`, galerie „Randările mele” (IndexedDB).
 
 ## Ce e simulat sau lipsește față de Cedreo

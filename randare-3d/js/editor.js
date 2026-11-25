@@ -303,6 +303,8 @@ const setWallH = (h) => { for (const w of P.walls) w.h = h; };
 function fenceLine(type, x1, y1, x2, y2, gaps = [], max = 3) {
   const L = Math.hypot(x2 - x1, y2 - y1), ux = (x2 - x1) / L, uy = (y2 - y1) / L, rot = Math.round(Math.atan2(uy, ux) / DEG);
   let segs = [[0, L]];
+  // golurile se dau prin coordonata porții (x pe o linie orizontală, y pe una verticală), aici devin distanțe de la capăt
+  gaps = gaps.map(([c, w]) => [Math.abs(ux) >= Math.abs(uy) ? (c - x1) / ux : (c - y1) / uy, w]);
   for (const [c, w] of gaps) segs = segs.flatMap(([a, b]) => (c + w / 2 <= a || c - w / 2 >= b ? [[a, b]] : [[a, c - w / 2], [c + w / 2, b]]).filter(([p, q]) => q - p > 0.3));
   for (const [a, b] of segs) { const n = Math.ceil((b - a) / max), sw = (b - a) / n; for (let i = 0; i < n; i++) { const m = a + (i + 0.5) * sw; addItem(type, x1 + ux * m, y1 + uy * m, rot, { w: r2(sw) }); } }
 }
@@ -814,8 +816,49 @@ function templateEtajModern() {
   fenceLine('gard_metalic', -8, 21, 24, 21, [[15.25, 5.4], [10.5, 1.2]], 3); addItem('poarta_auto', 15.25, 21, 0, { w: 5.4 }); addItem('poarta', 10.5, 21, 0, { w: 1.2 });
   P.env.hour = 16.5; P.env.north = 15; P.env.roof = 'plat_streasina'; P.env.cornisa = true; P.env.fasciaColor = '#2c2f33'; P.env.wallColor = '#f4f3ef'; P.env.allLevels = true;
 }
+function templateCurteLux() {
+  P = emptyProject(); P.name = t('Casă parter cu curte de lux luminată');
+  addRoom(0, 0, 10, 9, t('Living, bucătărie și dining'), 'stejar'); addRoom(10, 0, 12.5, 9, t('Hol'), 'beton'); addRoom(12.5, 4.5, 18, 9, t('Dormitor matrimonial'), 'stejar'); addRoom(12.5, 0, 15.5, 4.5, t('Baie'), 'marmura'); addRoom(15.5, 0, 18, 4.5, t('Birou'), 'nuc');
+  setWallH(3.1);
+  addOpening('glasswall', 5, 9, { w: 8.0, h: 2.85 }); addOpening('glasswall', 15.25, 9, { w: 4.6, h: 2.85 }); addOpening('pivot', 11.25, 0, { w: 1.4, h: 2.7 });
+  setStyle(addOpening('window', 4, 0, { w: 4.0, h: 1.0, sill: 1.3 }), 'panoramica'); setStyle(addOpening('window', 16.75, 0, { w: 1.6, h: 1.6, sill: 0.8 }), 'panoramica'); setStyle(addOpening('window', 14, 0, { w: 0.9, h: 0.6, sill: 1.7 }), 'panoramica');
+  addOpening('door2', 10, 4.5, { w: 1.6 }); addOpening('door', 12.5, 6.75, { w: 0.9 }); addOpening('door', 12.5, 2.25, { w: 0.8 }); addOpening('door', 15.5, 2.25, { w: 0.9 });
+  for (const o of P.openings) o.frame = 'negru';
+  facade(10, 0, 12.5, 0, 'lemn'); facade(0, 0, 0, 9, 'piatra'); facade(18, 0, 18, 9, 'vopsea', '#2f3236'); facade(10, 9, 12.5, 9, 'piatra');
+  livingSet(3.2, 6.2, 0, '#e3ddd2'); addItem('comoda_tv', 3.2, 3.6, 0, { w: 2.4 }); addItem('planta_mare', 0.6, 8.4); addItem('semineu', 0.35, 6, 270);
+  addItem('bucatarie', 7.8, 0.32, 0, { w: 4.2, color: '#2f3135', color2: '#d8d3ca' }); addItem('insula', 7.8, 2.2, 0, { w: 2.6, color: '#d8d3ca' });
+  for (const x of [7.0, 7.8, 8.6]) addItem('scaun', x, 2.95, 180, { color: '#a06a3c' });
+  addItem('masa', 7.8, 5.8, 90, { w: 2.0, d: 0.95, color: '#3a2a1e' }); for (const y of [5.2, 6.4]) { addItem('scaun', 7.3, y, 270); addItem('scaun', 8.3, y, 90); }
+  addItem('candelabru', 7.8, 5.8, 0, { w: 0.6, h: 0.6, elev: 2.3 }); for (const [x, y] of [[2, 4], [5, 4], [2, 7.5], [5, 7.5], [11.25, 2], [11.25, 6]]) addItem('spot_tavan', x, y, 0, { elev: 3.08 });
+  bedroom(15.25, 5.6, 180); addItem('dus', 13.1, 0.55, 0); addItem('lavoar', 15.2, 2.8, 90, { w: 0.9 }); addItem('wc', 13, 3.6, 270); officeSet(18, 2.25, 90, 3.6);
+  // curtea: terasă din lemn sub pergolă cu LED, piscină cu cascadă pe perete, iaz cu nuferi, alei din pietre rotunde
+  P.zones.push({ id: uid('z'), type: 'terasa', pts: [[0, 9.15], [18, 9.15], [18, 12.2], [0, 12.2]] });
+  // deck în jurul piscinei (nu peste ea)
+  for (const [a, b, c, d] of [[7.6, 12.2, 17.4, 14.2], [7.6, 17.8, 17.4, 18.7], [7.6, 14.2, 8.5, 17.8], [16.5, 14.2, 17.4, 17.8]]) P.zones.push({ id: uid('z'), type: 'terasa', pts: [[a, b], [c, b], [c, d], [a, d]] });
+  addItem('pergola_led', 4.2, 10.7, 0, { w: 7.0, d: 3.0, h: 2.75 }); addItem('lounge', 3.2, 10.75, 0, { w: 3.4, d: 2.3 }); addItem('masuta', 4.2, 11.2, 0, { w: 1.0, d: 0.6 });
+  for (const x of [1.4, 7.0]) addItem('lampion_agatat', x, 10.9, 0, { elev: 1.95 }); addItem('lampion', 6.2, 11.6); addItem('lampion', 0.5, 11.8, 0, { w: 0.3, h: 0.45 });
+  addItem('piscina', 12.5, 16.0, 0, { w: 7.4, d: 3.0 }); for (const x of [10.0, 11.6, 13.2]) addItem('sezlong', x, 13.4, 180);
+  addItem('perete_cascada', 12.5, 19.6, 180, { w: 2.6, d: 0.85, h: 2.5 }); addItem('palmier', 8.8, 19.7, 0, { h: 4.6 }); addItem('palmier', 16.3, 19.7, 0, { h: 5.0 }); addItem('palmier', 17.6, 13.2, 0, { h: 4.0 });
+  for (const x of [8.8, 16.3]) addItem('spot_sol', x + 0.5, 19.3); addItem('ghiveci_mare', 17.4, 10.0);
+  addItem('iaz', 2.3, 17.6, 0, { w: 3.6, d: 2.3 }); addItem('balansoar', 6.0, 18.4, 180); addItem('lampion', 6.9, 18.1);
+  addItem('pietre_rotunde', 5.2, 15.0, 0, { w: 0.75, d: 5.0 }); addItem('foc_gradina', 3.8, 14.2, 0, { w: 0.9 });
+  addItem('copac', 0.6, 13.6, 0, { w: 3.0, h: 4.6, color: '#a2402c' }); addItem('mesteacan', 17.5, 20, 0, { h: 6 });
+  addItem('bordura_pietris', 4, 20.4, 90, { w: 0.8, d: 7.6 }); addItem('bordura_pietris', -0.35, 15.5, 0, { w: 0.7, d: 9.2 });
+  for (const [x, y] of [[1, 20.4], [2.6, 20.5], [4.4, 20.3], [6.3, 20.5], [-0.35, 13.2], [-0.4, 15.6], [-0.3, 19.2]]) addItem('tufis', x, y, 0, { w: 0.8, h: 0.7 });
+  for (const [x, y] of [[1.8, 20.3], [3.5, 20.6], [5.4, 20.4], [-0.4, 14.4], [-0.35, 17.6]]) addItem('iarba_decorativa', x, y, 0, { w: 0.7, h: 0.8 });
+  for (const y of [13.2, 15.4, 17.6]) addItem('bolard', 6.0, y);
+  addItem('banda_led', 7.55, 15.45, 0, { d: 6.5 });
+  // zidurile curții: zid cu LED în spate, gard din lamele cu iederă la stânga, zid cu nișe rotunde la dreapta
+  fenceLine('perete_led', 19, 21, -1, 21, [], 4); fenceLine('gard_lamele', -1, 21, -1, 9.2, [], 3); fenceLine('perete_nise', 18.6, 9.4, 18.6, 21, [], 4);
+  // fața casei
+  addItem('trepte', 11.25, -0.75, 180, { w: 2.6, d: 1.4, h: 0.17 }); addItem('numar_casa', 12.2, -0.17, 180, { elev: 1.9 }); addItem('aplica', 10.4, -0.15, 180); addItem('aplica', 12.1, -0.15, 180);
+  P.paths.push({ id: uid('a'), pts: [[11.25, -1.5], [11.25, -9]], w: 1.6, mat: 'dale' }); for (const y of [-3, -5.5, -8]) addItem('bolard', 12.4, y);
+  addItem('jardiniera', 4, -0.6, 0, { w: 6 }); plantRow(0.5, -2.6, 8.5, 1.0); addItem('copac', -4, -5, 0, { w: 5, h: 8 }); addItem('brad', 23, 3, 0, { h: 9 }); addItem('brad', -5, 16, 0, { h: 10 }); addItem('brad', 23, 17, 0, { h: 11 });
+  P.env.hour = 19; P.env.north = 200; P.env.roof = 'plat_streasina'; P.env.fasciaColor = '#2c2f33'; P.env.wallColor = '#f4f3ef';
+}
 // modelele din galerie: [cheie, nume, descriere]
 const TEMPLATES = [
+  ['curte_lux', 'Casă parter cu curte de lux luminată', '160 m², curte de seară cu pergolă cu LED, piscină cu cascadă pe perete, iaz cu nuferi, balansoar, palmieri, zid cu nișe rotunde și gard din lamele cu iederă.'],
   ['etaj_modern', 'Casă modernă cu etaj și streșini din lemn', '235 m² pe două niveluri, streșini late cu lambriu de lemn și LED, terasă cu parapet din sticlă, garaj cu ușă din lemn, rame negre, piatră și lemn pe fațadă.'],
   ['casa_tabla', 'Casă modernă cu acoperiș din tablă', '120 m², acoperiș în două ape fără streașină, tablă fălțuită, ușă pivot, ferestre rotunde și înclinate, fațadă cu lemn.'],
   ['casa_o_apa', 'Casă cu acoperiș într-o apă', '125 m², acoperiș modern într-o singură pantă, perete de sticlă, ușă cu sticlă, lamele de lemn, ferestre rotunde.'],
@@ -3017,7 +3060,7 @@ $('#vBar').addEventListener('click', () => { if (tourRun) tourRun.stop = true; }
 
 $('#undo').addEventListener('click', undo); $('#redo').addEventListener('click', redo);
 $('#projName').addEventListener('change', (e) => { P.name = e.target.value || t('Proiect'); commit(); });
-const TPL_FN = { etaj_modern: templateEtajModern, casa_tabla: templateCasaTabla, casa_o_apa: templateCasaOApa, vila_clasica: templateVilaClasica, parter_modern: templateParterModern, parter_l: templateParterL, parter_4ape: templateParter4Ape, parter_garaj: templateParterGaraj, apartament: templateApartament, casa: templateCasa, casa_etaj: templateCasaEtaj, casa_mica: templateCasaMica, casa_moderna: templateCasaModerna, vila: templateVila, bloc: templateBloc, duplex: templateDuplex };
+const TPL_FN = { curte_lux: templateCurteLux, etaj_modern: templateEtajModern, casa_tabla: templateCasaTabla, casa_o_apa: templateCasaOApa, vila_clasica: templateVilaClasica, parter_modern: templateParterModern, parter_l: templateParterL, parter_4ape: templateParter4Ape, parter_garaj: templateParterGaraj, apartament: templateApartament, casa: templateCasa, casa_etaj: templateCasaEtaj, casa_mica: templateCasaMica, casa_moderna: templateCasaModerna, vila: templateVila, bloc: templateBloc, duplex: templateDuplex };
 function renderTemplates() {
   $('#tplGrid').innerHTML = TEMPLATES.map(([k, n, d]) => `<button class="tpl" data-tpl="${k}">${k === 'gol' ? '<span class="ph">＋</span>' : `<img src="modele/${k}.webp" alt="" loading="lazy">`}<b>${t(n)}</b><small>${t(d)}</small></button>`).join('');
 }
@@ -3282,6 +3325,157 @@ $('#btnSheet').addEventListener('click', async () => {
 });
 $('#shPrint').addEventListener('click', () => window.print());
 
+// ================= Planșa de prezentare =================
+// Ca planșele de arhitect: casa randată din față, apoi fiecare nivel văzut de sus, mobilat, fără tavan,
+// cu numele camerelor, suprafețele și cotele generale. Totul se compune într-o singură imagine.
+async function plan3D(li, W = 1600, S = 10) {
+  const keep = { cur: P.cur, cut: P.env.cutaway, all: P.env.allLevels, hour: P.env.hour, lights: P.env.lights, pos: camera.position.clone(), tgt: controls.target.clone(), fov: camera.fov, aspect: camera.aspect, walk };
+  try {
+    P.cur = li; P.env.cutaway = true; P.env.allLevels = false; P.env.hour = 13; P.env.lights = 'off';
+    rebuild3D(); applyEnv();
+    const L = P.levels[li]; let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+    for (const w of L.walls) { x1 = Math.min(x1, w.x1, w.x2); y1 = Math.min(y1, w.y1, w.y2); x2 = Math.max(x2, w.x1, w.x2); y2 = Math.max(y2, w.y1, w.y2); }
+    if (!isFinite(x1)) return null;
+    const m = 2.2, bw = x2 - x1 + 2 * m, bd = y2 - y1 + 2 * m, H = Math.round(Math.min(W * 1.4, Math.max(W * 0.45, W * bd / bw)));
+    const el = levelElev(li), cx = (x1 + x2) / 2, cz = (y1 + y2) / 2, fov = 28, tilt = 0.16;
+    const dist = Math.max(bd / 2, bw / 2 * H / W) / Math.tan(fov / 2 * DEG) * 1.04;
+    setWalk(false); camera.fov = fov; camera.aspect = W / H;
+    camera.position.set(cx, el + dist, cz + dist * tilt); controls.target.set(cx, el, cz); camera.lookAt(controls.target); camera.updateProjectionMatrix(); controls.update();
+    const cv = await renderPhoto(W, H, S, null, true);
+    const cam = camera.clone(); cam.aspect = W / H; cam.updateProjectionMatrix(); cam.updateMatrixWorld();
+    const pr = (x, y, z) => { const v = new THREE.Vector3(x, z, y).project(cam); return [(v.x + 1) / 2 * W, (1 - v.y) / 2 * H]; };
+    const g = cv.getContext('2d'), fs = Math.round(W / 64);
+    // cote generale: lățimea sus, adâncimea în stânga
+    g.strokeStyle = 'rgba(255,255,255,0.95)'; g.fillStyle = '#fff'; g.lineWidth = Math.max(2, W / 800); g.font = `600 ${fs}px system-ui, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.shadowColor = 'rgba(0,0,0,0.65)'; g.shadowBlur = 6;
+    const dim = (a, b, off) => {
+      g.beginPath(); g.moveTo(...a); g.lineTo(...b); g.stroke();
+      for (const q of [a, b]) { g.beginPath(); g.moveTo(q[0] - off[0] * 0.5, q[1] - off[1] * 0.5); g.lineTo(q[0] + off[0] * 0.5, q[1] + off[1] * 0.5); g.stroke(); }
+    };
+    const o = 1.1, t1 = pr(x1, y1 - o, el), t2 = pr(x2, y1 - o, el); dim(t1, t2, [0, fs]);
+    g.fillText(`${fmt(x2 - x1)} m`, (t1[0] + t2[0]) / 2, (t1[1] + t2[1]) / 2 - fs * 0.9);
+    const l1 = pr(x1 - o, y1, el), l2 = pr(x1 - o, y2, el); dim(l1, l2, [fs, 0]);
+    g.save(); g.translate((l1[0] + l2[0]) / 2 - fs * 0.9, (l1[1] + l2[1]) / 2); g.rotate(-Math.PI / 2); g.fillText(`${fmt(y2 - y1)} m`, 0, 0); g.restore();
+    g.shadowBlur = 0;
+    // etichete pentru camere: nume și suprafață pe o plăcuță albă semitransparentă
+    for (const r of L.rooms) {
+      const A = polyArea(r.pts); if (A < 1.5) continue;
+      let sx = 0, sy = 0; for (const [x, y] of r.pts) { sx += x; sy += y; } const [px, py] = pr(sx / r.pts.length, sy / r.pts.length, el + 0.9);
+      const name = String(r.name || '').toUpperCase(), sub = `${fmt(A)} m²`, f1 = Math.round(fs * 0.95), f2 = Math.round(fs * 0.78);
+      g.font = `700 ${f1}px system-ui, sans-serif`; const w1 = g.measureText(name).width; g.font = `500 ${f2}px system-ui, sans-serif`; const w2 = g.measureText(sub).width;
+      const bw2 = Math.max(w1, w2) + fs, bh = f1 + f2 + fs * 0.7;
+      g.fillStyle = 'rgba(255,255,255,0.82)'; g.beginPath(); g.roundRect(px - bw2 / 2, py - bh / 2, bw2, bh, fs * 0.35); g.fill();
+      g.fillStyle = '#1d1f22'; g.font = `700 ${f1}px system-ui, sans-serif`; g.fillText(name, px, py - f2 * 0.55);
+      g.fillStyle = '#5b5f66'; g.font = `500 ${f2}px system-ui, sans-serif`; g.fillText(sub, px, py + f1 * 0.6);
+    }
+    return cv;
+  } finally {
+    P.cur = keep.cur; P.env.cutaway = keep.cut; P.env.allLevels = keep.all; P.env.hour = keep.hour; P.env.lights = keep.lights;
+    camera.position.copy(keep.pos); controls.target.copy(keep.tgt); camera.fov = keep.fov; camera.aspect = keep.aspect; camera.updateProjectionMatrix();
+    setWalk(keep.walk); controls.update(); rebuild3D(); applyEnv(); invalidate();
+  }
+}
+// partea casei cu intrarea: ușa pivot, apoi garajul, apoi ușile duble, pe un perete exterior al parterului
+function entranceSide() {
+  const k = P.cur; P.cur = 0;
+  try {
+    const L = P.levels[0], rank = { pivot: 5, garaj: 4, dubla: 3, sticla: 3, clasica: 3, usa_arcada: 3, simpla: 1 };
+    let best = null;
+    for (const o of L.openings) {
+      const w = L.walls.find((x) => x.id === o.wall), sc = o.type === 'door' ? rank[o.style] || 0 : 0;
+      if (!w || !sc || !isExterior(w) || (best && best.sc >= sc)) continue;
+      const len = wallLen(w), ux = (w.x2 - w.x1) / len, uy = (w.y2 - w.y1) / len, px = w.x1 + ux * o.pos, py = w.y1 + uy * o.pos;
+      let nx = -uy, ny = ux; if (inAnyRoom(px + nx * 0.5, py + ny * 0.5)) { nx = -nx; ny = -ny; }
+      best = { sc, nx, ny };
+    }
+    return best;
+  } finally { P.cur = k; }
+}
+// casa văzută din față, la înălțimea ochilor (ca prima imagine de pe o planșă), dinspre intrare
+async function frontView(W = 2000, S = 12) {
+  const keep = { pos: camera.position.clone(), tgt: controls.target.clone(), fov: camera.fov, aspect: camera.aspect, walk, all: P.env.allLevels, hour: P.env.hour, chip: $('#camBtns .chip.on') };
+  try {
+    camera.aspect = 16 / 9; setCam('exterior');
+    // noaptea casa se vede prea puțin: planșa se face la apus, cu luminile aprinse
+    if (P.env.hour >= 18.5 || P.env.hour < 6.5) { P.env.hour = 16.8; rebuild3D(); applyEnv(); }
+    const e = entranceSide();
+    if (e) {
+      const h = houseBounds(), hx = (h.x1 + h.x2) / 2, hz = (h.y1 + h.y2) / 2, R = Math.max(h.x2 - h.x1, h.y2 - h.y1);
+      const D = R * 1.05 + 4, side = 0.42;
+      let cx = hx + e.nx * D - e.ny * D * side, cz = hz + e.ny * D + e.nx * D * side;
+      // dacă între cameră și casă e un gard sau un zid, camera intră în curte, chiar în spatele lui
+      const FENCES = /^(gard|perete_led|perete_nise|poarta)/;
+      let best = 1;
+      for (const it of P.levels[0].items) {
+        if (!FENCES.test(it.type)) continue;
+        const dx = Math.cos(it.rot * DEG) * it.w / 2, dy = Math.sin(it.rot * DEG) * it.w / 2, ax = it.x - dx, ay = it.y - dy, bx = it.x + dx, by = it.y + dy;
+        const rx = hx - cx, ry = hz - cz, sx = bx - ax, sy = by - ay, den = rx * sy - ry * sx; if (Math.abs(den) < 1e-6) continue;
+        const tt = ((ax - cx) * sy - (ay - cz) * sx) / den, u = ((ax - cx) * ry - (ay - cz) * rx) / den;
+        if (tt > 0 && tt < best && u >= 0 && u <= 1) best = tt;
+      }
+      if (best < 1) { const L = Math.hypot(hx - cx, hz - cz), k = Math.min(0.9, best + 1.2 / L); cx += (hx - cx) * k; cz += (hz - cz) * k; }
+      camera.position.set(cx, 1.7, cz);
+      const top = Math.max(...P.levels.map((L, i) => levelElev(i) + levelTop(L)));
+      // casa trebuie să încapă toată în cadru, și când camera a trebuit să intre în spatele gardului
+      const dc = Math.hypot(hx - cx, hz - cz), fit = 2 * Math.atan((R * 0.55 + 2) / (dc * 0.7) / (16 / 9)) / DEG;
+      controls.target.set(hx, Math.min(3.2, top * 0.42), hz); camera.fov = Math.max(52, Math.min(80, fit)); camera.lookAt(controls.target); camera.updateProjectionMatrix(); controls.update();
+    }
+    return await renderPhoto(W, Math.round(W * 9 / 16), S, null, true);
+  } finally {
+    P.env.allLevels = keep.all; P.env.hour = keep.hour; camera.position.copy(keep.pos); controls.target.copy(keep.tgt); camera.fov = keep.fov; camera.aspect = keep.aspect; camera.updateProjectionMatrix();
+    setWalk(keep.walk); controls.update(); syncLevelUI(); rebuild3D(); applyEnv(); $$('#camBtns .chip').forEach((x) => x.classList.toggle('on', x === keep.chip)); invalidate();
+  }
+}
+// compune planșa: titlu, casa, planurile 3D ale nivelurilor și lista camerelor
+async function presentationBoard(onStep, opts = {}) {
+  const W = opts.width || 2000, S = opts.samples || 12, pad = Math.round(W * 0.03);
+  onStep && onStep(t('Randez casa din față…'));
+  const ext = opts.ext || await frontView(W, S);
+  const plans = [];
+  for (let i = 0; i < P.levels.length; i++) { if (!P.levels[i].walls.length) continue; onStep && onStep(`${t('Randez planul 3D')}: ${P.levels[i].name}…`); const c = await plan3D(i, P.levels.length > 1 ? 1500 : 1900, Math.max(6, S - 2)); if (c) plans.push([P.levels[i], c]); }
+  const multi = plans.length > 1, colW = multi ? (W - pad * 3) / 2 : W - pad * 2;
+  const rows = []; for (let i = 0; i < plans.length; i += multi ? 2 : 1) rows.push(plans.slice(i, i + (multi ? 2 : 1)));
+  const rowH = rows.map((r) => Math.max(...r.map(([, c]) => c.height * colW / c.width)));
+  const rooms = P.levels.flatMap((L) => L.rooms.map((r) => [L, r])).filter(([, r]) => polyArea(r.pts) >= 1.5);
+  const cols = multi ? 2 : 3, lineH = Math.round(W / 48), listH = Math.ceil(rooms.length / cols) * lineH + lineH * 2.2;
+  const headH = Math.round(W * 0.085), extH = Math.round(ext.height * W / ext.width), titleH = Math.round(W / 26);
+  const Htot = headH + extH + rowH.reduce((a, h) => a + h + titleH, 0) + pad * (rows.length + 1) + listH + pad;
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = Math.round(Htot); const g = cv.getContext('2d');
+  g.fillStyle = '#16181b'; g.fillRect(0, 0, W, cv.height);
+  const area = allRooms().reduce((a, r) => a + polyArea(r.pts), 0), F = (k) => Math.round(W * k);
+  g.fillStyle = '#c9a46a'; g.font = `600 ${F(0.013)}px system-ui, sans-serif`; g.textBaseline = 'alphabetic'; g.fillText('PLANORA 3D', pad, F(0.032));
+  g.fillStyle = '#fff'; g.font = `700 ${F(0.03)}px system-ui, sans-serif`; g.fillText(P.name, pad, F(0.066));
+  const facts = [`${fmt(area)} m²`, `${allRooms().length} ${t('camere')}`, `${P.levels.length} ${P.levels.length === 1 ? t('nivel') : t('niveluri')}`];
+  g.textAlign = 'right'; g.fillStyle = '#d8d4cc'; g.font = `500 ${F(0.016)}px system-ui, sans-serif`; g.fillText(facts.join('   ·   '), W - pad, F(0.066)); g.textAlign = 'left';
+  g.drawImage(ext, 0, headH, W, extH);
+  let y = headH + extH + pad;
+  rows.forEach((r, k) => {
+    r.forEach(([L, c], j) => {
+      const x = pad + j * (colW + pad);
+      g.fillStyle = '#c9a46a'; g.font = `700 ${F(0.015)}px system-ui, sans-serif`; g.fillText(`${t('Plan')} · ${L.name}`.toUpperCase(), x, y + titleH * 0.62);
+      const h = c.height * colW / c.width; g.drawImage(c, x, y + titleH, colW, h);
+    });
+    y += titleH + rowH[k] + pad;
+  });
+  g.fillStyle = '#c9a46a'; g.font = `700 ${F(0.015)}px system-ui, sans-serif`; g.fillText(t('Camere').toUpperCase(), pad, y + lineH * 0.8);
+  const cw = (W - pad * 2) / cols; g.font = `500 ${F(0.0135)}px system-ui, sans-serif`;
+  rooms.forEach(([L, r], i) => {
+    const x = pad + (i % cols) * cw, yy = y + lineH * 2 + Math.floor(i / cols) * lineH;
+    g.fillStyle = '#e9e6e0'; g.fillText(`${i + 1}. ${r.name}${multi ? ` (${L.name})` : ''}`, x, yy);
+    g.fillStyle = '#9da2a8'; g.textAlign = 'right'; g.fillText(`${fmt(polyArea(r.pts))} m²`, x + cw - pad, yy); g.textAlign = 'left';
+  });
+  return cv;
+}
+$('#shBoard').addEventListener('click', async () => {
+  const b = $('#shBoard'); b.disabled = true;
+  try {
+    const cv = await presentationBoard((m) => { $('#shStatus').textContent = m; });
+    const url = cv.toDataURL('image/jpeg', 0.92), a = document.createElement('a'); a.href = url; a.download = fileName('plansa', 'jpg'); a.click();
+    galleryAdd(cv, 'foto'); $('#shStatus').textContent = t('Planșa e gata și s-a descărcat.');
+  } catch (e) { console.error(e); $('#shStatus').textContent = t('Nu a reușit') + ': ' + e.message; }
+  b.disabled = false;
+});
+
 // ================= Pornire =================
 window.I18N.apply(document); window.I18N.mountSelector($('#langSel'));
 renderCatalog(); setTool('select');
@@ -3300,5 +3494,5 @@ loop();
 window.planora = {
   get project() { return P; }, costData, scene, loadTemplate, setCam, renderPhoto, renderPanorama, recordTour, tourPlan, tourSet, setLevel, addLevel, setWalk, get walk() { return walk; },
   setEnv(o) { Object.assign(P.env, o); rebuild3D(); applyEnv(); renderProps(); },
-  camera, controls, select(kind, id) { sel = { kind, id }; renderProps(); draw2D(); highlight3D(); },
+  camera, controls, presentationBoard, plan3D, frontView, select(kind, id) { sel = { kind, id }; renderProps(); draw2D(); highlight3D(); },
 };

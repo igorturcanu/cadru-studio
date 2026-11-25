@@ -336,3 +336,43 @@ export function shrub(g, w, h, color, seed = 1) {
   }
   foliage(g, cls, color, seed, { size: 0.28, dens: 26 });
 }
+
+// ---------- plante agățătoare și palmieri ----------
+// iederă pe gard sau perete: ciorchini turtiți, cu frunze mici
+export function climber(g, clumps, color = '#3f6b33', seed = 1) { foliage(g, clumps, color, seed, { size: 0.2, dens: 38 }); }
+let frondTex;
+function frondMap() {
+  if (frondTex) return frondTex;
+  // frunză de palmier: nervură în mijloc și foițe lungi, înclinate spre vârf, pe ambele părți
+  const W = 128, H = 512, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const g = cv.getContext('2d'), r = rng(77);
+  g.clearRect(0, 0, W, H); g.strokeStyle = 'rgb(150,140,110)'; g.lineWidth = 4; g.beginPath(); g.moveTo(W / 2, H); g.lineTo(W / 2, 0); g.stroke();
+  for (let i = 0; i < 64; i++) {
+    const y = H * (0.04 + i / 66), t = 1 - i / 64, len = W * 0.47 * Math.sin(Math.PI * (0.15 + 0.85 * t)) + 4;
+    for (const sd of [-1, 1]) { const l = 160 + r() * 90 | 0; g.strokeStyle = `rgb(${l},${l},${l})`; g.lineWidth = 3.2; g.beginPath(); g.moveTo(W / 2, y); g.quadraticCurveTo(W / 2 + sd * len * 0.6, y - 6, W / 2 + sd * len, y - 16 - r() * 8); g.stroke(); }
+  }
+  frondTex = new THREE.CanvasTexture(cv); frondTex.colorSpace = THREE.SRGBColorSpace; frondTex.anisotropy = 4;
+  return frondTex;
+}
+export function palm(g, w, h, color = '#5b8a3a', seed = 1) {
+  const r = rng(seed * 7 + 3), bark = m('#8a7a62', { roughness: 0.95 }), ring = m('#6f604c', { roughness: 1 });
+  // trunchi ușor curbat, din inele
+  const segs = 14, th = h * 0.86, lean = (r() - 0.5) * 0.5; let top = new THREE.Vector3();
+  for (let i = 0; i < segs; i++) {
+    const t0 = i / segs, t1 = (i + 1) / segs, x0 = lean * t0 * t0 * th * 0.25, x1 = lean * t1 * t1 * th * 0.25, rad = 0.16 - 0.06 * t0;
+    const s = new THREE.Mesh(new THREE.CylinderGeometry(rad * 0.92, rad, th / segs, 10), i % 2 ? bark : ring);
+    s.position.set((x0 + x1) / 2, (t0 + t1) / 2 * th, 0); s.rotation.z = -Math.atan2(x1 - x0, th / segs); s.castShadow = true; g.add(s);
+    top.set(x1, t1 * th, 0);
+  }
+  const fm = new THREE.MeshStandardMaterial({ map: frondMap(), color, alphaTest: 0.45, side: THREE.DoubleSide, roughness: 0.75 });
+  const n = 13, L = Math.max(1.2, w * 0.55);
+  for (let i = 0; i < n; i++) {
+    // fiecare frunză e o fâșie îndoită în jos, ca un arc
+    const geo = new THREE.PlaneGeometry(L * 0.32, L, 1, 10), p = geo.attributes.position, droop = 0.5 + r() * 0.6;
+    for (let k = 0; k < p.count; k++) { const v = (p.getY(k) + L / 2) / L; p.setZ(k, -droop * L * v * v * 0.8); p.setY(k, v * L * (1 - 0.15 * v)); }
+    geo.computeVertexNormals();
+    const f = new THREE.Mesh(geo, fm); f.castShadow = true;
+    const holder = new THREE.Group(); holder.position.copy(top); holder.rotation.y = i / n * Math.PI * 2 + r() * 0.3;
+    f.rotation.x = -Math.PI / 2 + 0.55 + r() * 0.35 - (i % 3 === 0 ? 0.5 : 0); holder.add(f); g.add(holder);
+  }
+  const knot = new THREE.Mesh(new THREE.SphereGeometry(0.2, 10, 8), m(shade(color, -0.15))); knot.position.copy(top); g.add(knot);
+}
