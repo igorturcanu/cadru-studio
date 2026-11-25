@@ -160,7 +160,7 @@ export function costLines(q, env, opt) {
   add('Structură', 'planseu', q.slab * 0.18);
   // acoperiș
   if (q.roofArea) {
-    if (env.roof === 'plat') add('Acoperiș', 'hidro', q.roofArea * 1.1);
+    if (env.roof === 'plat' || env.roof === 'plat_streasina') add('Acoperiș', 'hidro', q.roofArea * 1.1);
     else { add('Acoperiș', opt.roofCover, q.roofArea * 1.1); add('Acoperiș', 'sarpanta', q.roofArea * 0.035); }
     add('Acoperiș', 'izo_acoperis', q.roofArea);
   }

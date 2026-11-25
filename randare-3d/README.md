@@ -9,7 +9,7 @@ Sait de prezentare + editor web pentru randări 3D de case, construit după mode
 ## Ce merge de-adevăratelea
 
 - **Plan 2D:** camere trase ca dreptunghi, pereți colț cu colț, uși și ferestre, cote, suprafețe, mutarea colțurilor, unealtă de măsurat, export PNG.
-- **3D în timp real** (three.js): pereți cu goluri, pardoseli cu texturi, peste 35 de obiecte (mobilier, lumini, baie, bucătărie, exterior), selectare în 3D, pereți tăiați, tavan automat în interior, camere: perspectivă, de sus, interior, exterior.
+- **3D în timp real** (three.js): pereți cu goluri, pardoseli cu texturi, peste 60 de obiecte (mobilier, lumini, baie, bucătărie, exterior), selectare în 3D, pereți tăiați, tavan automat în interior, camere: perspectivă, de sus, interior, exterior.
 - **Lumină:** ora zilei și orientarea nord mută soarele și umbrele; seara se aprind lămpile, noaptea e lumina lunii.
 - **Randare foto:** HD / Full HD / 4K, formate 16:9, 4:3, 1:1, 4:5; 8–64 de treceri cu umbre moi și antialiasing (media mai multor cadre).
 - **Vedere 360°:** panoramă echirectangulară 4096×2048 din poziția camerei, cu vizualizator în pagină.
@@ -31,8 +31,23 @@ Sait de prezentare + editor web pentru randări 3D de case, construit după mode
 - **Porți, garduri și lumini:** poartă pietonală, poartă auto culisantă, gard metalic, gard din zidărie, stâlp cu lampă, aplice, spoturi încastrate, candelabru, balcon în consolă, balustradă din sticlă, coloane.
 - **Pereți dintr-un clic:** clic pe perete și scrii lungimea, grosimea și înălțimea; butoane pentru fereastră, ușă, ușă dublă, glisantă și de balcon, puse automat în primul loc liber; dublu-clic pe un perete deschide direct mărimile.
 - **Ieși afară / Intră în casă:** în modul persoană un buton te scoate prin cea mai apropiată ușă exterioară sau te bagă înapoi în casă.
+- **Case parter moderne:** 4 modele noi, originale: casă parter cu streașină lată, casă în L cu curte interioară și piscină, casă cu acoperiș jos în patru ape, casă cu garaj închis (`?sablon=parter_modern`, `parter_l`, `parter_4ape`, `parter_garaj`).
+- **Natură mai reală:** iarbă 3D cu fire (sute de mii de smocuri, desenate dintr-o singură dată), cer cu nori și soare, pădure la orizont cu ceață, copaci cu frunziș texturat (foios, brad cu ramuri zimțate, mesteacăn, tuia), iarbă decorativă cu spice, lavandă, bolovani, piscină cu mozaic și apă care reflectă cerul.
+- **Fațade:** acoperiș plat cu streașină lată, lambriu de lemn dedesubt și bandă LED care se aprinde seara; acoperiș jos în patru ape cu streașină de 95 cm; perete de sticlă (3,6 m), ușă de garaj secțională; sticla reflectă cerul; finisaj de fațadă (lemn, piatră, cărămidă) doar pe partea de afară a peretelui.
+- **Decor interior:** draperii, plantă mare (ficus), vază cu flori, cărți, oglindă rotundă; în modelele noi camerele sunt mobilate complet.
+- **Video tur:** butonul 🎬 înregistrează un clip (20–60 s, 720p, 1080p sau 9:16): camera zboară în jurul casei, se apropie de ușă, intră și se uită de jur împrejur. Se descarcă ca .mp4 sau .webm.
+- **Ferestre și uși cu formă:** fereastră rotundă, arcuită, înclinată, triunghiulară, panoramică (fără montant), cu grilaj și cu obloane; ușă pivot din lemn, ușă cu sticlă, ușă clasică cu panouri, ușă arcuită. Zidăria se închide în jurul formei, cu ramă și sticlă pe contur.
+- **Acoperișuri moderne:** într-o apă (pantă de 10° cu pereții ridicați sub ea), în două ape fără streașină; învelitoare din țiglă, tablă fălțuită sau șindrilă bituminoasă.
+- **Decor de fațadă:** soclu din piatră, ancadramente albe la ferestre, brâu sub streașină, streșini din lemn cu LED între etaje (fiecare cu bifă), copertină de sticlă peste ușă, lamele verticale din lemn, jardiniere, trepte de intrare, număr de casă luminos, ușă de garaj din lemn.
+- **Birou de lucru:** bibliotecă cu dulapuri și cărți, birou cu sertare, monitor și lampă, scaun ergonomic, colț de lectură.
+- **Bucătărie și scară cu LED:** bandă LED sub corpurile suspendate și la plintă, insulă cu lamele de lemn pe spate, scară cu trepte în consolă luminată sub fiecare treaptă.
+- **Grădină:** alee din dale prin iarbă, vatră de foc, canapea de exterior în L, spoturi încastrate în sol.
+- **Modele noi (runda 5):** casă modernă cu etaj și streșini din lemn, casă cu acoperiș din tablă, casă cu acoperiș într-o apă, vilă clasică cu ferestre arcuite (`?sablon=etaj_modern`, `casa_tabla`, `casa_o_apa`, `vila_clasica`); casa cu grădină și casa mică au acum soclu de piatră, obloane și uși clasice.
 - **Proiectele mele:** mai multe proiecte salvate în browser, cu miniatură, deschidere, dublare și ștergere; un șablon deschis devine proiect nou și nu-l înlocuiește pe cel curent.
 - **Fișă client:** o pagină cu randarea 3D, planul, camerele și cantitățile de materiale, cu câmpuri pentru client și observații; se tipărește sau se salvează ca PDF.
+- **Planșă de prezentare:** din fișa client, butonul „Descarcă planșa de prezentare” compune o singură imagine: casa văzută din față, dinspre intrare (camera trece de gard dacă e nevoie), apoi fiecare nivel randat de sus, mobilat și fără tavan, cu numele camerelor, suprafețele și cotele generale, plus lista camerelor.
+- **Curte de lux (runda 6):** perete cu cascadă și bazin, pergolă de aluminiu cu lamele și LED, gard din lamele de lemn cu aplice și iederă, zid de grădină cu LED care spală zidul, zid cu nișe rotunde luminate, iaz cu nuferi, balansoar ou, felinare din ratan (pe jos și suspendate), pietre rotunde de călcat, bordură din pietriș alb, bandă LED pe marginea aleii, palmier, șezlong. Model nou: casă parter cu curte de lux luminată (`?sablon=curte_lux`).
+- **Porți în gard:** golurile pentru porți se calculează acum după poziția porții, așa că poarta nu se mai suprapune cu gardul.
 - **Proiecte:** salvare automată în browser, anulare/refacere, export/import `.json`, galerie „Randările mele” (IndexedDB).
 
 ## Ce e simulat sau lipsește față de Cedreo

@@ -1,8 +1,9 @@
 // Planora 3D: editor de plan 2D + vizualizare 3D + randare foto și 360°, totul în browser.
 import * as THREE from 'three';
 import { OrbitControls } from '../vendor/OrbitControls.js';
-import { CATALOG, BY_TYPE, buildItem, FLOORS, floorTexture, grassTexture, WALL_COLORS, mat, WALL_FINISHES, finishTexture, roofTexture, STRUCTURES, PARTITIONS, KITCHEN_PALETTES, PATH_MATS, ZONE_TYPES, gardenTexture } from './catalog.js';
+import { shade, CATALOG, BY_TYPE, buildItem, FLOORS, floorTexture, grassTexture, WALL_COLORS, mat, WALL_FINISHES, finishTexture, roofTexture, STRUCTURES, PARTITIONS, KITCHEN_PALETTES, PATH_MATS, ZONE_TYPES, gardenTexture } from './catalog.js';
 import { REGIONS, PRICES, TOOLS, ROOF_COVERS, PRICE_INFO, applyPriceFile, costLines } from './costs.js';
+import { skyTexture as natureSky, treeLine, grassField } from './nature.js';
 import { RoomEnvironment } from '../vendor/jsm/environments/RoomEnvironment.js';
 
 const { t, LANG } = window.I18N;
@@ -110,8 +111,20 @@ const OPENING_TOOLS = {
   slide: { type: 'door', style: 'glisanta', w: 1.8, h: 2.2, sill: 0 },
   window: { type: 'window', style: 'normala', w: 1.4, h: 1.4, sill: 0.9 },
   balcony: { type: 'window', style: 'balcon', w: 0.9, h: 2.2, sill: 0 },
+  garage: { type: 'door', style: 'garaj', w: 2.6, h: 2.25, sill: 0 },
+  glasswall: { type: 'door', style: 'glisanta', w: 3.6, h: 2.6, sill: 0 },
+  pivot: { type: 'door', style: 'pivot', w: 1.3, h: 2.5, sill: 0 },
+  round: { type: 'window', style: 'rotunda', w: 0.9, h: 0.9, sill: 1.2 },
+  arch: { type: 'window', style: 'arcada', w: 1.2, h: 1.8, sill: 0.7 },
+  slanted: { type: 'window', style: 'inclinata', w: 1.6, h: 1.8, sill: 0.6 },
 };
-const STYLE_NAMES = { simpla: 'Ușă simplă', dubla: 'Ușă dublă', glisanta: 'Ușă glisantă', normala: 'Fereastră', balcon: 'Ușă de balcon' };
+const STYLE_NAMES = { simpla: 'Ușă simplă', dubla: 'Ușă dublă', glisanta: 'Ușă glisantă', normala: 'Fereastră', balcon: 'Ușă de balcon', garaj: 'Ușă de garaj',
+  pivot: 'Ușă pivot din lemn', sticla: 'Ușă cu sticlă', clasica: 'Ușă clasică cu panouri', usa_arcada: 'Ușă arcuită',
+  rotunda: 'Fereastră rotundă', arcada: 'Fereastră arcuită', inclinata: 'Fereastră înclinată', triunghi: 'Fereastră triunghiulară', panoramica: 'Fereastră panoramică', grilaj: 'Fereastră cu grilaj', obloane: 'Fereastră cu obloane' };
+const DOOR_STYLES = ['simpla', 'dubla', 'glisanta', 'pivot', 'sticla', 'clasica', 'usa_arcada', 'garaj'];
+const WINDOW_STYLES = ['normala', 'panoramica', 'grilaj', 'obloane', 'arcada', 'rotunda', 'inclinata', 'triunghi', 'balcon'];
+// ferestre și uși cu formă: golul din perete rămâne dreptunghiular, iar colțurile se umplu cu zidărie
+const SHAPED = new Set(['rotunda', 'arcada', 'inclinata', 'triunghi', 'usa_arcada']);
 function addOpening(type, x, y, opts = {}) {
   const hit = nearestWall(x, y, 0.6);
   if (!hit) return null;
@@ -230,6 +243,9 @@ function templateCasa() {
   for (let i = 0; i < 3; i++) addItem('tufis', 8 + i * 1.2, 8.9, 0);
   addItem('masina', 14.5, 3.5, 0);
   P.env.hour = 17.5; P.env.north = 35; P.env.roof = 'doua_ape';
+  // fațadă tradițională: soclu din piatră, ancadramente, ușa de la intrare cu panouri, obloane la ferestrele mici
+  P.env.soclu = true; P.env.ancadrament = true;
+  for (const o of P.openings) { const w = getWall(o.wall); if (!w || !exteriorSide(w)) continue; if (o.type === 'door' && (!o.style || o.style === 'simpla')) o.style = 'clasica'; if (o.type === 'window' && o.w <= 1.3 && (!o.style || o.style === 'normala')) o.style = 'obloane'; }
 }
 
 function templateCasaEtaj() {
@@ -287,6 +303,8 @@ const setWallH = (h) => { for (const w of P.walls) w.h = h; };
 function fenceLine(type, x1, y1, x2, y2, gaps = [], max = 3) {
   const L = Math.hypot(x2 - x1, y2 - y1), ux = (x2 - x1) / L, uy = (y2 - y1) / L, rot = Math.round(Math.atan2(uy, ux) / DEG);
   let segs = [[0, L]];
+  // golurile se dau prin coordonata porții (x pe o linie orizontală, y pe una verticală), aici devin distanțe de la capăt
+  gaps = gaps.map(([c, w]) => [Math.abs(ux) >= Math.abs(uy) ? (c - x1) / ux : (c - y1) / uy, w]);
   for (const [c, w] of gaps) segs = segs.flatMap(([a, b]) => (c + w / 2 <= a || c - w / 2 >= b ? [[a, b]] : [[a, c - w / 2], [c + w / 2, b]]).filter(([p, q]) => q - p > 0.3));
   for (const [a, b] of segs) { const n = Math.ceil((b - a) / max), sw = (b - a) / n; for (let i = 0; i < n; i++) { const m = a + (i + 0.5) * sw; addItem(type, x1 + ux * m, y1 + uy * m, rot, { w: r2(sw) }); } }
 }
@@ -310,6 +328,9 @@ function templateCasaMica() {
   fenceLine('gard', -3, 12, 11.5, 12, [[2.6, 1.1]]); addItem('poarta', 2.6, 12, 0, { color: '#6b4a2f', color2: '#c9c2b4' });
   addItem('copac', -2, 3); addItem('pom', 10, 9); addItem('tufis', 9.6, 1.5); addItem('felinar', 1.6, 11.2); addItem('banca', 6.5, 10.2, 180);
   P.env.hour = 17; P.env.north = 20; P.env.roof = 'doua_ape'; P.env.roofColor = '#8a3f2c'; P.env.wallColor = '#efe6d6';
+  // fațadă tradițională: soclu din piatră, ancadramente, ușa de la intrare cu panouri, obloane la ferestrele mici
+  P.env.soclu = true; P.env.ancadrament = true;
+  for (const o of P.openings) { const w = getWall(o.wall); if (!w || !exteriorSide(w)) continue; if (o.type === 'door' && (!o.style || o.style === 'simpla')) o.style = 'clasica'; if (o.type === 'window' && o.w <= 1.3 && (!o.style || o.style === 'normala')) o.style = 'obloane'; }
 }
 
 function templateCasaModerna() {
@@ -490,8 +511,362 @@ function templateDuplex() {
   addLevel0Copy(); unit(false, true); unit(true, true);
   P.cur = 0; P.env.hour = 17; P.env.north = 40; P.env.roof = 'doua_ape'; P.env.roofColor = '#55402f'; P.env.wallColor = '#e8ddd0'; P.env.allLevels = true;
 }
+
+// finisaj pe pereții de pe o linie (fațade cu lemn sau piatră)
+function facade(x1, y1, x2, y2, finish, color) {
+  const on = (x, y) => Math.abs((x2 - x1) * (y - y1) - (y2 - y1) * (x - x1)) < 0.02 && x >= Math.min(x1, x2) - 0.02 && x <= Math.max(x1, x2) + 0.02 && y >= Math.min(y1, y2) - 0.02 && y <= Math.max(y1, y2) + 0.02;
+  for (const w of P.walls) if (on(w.x1, w.y1) && on(w.x2, w.y2)) { w.facade = finish; if (color) w.facadeColor = color; }
+}
+// plantări de grădină reutilizate de modele: rând de iarbă decorativă cu bolovani, lavandă, arbori
+function plantRow(x1, y, x2, step = 1.1) { for (let x = x1, i = 0; x <= x2; x += step, i++) addItem(i % 4 === 3 ? 'bolovan' : 'iarba_decorativa', x, y + (i % 2) * 0.35, i * 37 % 360, i % 4 === 3 ? { w: 0.9 + (i % 3) * 0.3, d: 0.7, h: 0.5 } : {}); }
+function livingSet(cx, cy, rot = 0, sofa = '#d9d4ca') {
+  const R = (dx, dy) => { const a = rot * DEG; return [cx + dx * Math.cos(a) - dy * Math.sin(a), cy + dx * Math.sin(a) + dy * Math.cos(a)]; };
+  addItem('covor', ...R(0, 0), rot, { w: 3.2, d: 2.3, color: '#b8ad9c' }); addItem('masuta', ...R(0, 0), rot, { w: 1.1, d: 0.6 });
+  addItem('canapea', ...R(0, 1.35), rot + 180, { w: 2.8, color: sofa }); addItem('fotoliu', ...R(-1.6, -0.2), rot + 270, { color: '#8a6a4a' }); addItem('fotoliu', ...R(1.6, -0.2), rot + 90, { color: '#8a6a4a' });
+  addItem('vaza', ...R(0.2, 0), rot, { elev: 0.42 }); addItem('carti', ...R(-0.3, 0.05), rot, { elev: 0.42, w: 0.3 });
+}
+function bedroom(cx, cy, rot = 0, big = true) {
+  const R = (dx, dy) => { const a = rot * DEG; return [cx + dx * Math.cos(a) - dy * Math.sin(a), cy + dx * Math.sin(a) + dy * Math.cos(a)]; };
+  addItem('pat', ...R(0, 0), rot, { w: big ? 1.8 : 1.4 }); addItem('noptiera', ...R(-(big ? 1.25 : 1.05), -0.75), rot); addItem('noptiera', ...R(big ? 1.25 : 1.05, -0.75), rot);
+  addItem('lampa', ...R(-(big ? 1.25 : 1.05), -0.75), rot, { h: 0.5, elev: 0.5 }); addItem('covor', ...R(0, 0.6), rot, { w: 2.4, d: 1.6, color: '#d8cfc0' }); addItem('tablou', ...R(0, -1.08), rot, { w: 1.4, h: 0.6, elev: 1.25 });
+}
+function templateParterModern() {
+  P = emptyProject(); P.name = t('Casă parter modernă cu streașină lată');
+  addRoom(0, 0, 10, 11, t('Living, bucătărie și dining'), 'stejar');
+  addRoom(10, 6, 13, 11, t('Hol'), 'gresie'); addRoom(10, 3, 13, 6, t('Baie'), 'marmura'); addRoom(10, 0, 13, 3, t('Cămară'), 'gresie');
+  addRoom(13, 5, 18, 11, t('Dormitor matrimonial'), 'stejar'); addRoom(13, 0, 18, 5, t('Dormitor'), 'stejar');
+  setWallH(2.9);
+  addOpening('glasswall', 3.4, 11, { w: 5.6, h: 2.7 }); addOpening('glasswall', 0, 5.5, { w: 3.2, h: 2.7 });
+  addOpening('door', 11.5, 11, { w: 1.1, h: 2.4 }); addOpening('window', 15.5, 11, { w: 2.6, h: 2.3, sill: 0.4 }); addOpening('window', 18, 2.5, { w: 1.8, h: 1.5 });
+  addOpening('window', 5, 0, { w: 3.0, h: 1.0, sill: 1.15 }); addOpening('window', 15.5, 0, { w: 2.0, h: 1.4 }); addOpening('window', 11.5, 0, { w: 0.8, h: 0.6, sill: 1.6 }); addOpening('window', 8.4, 11, { w: 1.6, h: 2.3, sill: 0.4 });
+  addOpening('door', 10, 8.5, { w: 1.0 }); addOpening('door', 13, 8.0); addOpening('door', 13, 3.0); addOpening('door', 11.5, 6, { w: 0.8 }); addOpening('door', 11.5, 3, { w: 0.8 });
+  for (const o of P.openings) o.frame = 'antracit';
+  facade(10, 11, 13, 11, 'lemn'); facade(13, 11, 18, 11, 'piatra'); facade(18, 0, 18, 11, 'piatra');
+  // interior
+  livingSet(4.2, 7.0, 0); addItem('comoda_tv', 4.2, 4.65, 0, { w: 2.4 }); addItem('planta_mare', 0.6, 10.3); addItem('planta_mare', 9.4, 4.6);
+  addItem('bucatarie', 5, 0.32, 0, { w: 5.6, color: '#efeae2', color2: '#3a3a3a' }); addItem('insula', 5, 2.1, 0, { w: 2.6 });
+  for (const x of [4.2, 5.0, 5.8]) addItem('scaun', x, 2.85, 180, { color: '#2b2b2e' });
+  addItem('masa', 8.2, 2.6, 90, { w: 2.0, d: 0.95 }); for (const y of [2.0, 3.2]) { addItem('scaun', 7.7, y, 270); addItem('scaun', 8.7, y, 90); }
+  addItem('candelabru', 8.2, 2.6, 0, { w: 0.7, h: 0.7, elev: 1.95 }); addItem('vaza', 8.2, 2.6, 0, { elev: 0.76 });
+  for (const [x, y] of [[2.5, 6.5], [6, 6.5], [2.5, 9.5], [6, 9.5], [3, 1.8], [7, 1.8]]) addItem('spot_tavan', x, y);
+  addItem('perdea', 0.95, 10.82, 0, { w: 0.9 }); addItem('perdea', 5.85, 10.82, 0, { w: 0.9 }); addItem('tablou', 0.06, 8.2, 270, { w: 1.6, h: 0.9, elev: 1.2 });
+  addItem('oglinda', 12.9, 7.4, 90, { elev: 1.1 }); addItem('planta', 10.4, 10.5);
+  addItem('cada', 11.5, 3.4, 0, { w: 1.7 }); addItem('lavoar', 12.75, 4.6, 90, { w: 1.0 }); addItem('wc', 10.3, 5.6, 270);
+  bedroom(15.5, 9.8, 180); addItem('dulap', 17.7, 6.4, 90, { w: 2.0 }); addItem('perdea', 14.45, 10.82, 0, { w: 0.6 }); addItem('perdea', 16.55, 10.82, 0, { w: 0.6 });
+  bedroom(15.5, 1.2, 0, false); addItem('birou', 13.5, 4.1, 270, { w: 1.2 });
+  // grădina
+  P.zones.push({ id: uid('z'), type: 'terasa', pts: [[0, 11.15], [10, 11.15], [10, 14.2], [0, 14.2]] });
+  addItem('piscina', 4.8, 17.4, 90, { w: 3.4, d: 9 });
+  P.paths.push({ id: uid('a'), pts: [[11.5, 11.2], [11.5, 25.5]], w: 1.4, mat: 'dale' });
+  P.paths.push({ id: uid('a'), pts: [[-0.2, 11.2], [-3.5, 11.2]], w: 1.0, mat: 'pietris' });
+  plantRow(13.4, 12.0, 17.6, 0.9); addItem('lavanda', 15.5, 13.3, 0, { w: 3.6 }); addItem('lavanda', 2.5, 20.3, 0, { w: 4.2 });
+  addItem('bolovan', 9.6, 15.0, 30, { w: 1.6, d: 1.1, h: 0.8 }); addItem('bolovan', 10.3, 16.1, 120, { w: 0.9, d: 0.7, h: 0.45 });
+  addItem('mesteacan', 14.5, 17); addItem('mesteacan', 16.2, 18.5, 0, { h: 8 }); addItem('copac', -4.5, -3, 0, { w: 5, h: 8 }); addItem('copac', 21, -2, 0, { w: 4.5, h: 7.5 });
+  for (let y = -4; y <= 22; y += 1.4) addItem('tuia', 22.5, y); addItem('brad', -5, 20, 0, { h: 9 }); addItem('brad', -6.5, 16.5, 0, { h: 7.5 });
+  addItem('ghiveci', 0.6, 13.6); addItem('banca', 2.5, 13.4, 180); addItem('aplica', 10.6, 11.1, 0); addItem('aplica', 12.4, 11.1, 0);
+  for (const y of [14, 17, 20, 23]) addItem('bolard', 12.5, y);
+  fenceLine('gard_metalic', -7, 26, 23, 26, [[11.5, 1.2]], 3); addItem('poarta', 11.5, 26, 0, { w: 1.2 });
+  P.env.hour = 17; P.env.north = 20; P.env.roof = 'plat_streasina'; P.env.wallColor = '#f3f1ec';
+}
+function templateParterL() {
+  P = emptyProject(); P.name = t('Casă parter în L cu curte interioară');
+  addRoom(0, 0, 8, 8, t('Living'), 'nuc'); addRoom(8, 0, 13, 8, t('Bucătărie și dining'), 'nuc'); addRoom(13, 0, 16, 8, t('Hol'), 'ardezie');
+  addRoom(16, 0, 19, 4, t('Baie'), 'marmura'); addRoom(19, 0, 22, 4, t('Birou'), 'nuc'); addRoom(16, 4, 22, 8, t('Hol dormitoare'), 'nuc');
+  addRoom(14, 8, 18, 16, t('Dormitor 2'), 'stejar'); addRoom(18, 8, 22, 16, t('Dormitor matrimonial'), 'stejar');
+  setWallH(3.0);
+  addOpening('glasswall', 4, 8, { w: 6.2, h: 2.8 }); addOpening('glasswall', 10.5, 8, { w: 3.6, h: 2.8 }); addOpening('glasswall', 14, 12, { w: 4.0, h: 2.8 });
+  addOpening('door2', 14.5, 0, { w: 1.6, h: 2.5 }); addOpening('window', 4, 0, { w: 4.5, h: 0.9, sill: 1.4 }); addOpening('window', 10.5, 0, { w: 2.4, h: 1.2, sill: 1.1 }); addOpening('window', 0, 4, { w: 2.4, h: 2.4, sill: 0.3 });
+  addOpening('window', 20.5, 0, { w: 1.6 }); addOpening('window', 17.5, 0, { w: 0.9, h: 0.7, sill: 1.5 }); addOpening('window', 22, 12, { w: 2.2, h: 2.2, sill: 0.4 }); addOpening('window', 18, 16, { w: 1.6 }); addOpening('window', 20, 16, { w: 1.6 });
+  addOpening('door2', 8, 4, { w: 2.2 }); addOpening('door2', 13, 4, { w: 1.6 }); addOpening('door', 16, 6, { w: 1.0 }); addOpening('door', 17.5, 4, { w: 0.8 }); addOpening('door', 20.5, 4, { w: 0.9 }); addOpening('door', 16, 8, { w: 0.9 }); addOpening('door', 20, 8, { w: 0.9 });
+  for (const o of P.openings) o.frame = 'negru';
+  facade(13, 0, 16, 0, 'lemn'); facade(0, 0, 8, 0, 'piatra'); facade(0, 0, 0, 8, 'piatra'); facade(14, 8, 14, 16, 'lemn'); facade(14, 16, 22, 16, 'lemn');
+  livingSet(4, 3.6, 0, '#5d6b74'); addItem('comoda_tv', 4, 0.3, 0, { w: 2.6 }); addItem('semineu', 0.4, 6.5, 270); addItem('planta_mare', 7.4, 0.6); addItem('perdea', 1.3, 7.82, 0, { w: 0.9, color: '#f1ede5' }); addItem('perdea', 6.7, 7.82, 0, { w: 0.9, color: '#f1ede5' });
+  addItem('bucatarie', 10.5, 0.32, 0, { w: 4.6, color: '#2f3135', color2: '#e9e5dd' }); addItem('masa', 10.5, 4.6, 0, { w: 2.2, d: 1.0, color: '#c49a6c' });
+  for (const [x, y, r] of [[9.8, 4.0, 0], [10.5, 4.0, 0], [11.2, 4.0, 0], [9.8, 5.2, 180], [10.5, 5.2, 180], [11.2, 5.2, 180]]) addItem('scaun', x, y, r, { color: '#2b2b2e' });
+  addItem('candelabru', 10.5, 4.6, 0, { w: 0.8, h: 0.8, elev: 2.05 }); addItem('vaza', 10.5, 4.6, 0, { elev: 0.76 });
+  addItem('oglinda', 15.95, 2, 90); addItem('planta', 13.4, 0.5); addItem('cada', 17.5, 0.4, 0); addItem('lavoar', 18.7, 3.6, 180, { w: 1.0 }); addItem('wc', 16.4, 3.4, 270);
+  officeSet(22, 2, 90, 3.6);
+  bedroom(20, 14.8, 180); addItem('dulap', 21.7, 10.2, 90, { w: 2 }); bedroom(16, 14.8, 180, false);
+  for (const [x, y] of [[3, 2], [6, 2], [3, 6], [6, 6], [10.5, 2]]) addItem('spot_tavan', x, y);
+  // curtea interioară: piscină, terasă și grădină
+  P.zones.push({ id: uid('z'), type: 'terasa', pts: [[0, 8.15], [13.85, 8.15], [13.85, 10.6], [0, 10.6]] });
+  addItem('piscina', 6.5, 13.0, 90, { w: 3.2, d: 9 });
+  addItem('banca', 2, 9.6, 180); addItem('ghiveci', 0.6, 10.2); addItem('ghiveci', 13.3, 10.2); plantRow(1, 15.6, 12, 1.0); addItem('mesteacan', -2, 14); addItem('mesteacan', 12.5, 17.5);
+  P.paths.push({ id: uid('a'), pts: [[14.5, -0.2], [14.5, -9]], w: 1.6, mat: 'piatra' });
+  P.zones.push({ id: uid('z'), type: 'pietris', pts: [[16.5, -1], [22, -1], [22, -8], [16.5, -8]] }); addItem('masina', 19.3, -4.5, 0, { color: '#e6e6e6' });
+  plantRow(0.5, -1.0, 12.5, 1.0); addItem('copac', -4, -6, 0, { w: 5, h: 8 }); addItem('copac', 26, 4, 0, { w: 5, h: 8.5 }); addItem('brad', 26, 15); addItem('brad', -4, 18);
+  for (const x of [13.6, 15.4]) addItem('stalp_lampa', x, -9.5); addItem('aplica', 13.3, -0.1, 180); addItem('aplica', 15.7, -0.1, 180);
+  fenceLine('gard_zidarie', -6, -9.5, 27, -9.5, [[14.5, 1.4], [19.3, 4.4]], 4); addItem('poarta', 14.5, -9.5, 0, { w: 1.4 }); addItem('poarta_auto', 19.3, -9.5, 0, { w: 4.6 });
+  for (let y = -8; y <= 20; y += 1.3) addItem('tuia', 27.5, y);
+  P.env.hour = 16.5; P.env.north = 200; P.env.roof = 'plat_streasina'; P.env.wallColor = '#f1efea';
+}
+function templateParter4Ape() {
+  P = emptyProject(); P.name = t('Casă parter cu acoperiș în patru ape');
+  addRoom(0, 4, 9, 11, t('Living'), 'stejar'); addRoom(0, 0, 5, 4, t('Bucătărie'), 'gresie'); addRoom(5, 0, 9, 4, t('Baie'), 'gresie');
+  addRoom(9, 0, 11, 11, t('Hol'), 'stejar'); addRoom(11, 5.5, 16, 11, t('Dormitor matrimonial'), 'stejar'); addRoom(11, 0, 16, 5.5, t('Dormitor 2'), 'frasin');
+  setWallH(2.85);
+  addOpening('glasswall', 4.5, 11, { w: 6.4, h: 2.6 }); addOpening('door', 10, 11, { w: 1.1, h: 2.3 }); addOpening('window', 13.5, 11, { w: 2.4, h: 1.9, sill: 0.6 });
+  addOpening('window', 0, 7.5, { w: 2.2, h: 1.9, sill: 0.6 }); addOpening('window', 2.5, 0, { w: 1.6, h: 1.2, sill: 1.0 }); addOpening('window', 7, 0, { w: 0.8, h: 0.7, sill: 1.5 }); addOpening('window', 13.5, 0, { w: 1.8 }); addOpening('window', 16, 8.2, { w: 1.6 });
+  addOpening('door2', 9, 7.5, { w: 1.6 }); addOpening('door', 5, 4, { w: 0.9 }); addOpening('door', 9, 2, { w: 0.8 }); addOpening('door', 11, 8.2); addOpening('door', 11, 2.6);
+  for (const o of P.openings) o.frame = 'antracit';
+  facade(9, 11, 11, 11, 'piatra'); facade(11, 11, 16, 11, 'lemn');
+  livingSet(4.5, 7.2, 0, '#e8e2d6'); addItem('comoda_tv', 4.5, 4.35, 0, { w: 2.2 }); addItem('planta_mare', 8.4, 10.4); addItem('lustra', 4.5, 7.2); addItem('perdea', 1.75, 10.82, 0, { w: 0.9 }); addItem('perdea', 7.25, 10.82, 0, { w: 0.9 });
+  addItem('bucatarie', 2.5, 0.32, 0, { w: 4.4 }); addItem('masa', 2.5, 2.4, 0, { w: 1.4, d: 0.8 }); for (const [x, y, r] of [[2.1, 1.95, 0], [2.9, 1.95, 0], [2.1, 2.85, 180], [2.9, 2.85, 180]]) addItem('scaun', x, y, r);
+  addItem('dus', 8.45, 0.55, 0); addItem('wc', 5.4, 3.4, 270); addItem('lavoar', 6.6, 0.3, 0); addItem('oglinda', 10.9, 5, 90);
+  bedroom(13.5, 9.8, 180); addItem('dulap', 15.7, 6.8, 90, { w: 1.6 }); bedroom(13.5, 1.2, 0, false);
+  P.zones.push({ id: uid('z'), type: 'pavaj', pts: [[0, 11.2], [9, 11.2], [9, 13.6], [0, 13.6]] });
+  addItem('piscina', 4.5, 16.4, 90, { w: 3.2, d: 7.5 }); addItem('pergola', 13.5, 13.6, 0, { w: 4.5, d: 2.6 }); addItem('banca', 13.5, 13.6, 180);
+  P.paths.push({ id: uid('a'), pts: [[10, 11.2], [10, 22]], w: 1.3, mat: 'pavele' });
+  P.zones.push({ id: uid('z'), type: 'flori', pts: [[-0.2, 11.8], [-1.2, 11.8], [-1.2, -0.5], [-0.2, -0.5]] });
+  for (const x of [11.5, 16.5]) addItem('tufis', x, 11.7, 0, { w: 0.9, h: 0.7 }); plantRow(0.3, 19.6, 8.5, 0.9);
+  addItem('copac', 20, 4, 0, { w: 5, h: 8 }); addItem('copac', -4.5, 18, 0, { w: 4.5, h: 7 }); addItem('pom', 18.5, 18); addItem('brad', -4, -3, 0, { h: 9 }); addItem('mesteacan', 18, -3);
+  for (const y of [13, 16, 19]) addItem('felinar', 11.2, y);
+  fenceLine('gard', -6, 22.5, 22, 22.5, [[10, 1.1]], 3); addItem('poarta', 10, 22.5, 0, { color: '#5b4030' });
+  P.env.hour = 15.5; P.env.north = 15; P.env.roof = 'patru_ape_jos'; P.env.roofColor = '#3a3c40'; P.env.wallColor = '#f2efe8';
+}
+function templateParterGaraj() {
+  P = emptyProject(); P.name = t('Casă parter cu garaj');
+  addRoom(0, 4, 8, 10, t('Living'), 'stejar'); addRoom(0, 0, 5, 4, t('Bucătărie'), 'gresie'); addRoom(5, 0, 8, 4, t('Baie'), 'gresie');
+  addRoom(8, 0, 10, 10, t('Hol'), 'stejar'); addRoom(10, 5, 14, 10, t('Dormitor'), 'stejar'); addRoom(10, 0, 14, 5, t('Dormitor 2'), 'stejar');
+  addRoom(14, 0, 20, 10, t('Garaj'), 'beton');
+  setWallH(2.9);
+  addOpening('glasswall', 4, 10, { w: 5.6, h: 2.6 }); addOpening('door', 9, 10, { w: 1.1, h: 2.4 }); addOpening('window', 12, 10, { w: 2.2, h: 2.2, sill: 0.4 }); addOpening('garage', 17, 10, { w: 4.8, h: 2.4 });
+  addOpening('window', 0, 7, { w: 2.0, h: 2.2, sill: 0.4 }); addOpening('window', 2.5, 0, { w: 1.6, h: 1.1, sill: 1.1 }); addOpening('window', 12, 0, { w: 1.6 }); addOpening('door', 17, 0, { w: 0.9 });
+  addOpening('door2', 8, 7, { w: 1.6 }); addOpening('door', 8, 2, { w: 0.8 }); addOpening('door', 10, 7.5); addOpening('door', 10, 2.5); addOpening('door', 14, 2, { w: 0.9 }); addOpening('door', 6.5, 4, { w: 0.8 });
+  for (const o of P.openings) o.frame = 'antracit';
+  facade(14, 10, 20, 10, 'lemn'); facade(8, 10, 10, 10, 'lemn'); facade(20, 0, 20, 10, 'lemn');
+  livingSet(4, 6.8, 0, '#cfc6b6'); addItem('comoda_tv', 4, 4.35, 0, { w: 2.2 }); addItem('planta_mare', 0.6, 9.4); addItem('perdea', 1.6, 9.82, 0, { w: 0.9 }); addItem('perdea', 6.4, 9.82, 0, { w: 0.9 });
+  addItem('bucatarie', 2.5, 0.32, 0, { w: 4.4 }); addItem('insula', 2.5, 2.3, 0, { w: 1.8 }); addItem('cada', 6.5, 0.4, 0, { w: 1.6 }); addItem('wc', 7.6, 2.6, 90);
+  bedroom(12, 8.8, 180, true); bedroom(12, 1.2, 0, false); addItem('masina', 17, 5, 0, { color: '#2b3a4a' }); addItem('raft', 19.75, 3, 90);
+  for (const [x, y] of [[2, 6], [6, 6], [2, 9], [6, 9]]) addItem('spot_tavan', x, y);
+  P.paths.push({ id: uid('a'), pts: [[17, 10.2], [17, 20]], w: 5, mat: 'pavele' }); P.paths.push({ id: uid('a'), pts: [[9, 10.2], [9, 13], [14.3, 13]], w: 1.2, mat: 'dale' });
+  P.zones.push({ id: uid('z'), type: 'terasa', pts: [[0, 10.15], [7.8, 10.15], [7.8, 13], [0, 13]] });
+  plantRow(0.4, 14, 7.6, 0.9); addItem('lavanda', 11.8, 11, 0, { w: 3.6 }); addItem('bolovan', 13.5, 15.5, 20, { w: 1.5, h: 0.7 });
+  addItem('mesteacan', 2, 17.5); addItem('copac', -4, 2, 0, { w: 5, h: 8 }); addItem('brad', 24, 3, 0, { h: 9 }); addItem('pom', -3, 15);
+  for (const x of [8.4, 9.6, 14.2, 19.8]) addItem('aplica', x, 10.1, 0);
+  fenceLine('gard_metalic', -6, 20.5, 25, 20.5, [[17, 4.4], [11.5, 1.1]], 3); addItem('poarta_auto', 17, 20.5, 0, { w: 4.6 }); addItem('poarta', 11.5, 20.5, 0);
+  P.paths.push({ id: uid('a'), pts: [[11.5, 20.3], [11.5, 13.2]], w: 1.1, mat: 'dale' });
+  P.env.hour = 16; P.env.north = 30; P.env.roof = 'plat_streasina'; P.env.wallColor = '#f4f2ee';
+}
+
+// pune stilul și rama pe golurile deja adăugate
+function setStyle(o, style, extra = {}) { if (o) Object.assign(o, { style }, extra); return o; }
+// birou de lucru: bibliotecă pe perete, masa în fața ei cu fața spre cameră, colț de lectură cu fotoliu și lampă
+// (cx, cy) = punctul de lângă peretele cu biblioteca; rot = direcția spre cameră (0 = +y)
+function officeSet(cx, cy, rot = 0, span = 3) {
+  const R = (dx, dy) => { const a = rot * DEG; return [cx + dx * Math.cos(a) - dy * Math.sin(a), cy + dx * Math.sin(a) + dy * Math.cos(a)]; };
+  addItem('mobila_birou', ...R(0, 0.22), rot, { w: Math.min(3.0, span - 0.4) }); addItem('scaun_birou', ...R(0, 1.0), rot); addItem('birou_mare', ...R(0, 1.6), rot + 180, { w: Math.min(1.8, span - 0.8) });
+  addItem('covor', ...R(0, 1.45), rot, { w: 2.2, d: 1.6, color: '#7b8a8f' }); addItem('fotoliu', ...R(span / 2 - 0.55, 2.7), rot + 135, { color: '#8a6a4a' }); addItem('lampa', ...R(span / 2 - 0.3, 3.05), rot); addItem('planta_mare', ...R(-span / 2 + 0.45, 2.8), rot);
+}
+function templateCasaTabla() {
+  P = emptyProject(); P.name = t('Casă modernă cu acoperiș din tablă');
+  addRoom(0, 0, 8, 8, t('Living, bucătărie și dining'), 'stejar'); addRoom(8, 4, 10, 8, t('Hol'), 'beton'); addRoom(8, 0, 10, 4, t('Baie'), 'beton');
+  addRoom(10, 4, 15, 8, t('Dormitor matrimonial'), 'stejar'); addRoom(10, 0, 15, 4, t('Dormitor'), 'stejar');
+  setWallH(3.0);
+  addOpening('glasswall', 0, 4, { w: 5.4, h: 2.75 });
+  addOpening('pivot', 9, 8, { w: 1.3, h: 2.5 });
+  setStyle(addOpening('window', 4.2, 8, { w: 3.2, h: 2.3, sill: 0.3 }), 'panoramica'); setStyle(addOpening('window', 12.5, 8, { w: 2.2, h: 1.7, sill: 0.8 }), 'panoramica');
+  setStyle(addOpening('window', 3, 0, { w: 2.6, h: 0.9, sill: 1.2 }), 'panoramica'); setStyle(addOpening('window', 6.6, 0, { w: 1.0, h: 1.0, sill: 1.1 }), 'rotunda');
+  setStyle(addOpening('window', 9, 0, { w: 0.75, h: 0.75, sill: 1.55 }), 'rotunda'); setStyle(addOpening('window', 12.5, 0, { w: 1.8, h: 1.5, sill: 0.9 }), 'panoramica');
+  setStyle(addOpening('window', 15, 6, { w: 1.5, h: 2.0, sill: 0.5 }), 'inclinata'); setStyle(addOpening('window', 15, 2, { w: 1.5, h: 2.0, sill: 0.5 }), 'inclinata');
+  addOpening('door', 8, 6, { w: 1.0 }); addOpening('door', 10, 6.5); addOpening('door', 10, 2); addOpening('door', 9, 4, { w: 0.8 });
+  for (const o of P.openings) o.frame = 'negru';
+  facade(15, 0, 15, 8, 'lemn'); facade(8, 8, 10, 8, 'lemn'); facade(0, 0, 0, 8, 'lemn');
+  livingSet(4.2, 5.6, 0, '#6f7a80'); addItem('comoda_tv', 4.2, 3.2, 0, { w: 2.4 }); addItem('planta_mare', 0.7, 7.3); addItem('semineu', 7.6, 5.6, 90);
+  addItem('bucatarie', 3, 0.32, 0, { w: 5.2, color: '#2f3135', color2: '#d8d3ca' }); addItem('insula', 3, 1.9, 0, { w: 2.4, color: '#d8d3ca' });
+  for (const x of [2.3, 3, 3.7]) addItem('scaun', x, 2.6, 180, { color: '#a06a3c' });
+  addItem('masa', 6.6, 2.2, 90, { w: 1.8, d: 0.9, color: '#3a2a1e' }); for (const y of [1.7, 2.7]) { addItem('scaun', 6.1, y, 270); addItem('scaun', 7.1, y, 90); }
+  addItem('candelabru', 6.6, 2.2, 0, { w: 0.6, h: 0.6, elev: 2.2 }); addItem('vaza', 6.6, 2.2, 0, { elev: 0.76 });
+  for (const [x, y] of [[2, 4.5], [6, 4.5], [2, 7], [6, 7]]) addItem('spot_tavan', x, y, 0, { elev: 2.98 });
+  addItem('dus', 9.45, 0.55, 0); addItem('lavoar', 8.6, 3.6, 270, { w: 0.9 }); addItem('wc', 9.6, 3.4, 90); addItem('oglinda', 8.06, 2.6, 270);
+  bedroom(12.5, 7.0, 180); addItem('dulap', 14.7, 4.9, 90, { w: 1.4 }); bedroom(12.5, 1.0, 0, false);
+  // intrare: copertină, lamele, număr, ghivece; grădină
+  addItem('copertina', 9, 8.68, 0, { w: 2.2, d: 1.2, elev: 2.62 }); addItem('lamele', 10.75, 8.2, 0, { w: 1.3, h: 2.9 });
+  addItem('numar_casa', 7.75, 8.17, 0, { elev: 1.8 }); addItem('ghiveci_mare', 8.0, 8.6); addItem('jardiniera', 4.2, 8.45, 0, { w: 3.0 });
+  P.zones.push({ id: uid('z'), type: 'terasa', pts: [[-0.15, -0.5], [-4, -0.5], [-4, 8.5], [-0.15, 8.5]] });
+  addItem('masa', -2.1, 4, 90, { w: 2, d: 0.9, color: '#8a6a4a' }); for (const y of [3.4, 4.6]) { addItem('scaun', -2.6, y, 270, { color: '#2b2b2e' }); addItem('scaun', -1.6, y, 90, { color: '#2b2b2e' }); }
+  P.paths.push({ id: uid('a'), pts: [[9, 9.3], [9, 18]], w: 1.4, mat: 'dale' });
+  plantRow(1, 10, 7.6, 0.9); plantRow(10.6, 10, 15, 0.9); addItem('bolovan', 6.5, 12.5, 30, { w: 1.4, h: 0.6 });
+  addItem('mesteacan', -6, 10); addItem('mesteacan', 17.5, 9, 0, { h: 8 }); addItem('brad', -7, -4, 0, { h: 10 }); addItem('brad', 19, -3, 0, { h: 9 }); addItem('copac', 4, -8, 0, { w: 6, h: 9 }); addItem('copac', 14, -7.5, 0, { w: 5, h: 8 });
+  for (const y of [11, 14, 17]) addItem('bolard', 9.9, y);
+  fenceLine('gard_metalic', -9, 18.5, 22, 18.5, [[9, 1.2]], 3); addItem('poarta', 9, 18.5, 0, { w: 1.2 });
+  P.env.hour = 17.5; P.env.north = 10; P.env.roof = 'doua_ape_modern'; P.env.roofCover = 'tabla'; P.env.roofColor = '#2e3135'; P.env.wallColor = '#f4f3ef';
+}
+function templateCasaOApa() {
+  P = emptyProject(); P.name = t('Casă cu acoperiș într-o apă');
+  addRoom(0, 0, 7.5, 9, t('Living și bucătărie'), 'nuc'); addRoom(7.5, 5, 10, 9, t('Hol'), 'ardezie'); addRoom(7.5, 2.5, 10, 5, t('Baie'), 'marmura'); addRoom(7.5, 0, 10, 2.5, t('Cămară'), 'ardezie');
+  addRoom(10, 4.5, 14, 9, t('Dormitor matrimonial'), 'nuc'); addRoom(10, 0, 14, 4.5, t('Dormitor'), 'nuc');
+  setWallH(2.9);
+  addOpening('glasswall', 3.6, 9, { w: 5.6, h: 2.6 }); setStyle(addOpening('door', 8.75, 9, { w: 1.1, h: 2.4 }), 'sticla');
+  setStyle(addOpening('window', 12, 9, { w: 2.4, h: 2.2, sill: 0.4 }), 'panoramica'); setStyle(addOpening('window', 0, 4.5, { w: 2.2, h: 2.2, sill: 0.4 }), 'panoramica');
+  setStyle(addOpening('window', 3.7, 0, { w: 3, h: 0.7, sill: 1.6 }), 'panoramica'); setStyle(addOpening('window', 8.75, 0, { w: 0.6, h: 0.6, sill: 1.6 }), 'rotunda');
+  setStyle(addOpening('window', 14, 6.7, { w: 0.9, h: 0.9, sill: 1.2 }), 'rotunda'); setStyle(addOpening('window', 12, 0, { w: 1.8, h: 1.5, sill: 0.9 }), 'panoramica');
+  addOpening('door', 7.5, 7, { w: 1.0 }); addOpening('door', 10, 6.8); addOpening('door', 10, 2.2); addOpening('door', 8.75, 5, { w: 0.8 }); addOpening('door', 8.75, 2.5, { w: 0.8 });
+  for (const o of P.openings) o.frame = 'antracit';
+  facade(7.5, 9, 14, 9, 'lemn'); facade(14, 0, 14, 9, 'lemn');
+  livingSet(3.6, 6.4, 0, '#d9d4ca'); addItem('comoda_tv', 3.6, 4.0, 0, { w: 2.2 }); addItem('planta_mare', 7, 8.4);
+  addItem('bucatarie', 3.7, 0.32, 0, { w: 5.2, color: '#f1ede6', color2: '#3a3a3a' }); addItem('masa', 3.7, 2.2, 0, { w: 1.8, d: 0.9, color: '#c49a6c' });
+  for (const [x, y, r] of [[3.2, 1.7, 0], [4.2, 1.7, 0], [3.2, 2.7, 180], [4.2, 2.7, 180]]) addItem('scaun', x, y, r, { color: '#2b2b2e' });
+  addItem('cada', 8.75, 2.9, 0, { w: 1.6 }); addItem('lavoar', 9.6, 4.3, 90, { w: 0.8 }); bedroom(12, 7.9, 180); bedroom(12, 1.1, 0, false); addItem('dulap', 13.7, 5.6, 90, { w: 1.4 });
+  addItem('lamele', 10.9, 9.15, 0, { w: 1.6, h: 2.8 }); addItem('jardiniera', 12, 9.45, 0, { w: 2.4 }); addItem('numar_casa', 7.9, 9.17, 0, { elev: 1.9 }); addItem('ghiveci_mare', 7.9, 9.6);
+  P.zones.push({ id: uid('z'), type: 'terasa', pts: [[0, 9.15], [6.6, 9.15], [6.6, 12], [0, 12]] }); addItem('banca', 2, 11.5, 180);
+  P.paths.push({ id: uid('a'), pts: [[8.75, 9.3], [8.75, 17]], w: 1.3, mat: 'piatra' });
+  plantRow(0.5, 13, 6.5, 0.9); addItem('lavanda', 12, 11, 0, { w: 3.6 }); addItem('bolovan', 5, 14.6, 10, { w: 1.6, h: 0.7 });
+  addItem('copac', -5, 4, 0, { w: 5.5, h: 8.5 }); addItem('mesteacan', 16.5, 12); addItem('brad', 18, -2, 0, { h: 9 }); addItem('brad', -4.5, -4, 0, { h: 8 });
+  fenceLine('gard', -7, 17.5, 20, 17.5, [[8.75, 1.1]], 3); addItem('poarta', 8.75, 17.5, 0, { color: '#5b4030' });
+  P.env.hour = 16.5; P.env.north = 25; P.env.roof = 'o_apa'; P.env.roofCover = 'tabla'; P.env.roofColor = '#3a3d42'; P.env.wallColor = '#efede8';
+}
+function templateVilaClasica() {
+  P = emptyProject(); P.name = t('Vilă clasică cu ferestre arcuite');
+  addRoom(0, 0, 7, 10, t('Salon'), 'nuc'); addRoom(7, 4, 10, 10, t('Hol'), 'marmura'); addRoom(7, 0, 10, 4, t('Baie'), 'marmura'); addRoom(10, 0, 16, 10, t('Bucătărie și dining'), 'stejar');
+  setWallH(3.1);
+  addOpening('door', 8.5, 10, { w: 1.5, h: 2.6 }); setStyle(P.openings[P.openings.length - 1], 'clasica');
+  for (const x of [2, 5, 12, 14.5]) setStyle(addOpening('window', x, 10, { w: 1.25, h: 2.3, sill: 0.45 }), 'arcada');
+  for (const x of [2, 5, 12, 14.5]) setStyle(addOpening('window', x, 0, { w: 1.2, h: 1.6, sill: 0.9 }), 'obloane');
+  setStyle(addOpening('window', 0, 5, { w: 1.2, h: 1.6, sill: 0.9 }), 'obloane'); setStyle(addOpening('window', 16, 5, { w: 1.2, h: 1.6, sill: 0.9 }), 'obloane');
+  setStyle(addOpening('window', 8.5, 0, { w: 0.7, h: 0.7, sill: 1.6 }), 'rotunda');
+  addOpening('door2', 7, 7, { w: 1.4 }); addOpening('door2', 10, 7, { w: 1.4 }); addOpening('door', 8.5, 4, { w: 0.8 });
+  for (const o of P.openings) { o.frame = 'alb'; o.glaf = 'piatra'; }
+  addItem('canapea', 3.5, 6.4, 180, { w: 2.6, color: '#7d8c7a' }); addItem('fotoliu', 1.5, 4.6, 270, { color: '#a88b62' }); addItem('fotoliu', 5.5, 4.6, 90, { color: '#a88b62' });
+  addItem('covor', 3.5, 4.8, 0, { w: 3.4, d: 2.6, color: '#b49f80' }); addItem('masuta', 3.5, 4.8, 0); addItem('semineu', 3.5, 0.4, 0); addItem('tablou', 3.5, 0.1, 0, { w: 1.2, h: 0.8, elev: 1.7, color: '#8a5a35' });
+  addItem('candelabru', 3.5, 5, 0, { w: 1.0, h: 0.9, elev: 2.0 }); addItem('planta_mare', 0.6, 9.4); addItem('perdea', 2, 9.82, 0, { w: 1.6 }); addItem('perdea', 5, 9.82, 0, { w: 1.6 });
+  addItem('candelabru', 8.5, 7, 0, { w: 0.8, h: 0.8, elev: 2.1 }); addItem('oglinda', 7.06, 8.5, 270, { elev: 1.2 }); addItem('ghiveci', 9.5, 9.5);
+  addItem('cada', 8.5, 0.45, 0, { w: 1.6 }); addItem('lavoar', 9.6, 3.0, 90, { w: 0.8 });
+  addItem('bucatarie', 13, 0.32, 0, { w: 5.4, color: '#e8e1d3', color2: '#3a3530' }); addItem('masa', 13, 6.5, 0, { w: 2.4, d: 1.1, color: '#6b3f22' });
+  for (const [x, y, r] of [[12.2, 5.85, 0], [13.8, 5.85, 0], [12.2, 7.15, 180], [13.8, 7.15, 180]]) addItem('scaun', x, y, r, { color: '#6b3f22' });
+  addItem('candelabru', 13, 6.5, 0, { w: 0.9, h: 0.8, elev: 2.1 }); addItem('vaza', 13, 6.5, 0, { elev: 0.76 });
+  // etaj
+  addLevel0Copy();
+  addRoom(0, 0, 7, 10, t('Dormitor matrimonial'), 'stejar'); addRoom(7, 4, 10, 10, t('Hol'), 'stejar'); addRoom(7, 0, 10, 4, t('Baie'), 'marmura'); addRoom(10, 5, 16, 10, t('Dormitor'), 'stejar'); addRoom(10, 0, 16, 5, t('Birou'), 'stejar');
+  setWallH(2.9);
+  setStyle(addOpening('window', 8.5, 10, { w: 1.4, h: 2.3, sill: 0 }), 'arcada');
+  for (const x of [2, 5, 12, 14.5]) setStyle(addOpening('window', x, 10, { w: 1.2, h: 1.6, sill: 0.8 }), 'obloane');
+  for (const x of [2, 5, 13]) setStyle(addOpening('window', x, 0, { w: 1.2, h: 1.5, sill: 0.9 }), 'obloane');
+  setStyle(addOpening('window', 8.5, 0, { w: 0.7, h: 0.7, sill: 1.5 }), 'rotunda');
+  addOpening('door', 7, 7); addOpening('door', 10, 7.5); addOpening('door', 10, 2.5); addOpening('door', 8.5, 4, { w: 0.8 });
+  for (const o of P.openings) { o.frame = 'alb'; o.glaf = 'piatra'; }
+  bedroom(3.5, 1.2, 0); addItem('dulap', 6.7, 6, 90, { w: 2 }); bedroom(13, 8.8, 180, false); officeSet(13, 5, 180, 5.6);
+  addItem('balcon', 8.5, 10.7, 0, { w: 3.0, d: 1.2 });
+  addItem('scara', 8.6, 6.4, 0, { w: 1.0, d: 3.2 });
+  P.cur = 0;
+  addItem('coloana_decor', 7.4, 11.5); addItem('coloana_decor', 9.6, 11.5); addItem('trepte', 8.5, 10.6, 0, { w: 2.8, d: 1.1, h: 0.17 });
+  P.zones.push({ id: uid('z'), type: 'pavaj', pts: [[6.5, 10.2], [10.5, 10.2], [10.5, 12.3], [6.5, 12.3]] });
+  P.paths.push({ id: uid('a'), pts: [[8.5, 12.3], [8.5, 22]], w: 2.0, mat: 'pietris' });
+  addItem('fantana', 8.5, 17, 0); for (const x of [6.3, 10.7]) addItem('tuia', x, 12.6); for (const x of [1, 3, 5, 12, 14, 16]) addItem('tufis', x, 10.8, 0, { w: 1.0, h: 0.9 });
+  addItem('flori', 3, 14, 0, { w: 4, d: 1.2 }); addItem('flori', 14, 14, 0, { w: 4, d: 1.2 });
+  addItem('copac', -5, 3, 0, { w: 6, h: 9 }); addItem('copac', 21, 4, 0, { w: 6, h: 9.5 }); addItem('brad', -6, 16, 0, { h: 10 }); addItem('brad', 22, 17, 0, { h: 10 });
+  for (const x of [5.5, 11.5]) addItem('felinar', x, 20);
+  fenceLine('gard_zidarie', -8, 23, 25, 23, [[8.5, 4.4]], 4); addItem('poarta_auto', 8.5, 23, 0, { w: 4.4, color: '#1f2124' });
+  P.env.hour = 16; P.env.north = 20; P.env.roof = 'patru_ape'; P.env.roofCover = 'tigla'; P.env.roofColor = '#8a3f2c'; P.env.wallColor = '#efe3cc';
+  P.env.soclu = true; P.env.ancadrament = true; P.env.brau = true; P.env.allLevels = true;
+}
+function templateEtajModern() {
+  P = emptyProject(); P.name = t('Casă modernă cu etaj și streșini din lemn');
+  addRoom(0, 0, 9, 10, t('Living, bucătărie și dining'), 'stejar'); addRoom(9, 4, 12, 10, t('Hol'), 'beton'); addRoom(9, 0, 12, 4, t('Baie'), 'marmura'); addRoom(12, 0, 18.5, 10, t('Garaj'), 'beton');
+  setWallH(3.0);
+  addOpening('glasswall', 4.2, 10, { w: 6.0, h: 2.75 }); addOpening('glasswall', 0, 5, { w: 3.4, h: 2.75 });
+  addOpening('pivot', 10.5, 10, { w: 1.3, h: 2.6 }); setStyle(addOpening('garage', 15.25, 10, { w: 5.0, h: 2.4 }), 'garaj', { frame: 'lemn' });
+  setStyle(addOpening('window', 4.5, 0, { w: 3.2, h: 1.0, sill: 1.15 }), 'panoramica'); setStyle(addOpening('window', 10.5, 0, { w: 0.8, h: 0.6, sill: 1.7 }), 'panoramica');
+  setStyle(addOpening('window', 18.5, 5, { w: 1.6, h: 0.6, sill: 1.7 }), 'panoramica');
+  addOpening('door', 9, 7.5, { w: 1.0 }); addOpening('door', 10.5, 4, { w: 0.8 }); addOpening('door', 12, 8.8, { w: 0.9 });
+  for (const o of P.openings) if (o.style !== 'garaj') o.frame = 'negru';
+  facade(9, 10, 12, 10, 'piatra'); facade(12, 0, 18.5, 0, 'vopsea', '#2f3236'); facade(18.5, 0, 18.5, 10, 'vopsea', '#2f3236');
+  livingSet(3.8, 7.2, 0, '#d9d4ca'); addItem('comoda_tv', 3.8, 4.8, 0, { w: 2.4 }); addItem('planta_mare', 0.6, 9.4); addItem('semineu', 8.6, 7.2, 90);
+  addItem('bucatarie', 4.4, 0.32, 0, { w: 5.6, color: '#2f3135', color2: '#d8d3ca' }); addItem('insula', 4.4, 2.0, 0, { w: 2.6, color: '#d8d3ca' });
+  for (const x of [3.6, 4.4, 5.2]) addItem('scaun', x, 2.75, 180, { color: '#a06a3c' });
+  addItem('masa', 7.6, 2.6, 90, { w: 2.0, d: 0.95, color: '#3a2a1e' }); for (const y of [2.0, 3.2]) { addItem('scaun', 7.1, y, 270); addItem('scaun', 8.1, y, 90); }
+  addItem('candelabru', 7.6, 2.6, 0, { w: 0.6, h: 0.6, elev: 2.2 }); for (const [x, y] of [[2, 5], [6, 5], [2, 8.5], [6, 8.5]]) addItem('spot_tavan', x, y, 0, { elev: 2.98 });
+  addItem('scara_plutitoare', 10.5, 6.6, 0, { w: 0.95, d: 3.3, h: 3.25, color: '#3b2a20' }); addItem('planta_mare', 9.5, 5.0);
+  addItem('dus', 9.5, 0.55, 0); addItem('lavoar', 11.6, 2.4, 90, { w: 0.9 }); addItem('wc', 9.4, 3.3, 270);
+  addItem('masina', 15.25, 5.2, 0); addItem('raft', 18.2, 3, 270);
+  // etaj: retras 1,5 m de la fațadă, cu terasă pe streașina dintre etaje
+  addLevel0Copy();
+  addRoom(0, 0, 6, 8.5, t('Dormitor matrimonial'), 'stejar'); addRoom(6, 3, 12, 8.5, t('Hol'), 'stejar'); addRoom(6, 0, 12, 3, t('Baie'), 'marmura');
+  addRoom(12, 4.5, 16, 8.5, t('Birou'), 'nuc'); addRoom(12, 0, 16, 4.5, t('Dormitor'), 'stejar');
+  setWallH(2.9);
+  addOpening('glasswall', 3, 8.5, { w: 4.4, h: 2.55 }); setStyle(addOpening('window', 9, 8.5, { w: 3.6, h: 2.5, sill: 0.1 }), 'panoramica'); setStyle(addOpening('window', 14, 8.5, { w: 2.6, h: 2.3, sill: 0.3 }), 'panoramica');
+  setStyle(addOpening('window', 3, 0, { w: 2.4, h: 1.4, sill: 0.9 }), 'panoramica'); setStyle(addOpening('window', 9, 0, { w: 1.4, h: 0.7, sill: 1.6 }), 'panoramica'); setStyle(addOpening('window', 14, 0, { w: 2.0, h: 1.5, sill: 0.8 }), 'panoramica');
+  setStyle(addOpening('window', 0, 4.2, { w: 0.8, h: 2.3, sill: 0.2 }), 'panoramica'); setStyle(addOpening('window', 16, 2.2, { w: 1.4, h: 1.5, sill: 0.8 }), 'panoramica');
+  addOpening('door', 6, 5.5); addOpening('door', 12, 6.5); addOpening('door', 12, 3.75, { w: 0.8 }); addOpening('door', 8, 3, { w: 0.8 });
+  for (const o of P.openings) o.frame = 'negru';
+  facade(12, 8.5, 16, 8.5, 'lemn'); facade(16, 0, 16, 8.5, 'lemn'); facade(6, 8.5, 12, 8.5, 'vopsea', '#2f3236'); facade(0, 0, 0, 8.5, 'vopsea', '#2f3236');
+  bedroom(3, 1.2, 0); addItem('dulap', 5.7, 5.5, 90, { w: 1.8 }); addItem('perdea', 0.9, 8.32, 0, { w: 0.8 });
+  bedroom(14, 1.1, 0, false); officeSet(14, 4.75, 0, 4);
+  addItem('canapea', 8, 6.4, 180, { w: 2.2, color: '#6f7a80' }); addItem('covor', 8, 5.6, 0, { w: 2.4, d: 1.6, color: '#b8ad9c' }); addItem('planta_mare', 6.5, 8.0);
+  addItem('cada', 9, 0.45, 0, { w: 1.7 }); addItem('lavoar', 11.6, 1.5, 90, { w: 1.0 });
+  // terasa de pe streașină, cu parapet din sticlă
+  for (const [x, w] of [[2.0, 5.0], [7.0, 5.0], [12.0, 5.0], [17.0, 5.0]]) addItem('balustrada', x - 1.05, 11.0, 0, { w });
+  addItem('balustrada', -1.05, 9.75, 90, { w: 2.5 });
+  addItem('fotoliu', 1.5, 9.8, 180, { color: '#d9d4ca' }); addItem('masuta', 2.6, 9.8); addItem('ghiveci_mare', 6.2, 10.4); addItem('ghiveci_mare', 16.6, 9.2);
+  P.cur = 0;
+  // intrare și curte
+  // curtea laterală: terasă cu canapea în L, vatră de foc, alee din dale spre spate și spoturi în sol
+  P.zones.push({ id: uid('z'), type: 'terasa', pts: [[-0.15, 0.6], [-6, 0.6], [-6, 9.4], [-0.15, 9.4]] });
+  addItem('lounge', -3.6, 2.4, 0, { w: 3.2, d: 2.4 }); addItem('foc_gradina', -2.6, 4.6, 0, { w: 1.0 }); addItem('ghiveci_mare', -5.5, 8.8); addItem('ghiveci_mare', -0.7, 8.9);
+  addItem('alee_dale', -3.2, -4, 0, { w: 1.1, d: 7 });
+  for (const [x, y] of [[-6, -3], [-4, -6], [22, -4], [-4.5, 13], [9, -8], [-1.2, 11.6], [7.6, 11.6]]) addItem('spot_sol', x + 0.7, y + 0.7);
+  addItem('trepte', 10.5, 10.75, 0, { w: 2.6, d: 1.4, h: 0.17 }); addItem('numar_casa', 11.75, 10.17, 0, { elev: 1.9 }); addItem('lamele', 8.6, 10.2, 0, { w: 0.8, h: 2.9 });
+  addItem('aplica', 12.4, 10.15, 0); addItem('aplica', 18.1, 10.15, 0);
+  P.paths.push({ id: uid('a'), pts: [[15.25, 10.2], [15.25, 20]], w: 5.2, mat: 'beton' });
+  P.paths.push({ id: uid('a'), pts: [[10.5, 11.5], [10.5, 20]], w: 1.6, mat: 'dale' });
+  addItem('jardiniera', 4.2, 11.2, 0, { w: 5.0 }); for (const x of [1.5, 3.3, 5.1, 6.9]) addItem('iarba_decorativa', x, 13); addItem('bolovan', 7.6, 14.2, 20, { w: 1.3, h: 0.6 });
+  plantRow(0.5, 15.5, 8.5, 1.0); addItem('lavanda', 4.5, 17.5, 0, { w: 6 }); for (const y of [13, 16, 19]) addItem('bolard', 11.6, y);
+  addItem('brad', -6, -3, 0, { h: 12 }); addItem('brad', -4, -6, 0, { h: 10 }); addItem('brad', 22, -4, 0, { h: 11 }); addItem('brad', 24, 3, 0, { h: 9 }); addItem('mesteacan', -4.5, 13); addItem('copac', 9, -8, 0, { w: 6, h: 9 });
+  for (let y = -3; y <= 19; y += 1.4) addItem('tuia', -7.5, y);
+  fenceLine('gard_metalic', -8, 21, 24, 21, [[15.25, 5.4], [10.5, 1.2]], 3); addItem('poarta_auto', 15.25, 21, 0, { w: 5.4 }); addItem('poarta', 10.5, 21, 0, { w: 1.2 });
+  P.env.hour = 16.5; P.env.north = 15; P.env.roof = 'plat_streasina'; P.env.cornisa = true; P.env.fasciaColor = '#2c2f33'; P.env.wallColor = '#f4f3ef'; P.env.allLevels = true;
+}
+function templateCurteLux() {
+  P = emptyProject(); P.name = t('Casă parter cu curte de lux luminată');
+  addRoom(0, 0, 10, 9, t('Living, bucătărie și dining'), 'stejar'); addRoom(10, 0, 12.5, 9, t('Hol'), 'beton'); addRoom(12.5, 4.5, 18, 9, t('Dormitor matrimonial'), 'stejar'); addRoom(12.5, 0, 15.5, 4.5, t('Baie'), 'marmura'); addRoom(15.5, 0, 18, 4.5, t('Birou'), 'nuc');
+  setWallH(3.1);
+  addOpening('glasswall', 5, 9, { w: 8.0, h: 2.85 }); addOpening('glasswall', 15.25, 9, { w: 4.6, h: 2.85 }); addOpening('pivot', 11.25, 0, { w: 1.4, h: 2.7 });
+  setStyle(addOpening('window', 4, 0, { w: 4.0, h: 1.0, sill: 1.3 }), 'panoramica'); setStyle(addOpening('window', 16.75, 0, { w: 1.6, h: 1.6, sill: 0.8 }), 'panoramica'); setStyle(addOpening('window', 14, 0, { w: 0.9, h: 0.6, sill: 1.7 }), 'panoramica');
+  addOpening('door2', 10, 4.5, { w: 1.6 }); addOpening('door', 12.5, 6.75, { w: 0.9 }); addOpening('door', 12.5, 2.25, { w: 0.8 }); addOpening('door', 15.5, 2.25, { w: 0.9 });
+  for (const o of P.openings) o.frame = 'negru';
+  facade(10, 0, 12.5, 0, 'lemn'); facade(0, 0, 0, 9, 'piatra'); facade(18, 0, 18, 9, 'vopsea', '#2f3236'); facade(10, 9, 12.5, 9, 'piatra');
+  livingSet(3.2, 6.2, 0, '#e3ddd2'); addItem('comoda_tv', 3.2, 3.6, 0, { w: 2.4 }); addItem('planta_mare', 0.6, 8.4); addItem('semineu', 0.35, 6, 270);
+  addItem('bucatarie', 7.8, 0.32, 0, { w: 4.2, color: '#2f3135', color2: '#d8d3ca' }); addItem('insula', 7.8, 2.2, 0, { w: 2.6, color: '#d8d3ca' });
+  for (const x of [7.0, 7.8, 8.6]) addItem('scaun', x, 2.95, 180, { color: '#a06a3c' });
+  addItem('masa', 7.8, 5.8, 90, { w: 2.0, d: 0.95, color: '#3a2a1e' }); for (const y of [5.2, 6.4]) { addItem('scaun', 7.3, y, 270); addItem('scaun', 8.3, y, 90); }
+  addItem('candelabru', 7.8, 5.8, 0, { w: 0.6, h: 0.6, elev: 2.3 }); for (const [x, y] of [[2, 4], [5, 4], [2, 7.5], [5, 7.5], [11.25, 2], [11.25, 6]]) addItem('spot_tavan', x, y, 0, { elev: 3.08 });
+  bedroom(15.25, 5.6, 180); addItem('dus', 13.1, 0.55, 0); addItem('lavoar', 15.2, 2.8, 90, { w: 0.9 }); addItem('wc', 13, 3.6, 270); officeSet(18, 2.25, 90, 3.6);
+  // curtea: terasă din lemn sub pergolă cu LED, piscină cu cascadă pe perete, iaz cu nuferi, alei din pietre rotunde
+  P.zones.push({ id: uid('z'), type: 'terasa', pts: [[0, 9.15], [18, 9.15], [18, 12.2], [0, 12.2]] });
+  // deck în jurul piscinei (nu peste ea)
+  for (const [a, b, c, d] of [[7.6, 12.2, 17.4, 14.2], [7.6, 17.8, 17.4, 18.7], [7.6, 14.2, 8.5, 17.8], [16.5, 14.2, 17.4, 17.8]]) P.zones.push({ id: uid('z'), type: 'terasa', pts: [[a, b], [c, b], [c, d], [a, d]] });
+  addItem('pergola_led', 4.2, 10.7, 0, { w: 7.0, d: 3.0, h: 2.75 }); addItem('lounge', 3.2, 10.75, 0, { w: 3.4, d: 2.3 }); addItem('masuta', 4.2, 11.2, 0, { w: 1.0, d: 0.6 });
+  for (const x of [1.4, 7.0]) addItem('lampion_agatat', x, 10.9, 0, { elev: 1.95 }); addItem('lampion', 6.2, 11.6); addItem('lampion', 0.5, 11.8, 0, { w: 0.3, h: 0.45 });
+  addItem('piscina', 12.5, 16.0, 0, { w: 7.4, d: 3.0 }); for (const x of [10.0, 11.6, 13.2]) addItem('sezlong', x, 13.4, 180);
+  addItem('perete_cascada', 12.5, 19.6, 180, { w: 2.6, d: 0.85, h: 2.5 }); addItem('palmier', 8.8, 19.7, 0, { h: 4.6 }); addItem('palmier', 16.3, 19.7, 0, { h: 5.0 }); addItem('palmier', 17.6, 13.2, 0, { h: 4.0 });
+  for (const x of [8.8, 16.3]) addItem('spot_sol', x + 0.5, 19.3); addItem('ghiveci_mare', 17.4, 10.0);
+  addItem('iaz', 2.3, 17.6, 0, { w: 3.6, d: 2.3 }); addItem('balansoar', 6.0, 18.4, 180); addItem('lampion', 6.9, 18.1);
+  addItem('pietre_rotunde', 5.2, 15.0, 0, { w: 0.75, d: 5.0 }); addItem('foc_gradina', 3.8, 14.2, 0, { w: 0.9 });
+  addItem('copac', 0.6, 13.6, 0, { w: 3.0, h: 4.6, color: '#a2402c' }); addItem('mesteacan', 17.5, 20, 0, { h: 6 });
+  addItem('bordura_pietris', 4, 20.4, 90, { w: 0.8, d: 7.6 }); addItem('bordura_pietris', -0.35, 15.5, 0, { w: 0.7, d: 9.2 });
+  for (const [x, y] of [[1, 20.4], [2.6, 20.5], [4.4, 20.3], [6.3, 20.5], [-0.35, 13.2], [-0.4, 15.6], [-0.3, 19.2]]) addItem('tufis', x, y, 0, { w: 0.8, h: 0.7 });
+  for (const [x, y] of [[1.8, 20.3], [3.5, 20.6], [5.4, 20.4], [-0.4, 14.4], [-0.35, 17.6]]) addItem('iarba_decorativa', x, y, 0, { w: 0.7, h: 0.8 });
+  for (const y of [13.2, 15.4, 17.6]) addItem('bolard', 6.0, y);
+  addItem('banda_led', 7.55, 15.45, 0, { d: 6.5 });
+  // zidurile curții: zid cu LED în spate, gard din lamele cu iederă la stânga, zid cu nișe rotunde la dreapta
+  fenceLine('perete_led', 19, 21, -1, 21, [], 4); fenceLine('gard_lamele', -1, 21, -1, 9.2, [], 3); fenceLine('perete_nise', 18.6, 9.4, 18.6, 21, [], 4);
+  // fața casei
+  addItem('trepte', 11.25, -0.75, 180, { w: 2.6, d: 1.4, h: 0.17 }); addItem('numar_casa', 12.2, -0.17, 180, { elev: 1.9 }); addItem('aplica', 10.4, -0.15, 180); addItem('aplica', 12.1, -0.15, 180);
+  P.paths.push({ id: uid('a'), pts: [[11.25, -1.5], [11.25, -9]], w: 1.6, mat: 'dale' }); for (const y of [-3, -5.5, -8]) addItem('bolard', 12.4, y);
+  addItem('jardiniera', 4, -0.6, 0, { w: 6 }); plantRow(0.5, -2.6, 8.5, 1.0); addItem('copac', -4, -5, 0, { w: 5, h: 8 }); addItem('brad', 23, 3, 0, { h: 9 }); addItem('brad', -5, 16, 0, { h: 10 }); addItem('brad', 23, 17, 0, { h: 11 });
+  P.env.hour = 19; P.env.north = 200; P.env.roof = 'plat_streasina'; P.env.fasciaColor = '#2c2f33'; P.env.wallColor = '#f4f3ef';
+}
 // modelele din galerie: [cheie, nume, descriere]
 const TEMPLATES = [
+  ['curte_lux', 'Casă parter cu curte de lux luminată', '160 m², curte de seară cu pergolă cu LED, piscină cu cascadă pe perete, iaz cu nuferi, balansoar, palmieri, zid cu nișe rotunde și gard din lamele cu iederă.'],
+  ['etaj_modern', 'Casă modernă cu etaj și streșini din lemn', '235 m² pe două niveluri, streșini late cu lambriu de lemn și LED, terasă cu parapet din sticlă, garaj cu ușă din lemn, rame negre, piatră și lemn pe fațadă.'],
+  ['casa_tabla', 'Casă modernă cu acoperiș din tablă', '120 m², acoperiș în două ape fără streașină, tablă fălțuită, ușă pivot, ferestre rotunde și înclinate, fațadă cu lemn.'],
+  ['casa_o_apa', 'Casă cu acoperiș într-o apă', '125 m², acoperiș modern într-o singură pantă, perete de sticlă, ușă cu sticlă, lamele de lemn, ferestre rotunde.'],
+  ['vila_clasica', 'Vilă clasică cu ferestre arcuite', '320 m² pe două niveluri, ferestre arcuite, obloane, soclu din piatră, ancadramente, coloane, balcon și fântână.'],
+  ['parter_modern', 'Casă parter modernă cu streașină lată', '150 m², living deschis cu pereți de sticlă, streașină cu lemn și LED, fațadă cu lemn și piatră, piscină, terasă și grădină cu ierburi decorative.'],
+  ['parter_l', 'Casă parter în L cu curte interioară', '175 m², curte cu piscină între cele două aripi, pereți de sticlă spre curte, garaj descoperit, gard din zidărie.'],
+  ['parter_4ape', 'Casă parter cu acoperiș în patru ape', '140 m², acoperiș jos cu streașină lată, living cu perete de sticlă, piscină, pergolă și gard din lemn.'],
+  ['parter_garaj', 'Casă parter cu garaj', '200 m², garaj închis cu ușă secțională, placare cu lemn, alee pentru mașină și poartă culisantă.'],
   ['vila', 'Vilă cu hol de onoare', '2 niveluri, 610 m², hol dublu înalt cu scară imperială, scară rulantă, lift și candelabru, garaj dublu, piscină, fântână, porți și gard din zidărie.'],
   ['casa_moderna', 'Casă modernă cu acoperiș plat', '2 niveluri, 250 m², pereți de sticlă, balcon cu parapet din sticlă, piscină lungă, spoturi și aplice.'],
   ['bloc', 'Bloc de locuințe P+3', '4 niveluri, 8 apartamente cu 2 camere, casa scării cu lift, balcoane și parcare.'],
@@ -755,6 +1130,11 @@ function drawOpening2D(o) {
       const [e, f] = toS(p0[0] + nx * k, p0[1] + ny * k), [g, h] = toS(p1[0] + nx * k, p1[1] + ny * k);
       g2.beginPath(); g2.moveTo(e, f); g2.lineTo(g, h); g2.stroke();
     }
+  } else if (o.style === 'garaj') {
+    // ușa de garaj se ridică spre tavan: linie punctată în interior, pe adâncimea ușii
+    g2.strokeStyle = selC; g2.lineWidth = 1; g2.setLineDash([5, 4]);
+    for (const k of [0.3, 2.2]) { const [e1, f1] = toS(p0[0] - nx * k, p0[1] - ny * k), [e2, f2] = toS(p1[0] - nx * k, p1[1] - ny * k); g2.beginPath(); g2.moveTo(e1, f1); g2.lineTo(e2, f2); g2.stroke(); }
+    g2.setLineDash([]);
   } else if (o.style === 'glisanta') {
     g2.strokeStyle = selC; g2.lineWidth = 2;
     const off = w.t * 0.18, k = 0.55;
@@ -1081,8 +1461,38 @@ scene.add(sun); scene.add(sun.target);
 const fill = new THREE.AmbientLight('#ffffff', 0.15); scene.add(fill);
 // lumină ambientală dintr-o „cameră de studio” virtuală: reflexii și umbre moi pe toate suprafețele
 const pmrem = new THREE.PMREMGenerator(renderer);
-scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+const roomEnv = pmrem.fromScene(new RoomEnvironment(), 0.04).texture; let skyEnv = null;
+scene.environment = roomEnv;
 
+scene.fog = new THREE.Fog('#cfe1f1', 60, 230);
+// natura din jur: pădurea de la orizont și iarba cu fire (se refac doar când se schimbă casa sau grădina)
+let natureGrp = new THREE.Group(); scene.add(natureGrp); let natureKey = '';
+function updateNature() {
+  const L0 = P.levels[0], on = P.env.grass3d !== false;
+  const hb = houseBounds(), b = bounds();
+  const key = JSON.stringify([on, hb, b, L0.rooms.map((r) => r.pts), L0.paths, L0.zones, L0.items.filter((it) => NO_GRASS.has(it.type)).map((it) => [it.x, it.y, it.w, it.d, it.rot])]);
+  if (key === natureKey) return; natureKey = key;
+  scene.remove(natureGrp); natureGrp.traverse((o) => { if (o.geometry) o.geometry.dispose(); });
+  natureGrp = new THREE.Group(); scene.add(natureGrp);
+  const c = new THREE.Vector3((b.x1 + b.x2) / 2, 0, (b.y1 + b.y2) / 2), R = Math.max(14, Math.hypot(b.x2 - b.x1, b.y2 - b.y1) / 2);
+  natureGrp.add(treeLine(c, Math.max(110, R * 4.5), 420));
+  if (!on || !L0.walls.length) return;
+  const pad = 7, area = { x1: b.x1 - pad, z1: b.y1 - pad, x2: b.x2 + pad, z2: b.y2 + pad };
+  const blocks = L0.items.filter((it) => NO_GRASS.has(it.type)).map((it) => { const a = it.rot * DEG, cs = Math.abs(Math.cos(a)), sn = Math.abs(Math.sin(a)); const hw = (it.w * cs + it.d * sn) / 2 + 0.25, hd = (it.w * sn + it.d * cs) / 2 + 0.25; return [it.x - hw, it.y - hd, it.x + hw, it.y + hd]; });
+  const rooms = L0.rooms.map((r) => r.pts), zones = L0.zones.filter((z) => z.type !== 'gazon').map((z) => z.pts);
+  const segs = L0.paths.flatMap((pa) => pa.pts.slice(1).map((q, i) => [pa.pts[i], q, pa.w / 2 + 0.05]));
+  const skip = (x, z) => {
+    for (const [a, bb, c2, d] of blocks) if (x > a && x < c2 && z > bb && z < d) return true;
+    for (const pts of rooms) if (inPoly(x, z, pts)) return true;
+    for (const pts of zones) if (inPoly(x, z, pts)) return true;
+    for (const [p1, p2, w] of segs) { const dx = p2[0] - p1[0], dz = p2[1] - p1[1], L2 = dx * dx + dz * dz || 1, t = Math.max(0, Math.min(1, ((x - p1[0]) * dx + (z - p1[1]) * dz) / L2)); if (Math.hypot(x - p1[0] - dx * t, z - p1[1] - dz * t) < w) return true; }
+    // pereții exteriori: iarba nu iese prin perete
+    for (const w of L0.walls) { const dx = w.x2 - w.x1, dz = w.y2 - w.y1, L2 = dx * dx + dz * dz || 1, t = Math.max(0, Math.min(1, ((x - w.x1) * dx + (z - w.y1) * dz) / L2)); if (Math.hypot(x - w.x1 - dx * t, z - w.y1 - dz * t) < w.t / 2 + 0.08) return true; }
+    return false;
+  };
+  natureGrp.add(grassField(area, skip, P.env.hq ? 60 : 40));
+}
+const NO_GRASS = new Set(['piscina', 'fantana', 'masina', 'bolovan', 'gard_zidarie', 'gard_metalic', 'poarta', 'poarta_auto', 'stalp_lampa', 'pergola', 'banca', 'balcon', 'coloana_decor', 'scara_imperiala']);
 const ground = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), new THREE.MeshStandardMaterial({ map: grassTexture(), roughness: 1 }));
 ground.material.map.repeat.set(100, 100);
 ground.rotation.x = -Math.PI / 2; ground.position.y = -0.01; ground.receiveShadow = true; scene.add(ground);
@@ -1134,7 +1544,11 @@ function applyEnv() { invalidate();
   const mid = new THREE.Color('#1c2740').lerp(new THREE.Color(warm < 0.6 && day > 0.05 ? '#f3b58a' : '#cfe1f1'), day);
   const bot = new THREE.Color('#141a22').lerp(new THREE.Color('#9fb08f'), day);
   if (scene.background) scene.background.dispose();
-  scene.background = skyTexture('#' + top.getHexString(), '#' + mid.getHexString(), '#' + bot.getHexString());
+  scene.background = natureSky({ top: '#' + top.getHexString(), mid: '#' + mid.getHexString(), bottom: '#' + bot.getHexString(), sunDir: dir, sunColor: '#' + sun.color.getHexString(), day, cloudiness: P.env.clouds ?? 1 });
+  // ceața de la orizont are culoarea cerului de jos, ca pădurea și iarba să se piardă natural în depărtare
+  // afară reflexiile (geamuri, apă, mașini) arată cerul adevărat, nu o cameră de studio
+  if (skyEnv) skyEnv.dispose(); skyEnv = pmrem.fromEquirectangular(scene.background).texture;
+  scene.fog.color.copy(mid).lerp(bot, 0.35); scene.fog.near = Math.max(50, sceneRadius * 3.5); scene.fog.far = scene.fog.near + 200;
   baseLight.exposure = P.env.exposure * (0.85 + 0.35 * (1 - day));
   applyInterior(true);
   ground.material.color.set('#ffffff').multiplyScalar(0.35 + 0.65 * day);
@@ -1151,6 +1565,7 @@ function applyInterior(force) {
   wasInside = inside;
   const d = baseLight.day;
   hemi.intensity = baseLight.hemi * (inside ? 1.3 : 1);
+  scene.environment = inside || !skyEnv ? roomEnv : skyEnv;
   // în interior lumina reflectată de podea luminează tavanul
   hemi.groundColor.set(inside ? '#cbbfae' : '#8b7b66');
   fill.intensity = baseLight.fill + (inside ? 0.2 * d + 0.04 : 0);
@@ -1160,7 +1575,7 @@ function applyInterior(force) {
   // intensitatea luminii de mediu: mai mare ziua și în interior, aproape stinsă noaptea
   const envK = 0.04 + d * (inside ? 0.55 : 0.4);
   const seen = new Set();
-  scene.traverse((m) => { const mm = m.material; if (mm && mm.isMeshStandardMaterial && !seen.has(mm)) { seen.add(mm); mm.envMapIntensity = envK; } });
+  scene.traverse((m) => { const mm = m.material; if (mm && mm.isMeshStandardMaterial && !seen.has(mm)) { seen.add(mm); mm.envMapIntensity = envK * (mm.userData.envBoost || 1); } });
 }
 
 function disposeGroup(g) { g.traverse((o) => { if (o.geometry) o.geometry.dispose(); }); }
@@ -1184,6 +1599,7 @@ function rebuild3D() { invalidate();
   const b = bounds();
   sceneCenter.set((b.x1 + b.x2) / 2, 0, (b.y1 + b.y2) / 2);
   sceneRadius = Math.max(6, Math.hypot(b.x2 - b.x1, b.y2 - b.y1) / 2 + 1 + levelElev(show) * 0.5);
+  updateNature();
   applyEnv();
   highlight3D();
 }
@@ -1216,7 +1632,8 @@ function buildLevel3D(li, isTop, isCur) {
     if (!P.env.cutaway) {
       // tavanul apare doar când camera e în interior (sau când e bifat „Tavan mereu”)
       const cg = new THREE.ShapeGeometry(ceilHoles.length ? roomShape(rm, ceilHoles) : shape); const cm = new THREE.Mesh(cg, new THREE.MeshStandardMaterial({ color: '#fbfaf7', roughness: 0.9, side: THREE.DoubleSide, emissive: '#fbfaf7', emissiveIntensity: 0.06 + 0.3 * baseLight.day }));
-      cm.rotation.x = -Math.PI / 2; cm.position.y = ceilY; cm.receiveShadow = true; cm.castShadow = true;
+      // fața tavanului privește în jos (oglindit + rotit), ca umbrele de contact să-l vadă din cameră
+      cm.scale.y = -1; cm.rotation.x = Math.PI / 2; cm.position.y = ceilY; cm.receiveShadow = true; cm.castShadow = true;
       cm.userData.ceiling = true; world.add(cm);
     }
   }
@@ -1227,7 +1644,10 @@ function buildLevel3D(li, isTop, isCur) {
     const grp = new THREE.Group();
     grp.position.set((w.x1 + w.x2) / 2, 0, (w.y1 + w.y2) / 2); grp.rotation.y = -ang;
     const fin = WALL_FINISHES[w.finish || P.env.finish] ? (w.finish || P.env.finish) : 'vopsea';
-    const wm = wallMaterial(fin, w.color || P.env.wallColor), fsz = WALL_FINISHES[fin].size;
+    const outSide = exteriorSide(w), fac = outSide && WALL_FINISHES[w.facade] ? w.facade : null;
+    // fațada (lemn, piatră…) doar pe partea de afară; înăuntru rămâne finisajul camerei
+    const wm0 = wallMaterial(fin, w.color || P.env.wallColor), fsz = WALL_FINISHES[fac || fin].size;
+    const wm = fac ? [wm0, wm0, wm0, wm0, wm0, wm0].map((m2, i) => (i === (outSide > 0 ? 4 : 5) ? wallMaterial(fac, w.facadeColor || w.color || P.env.wallColor) : m2)) : wm0;
     const piece = (u0, u1, y0, y1) => {
       if (u1 - u0 < 0.001 || y1 - y0 < 0.001) return;
       const geo = new THREE.BoxGeometry(u1 - u0, y1 - y0, t);
@@ -1239,20 +1659,21 @@ function buildLevel3D(li, isTop, isCur) {
     const ops = P.openings.filter((o) => o.wall === w.id).sort((a, b) => a.pos - b.pos);
     // la etaje peretele continuă în jos pe grosimea planșeului, ca fațada să fie continuă
     if (li > 0 && !P.env.cutaway) piece(-L / 2 - t / 2, L / 2 + t / 2, -SLAB, 0);
-    const outSide = exteriorSide(w);
     let u = -L / 2 - t / 2;
     for (const o of ops) {
       const a = o.pos - o.w / 2 - L / 2, b = o.pos + o.w / 2 - L / 2;
       piece(u, a, 0, H);
       piece(a, b, 0, Math.min(H, o.sill));
       if (o.sill + o.h < H) piece(a, b, o.sill + o.h, H);
-      if (o.sill < H) buildOpening3D(grp, o, a, b, t, Math.min(H, o.sill + o.h), outSide);
+      if (o.sill < H) buildOpening3D(grp, o, a, b, t, Math.min(H, o.sill + o.h), outSide, wm0);
       u = b;
     }
     piece(u, L / 2 + t / 2, 0, H);
+    if (outSide && !P.env.cutaway) facadeDecor(grp, w, ops, L, t, H, outSide, li);
     world.add(grp);
   }
   if (isTop) buildRoof();
+  else if (P.env.cornisa && !P.env.cutaway && P.walls.length) { const g = new THREE.Group(); overhangSlab(g, Math.max(...P.walls.map((w) => w.h)), SLAB - 0.02); world.add(g); }
   buildGarden3D();
   // obiecte
   const on = lightsOn();
@@ -1359,6 +1780,24 @@ function boxUV(geo, ox, oy, size) {
   }
 }
 
+// placă groasă care iese 1,1 m peste pereți, dedesubt lambriu de lemn și bandă LED
+// (acoperișul „plat cu streașină” și streașinile dintre etaje)
+function overhangSlab(grp, H, th) {
+  const o = 1.1, edge = mat(P.env.fasciaColor || '#f4f3ef', { roughness: 0.6 });
+  const woodTex = finishTexture('lemn').clone(); woodTex.needsUpdate = true; woodTex.repeat.set(1, 1);
+  const soffit = new THREE.MeshStandardMaterial({ map: woodTex, color: '#c08a5a', roughness: 0.7 });
+  const on = lightsOn(), led = new THREE.MeshStandardMaterial({ color: '#fff6e0', emissive: '#ffd9a0', emissiveIntensity: on ? 2.2 : 0.15 });
+  const rects = P.rooms.map((rm) => { const xs = rm.pts.map((p) => p[0]), ys = rm.pts.map((p) => p[1]); return [Math.min(...xs) - o, Math.min(...ys) - o, Math.max(...xs) + o, Math.max(...ys) + o]; });
+  rects.forEach(([a, b, c, d], i) => {
+    const y = H + 0.012 + th / 2 + i * 0.002; // puțin peste tavan, ca să nu se suprapună cu el
+    const slab = new THREE.Mesh(new THREE.BoxGeometry(c - a, th, d - b), [edge, edge, edge, soffit, edge, edge]);
+    slab.position.set((a + c) / 2, y, (b + d) / 2); slab.castShadow = slab.receiveShadow = true; grp.add(slab);
+    const uv = slab.geometry.attributes.uv; for (let k = 12; k < 16; k++) uv.setXY(k, uv.getX(k) * (c - a) / 1.6, uv.getY(k) * (d - b) / 1.6);
+    for (const [w2, d2, x, z] of [[c - a - 0.5, 0.04, (a + c) / 2, b + 0.25], [c - a - 0.5, 0.04, (a + c) / 2, d - 0.25], [0.04, d - b - 0.5, a + 0.25, (b + d) / 2], [0.04, d - b - 0.5, c - 0.25, (b + d) / 2]]) {
+      const l = new THREE.Mesh(new THREE.BoxGeometry(w2, 0.015, d2), led); l.position.set(x, H - 0.008 + i * 0.002, z); grp.add(l);
+    }
+  });
+}
 // ---------- acoperiș ----------
 function buildRoof() {
   if (P.env.roof === 'fara' || P.env.cutaway || !P.walls.length) return;
@@ -1367,8 +1806,10 @@ function buildRoof() {
   const tmax = Math.max(...P.walls.map((w) => w.t)) / 2;
   x0 -= tmax; x1 += tmax; z0 -= tmax; z1 += tmax;
   const grp = new THREE.Group(); grp.userData.roof = true;
-  const rm = new THREE.MeshStandardMaterial({ map: roofTexture(), color: P.env.roofColor, roughness: 0.8, side: THREE.DoubleSide });
+  const cover = P.env.roofCover || 'tigla';
+  const rm = new THREE.MeshStandardMaterial({ map: roofTexture(cover), color: P.env.roofColor, roughness: cover === 'tabla' ? 0.42 : 0.8, metalness: cover === 'tabla' ? 0.35 : 0, side: THREE.DoubleSide });
   const wm = wallMaterial(WALL_FINISHES[P.env.finish] ? P.env.finish : 'vopsea', P.env.wallColor);
+  if (P.env.roof === 'plat_streasina') { overhangSlab(grp, H, 0.34); world.add(grp); return; }
   if (P.env.roof === 'plat') {
     const o = 0.15, geo = new THREE.BoxGeometry(x1 - x0 + 2 * o, 0.3, z1 - z0 + 2 * o);
     const m = new THREE.Mesh(geo, mat('#8b8d90', { roughness: 0.9 })); m.position.set((x0 + x1) / 2, H + 0.15, (z0 + z1) / 2); m.castShadow = m.receiveShadow = true; grp.add(m);
@@ -1380,16 +1821,43 @@ function buildRoof() {
   // lucrăm cu axa lungă pe „a” și cea scurtă pe „b”, apoi convertim în x/z
   const alongX = x1 - x0 >= z1 - z0;
   const A0 = alongX ? x0 : z0, A1 = alongX ? x1 : z1, B0 = alongX ? z0 : x0, B1 = alongX ? z1 : x1;
-  const k = Math.tan(32 * DEG), o = 0.45;
+  const P3 = (a, y, b) => (alongX ? [a, y, b] : [b, y, a]);
+  const mesh = (arr, m2, uvArr) => { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(arr, 3)); if (uvArr) g.setAttribute('uv', new THREE.Float32BufferAttribute(uvArr, 2)); g.computeVertexNormals(); const mm = new THREE.Mesh(g, m2); mm.castShadow = mm.receiveShadow = true; grp.add(mm); return mm; };
+  const gableMat = new THREE.MeshStandardMaterial({ map: wm.map, color: wm.color, roughness: wm.roughness, side: THREE.DoubleSide });
+  if (P.env.roof === 'o_apa') {
+    // acoperiș într-o singură apă (modern): pantă mică de 10°, partea înaltă spre b0, pereții se ridică sub pantă
+    const ko = Math.tan(10 * DEG), oo = 0.6, eA0 = A0 - oo, eA1 = A1 + oo, eB0 = B0 - oo, eB1 = B1 + oo, base = H + 0.22, y = (b) => base + (eB1 - b) * ko;
+    const S = 1.6, pos = [], uv = [], q = [[eA0, eB0], [eA1, eB0], [eA1, eB1], [eA0, eB1]];
+    const sv = (b) => (b - eB0) / Math.cos(10 * DEG) / S;
+    const v = q.map(([a, b]) => P3(a, y(b), b)), vu = q.map(([a, b]) => [a / S, sv(b)]);
+    pos.push(...v[0], ...v[1], ...v[2], ...v[0], ...v[2], ...v[3]); uv.push(...vu[0], ...vu[1], ...vu[2], ...vu[0], ...vu[2], ...vu[3]);
+    mesh(pos, rm, uv);
+    // grosimea acoperișului: atic subțire pe margini
+    const fm = mat(P.env.roofColor, { roughness: 0.5, metalness: 0.2 }), th = 0.22;
+    for (const [a0, b0, a1, b1] of [[eA0, eB0, eA1, eB0], [eA0, eB1, eA1, eB1], [eA0, eB0, eA0, eB1], [eA1, eB0, eA1, eB1]]) {
+      const pp = [P3(a0, y(b0), b0), P3(a1, y(b1), b1), P3(a1, y(b1) - th, b1), P3(a0, y(b0) - th, b0)];
+      mesh([...pp[0], ...pp[1], ...pp[2], ...pp[0], ...pp[2], ...pp[3]], new THREE.MeshStandardMaterial({ color: fm.color, roughness: 0.5, side: THREE.DoubleSide }));
+    }
+    // pereții de sub pantă
+    const gp = [], quad = (p1, p2, p3, p4) => gp.push(...p1, ...p2, ...p3, ...p1, ...p3, ...p4);
+    quad(P3(A0, H, B0), P3(A1, H, B0), P3(A1, y(B0), B0), P3(A0, y(B0), B0));
+    quad(P3(A0, H, B1), P3(A1, H, B1), P3(A1, y(B1), B1), P3(A0, y(B1), B1));
+    for (const a of [A0, A1]) quad(P3(a, H, B0), P3(a, H, B1), P3(a, y(B1), B1), P3(a, y(B0), B0));
+    const guv = []; for (let i = 0; i < gp.length; i += 3) guv.push(((alongX ? gp[i] : gp[i + 2]) + (alongX ? gp[i + 2] : gp[i])) / 2, gp[i + 1] / 2);
+    mesh(gp, gableMat, guv);
+    world.add(grp); return;
+  }
+  const modern = P.env.roof === 'doua_ape_modern';
+  const low = P.env.roof === 'patru_ape_jos', ANG = (low ? 20 : modern ? 40 : 32) * DEG;
+  const k = Math.tan(ANG), o = low ? 0.95 : modern ? 0.06 : 0.45;
   const eA0 = A0 - o, eA1 = A1 + o, eB0 = B0 - o, eB1 = B1 + o, hs = (eB1 - eB0) / 2, Bm = (B0 + B1) / 2;
   const He = H - o * k, Hr = He + hs * k;
-  const P3 = (a, y, b) => (alongX ? [a, y, b] : [b, y, a]);
   const pos = [], uvs = [], gpos = [];
-  const slopeLen = hs / Math.cos(32 * DEG), S = 1.6;
+  const slopeLen = hs / Math.cos(ANG), S = 1.6;
   const tri = (arr, p1, p2, p3, uvArr) => { arr.push(...p1, ...p2, ...p3); if (uvArr) uvs.push(...uvArr); };
   // fiecare punct: [a, y, b]; UV: u = a, v = distanța pe pantă
-  const sv = (y) => ((Hr - y) / k) / Math.cos(32 * DEG) / S;
-  const hip = P.env.roof === 'patru_ape';
+  const sv = (y) => ((Hr - y) / k) / Math.cos(ANG) / S;
+  const hip = P.env.roof === 'patru_ape' || low;
   const rA0 = hip ? eA0 + hs : eA0, rA1 = hip ? eA1 - hs : eA1;
   for (const side of [0, 1]) {
     const eb = side ? eB1 : eB0;
@@ -1415,11 +1883,16 @@ function buildRoof() {
     gg.setAttribute('uv', new THREE.Float32BufferAttribute(guv, 2)); gg.computeVertexNormals();
     const gm = new THREE.Mesh(gg, new THREE.MeshStandardMaterial({ map: wm.map, color: wm.color, roughness: wm.roughness, side: THREE.DoubleSide })); gm.castShadow = true; gm.receiveShadow = true; grp.add(gm);
   }
+  if (low) {
+    // dedesubtul streașinii late: tavan alb drept, de la perete până la margine
+    const sm = mat('#f2f0ea', { roughness: 0.8 });
+    const so = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0 + 2 * o, 0.03, z1 - z0 + 2 * o), sm); so.position.set((x0 + x1) / 2, He - 0.05, (z0 + z1) / 2); so.receiveShadow = true; grp.add(so);
+  }
   // streașina: o margine subțire
-  const fascia = mat('#f2efe9');
+  const fascia = modern ? mat(P.env.roofColor, { roughness: 0.5, metalness: 0.3 }) : mat('#f2efe9');
   for (const eb of [eB0, eB1]) { const f = new THREE.Mesh(new THREE.BoxGeometry(alongX ? eA1 - eA0 : 0.04, 0.16, alongX ? 0.04 : eA1 - eA0), fascia); const c = P3((eA0 + eA1) / 2, He - 0.06, eb); f.position.set(...c); grp.add(f); }
   void slopeLen;
-  if (P.env.gutters) {
+  if (P.env.gutters && !modern) {
     // jgheaburi semirotunde sub streașină și burlane la colțuri, până la pământ
     const gm = new THREE.MeshStandardMaterial({ color: P.env.gutterColor, roughness: 0.4, metalness: 0.2, side: THREE.DoubleSide });
     const pipe = (p1, p2, r) => {
@@ -1451,18 +1924,114 @@ function buildRoof() {
   world.add(grp);
 }
 
+// geam termopan: transparent, dar cu reflexia cerului (mai puternică privit din unghi)
+const GLASS = new THREE.MeshPhysicalMaterial({ color: '#b9ccd6', transparent: true, opacity: 0.3, roughness: 0.02, metalness: 0.1, reflectivity: 0.9, clearcoat: 1, clearcoatRoughness: 0, depthWrite: false });
+GLASS.userData.envBoost = 4;
 const FRAME_COLORS = { alb: ['PVC alb', '#f7f7f5'], antracit: ['Antracit', '#3a3d42'], lemn: ['Lemn', '#8a5a35'], negru: ['Negru', '#1f2124'] };
 const GLAF_TYPES = { antracit: ['Aluminiu antracit', '#3a3d42'], alb: ['Aluminiu alb', '#eeeeec'], maro: ['Aluminiu maro', '#5b4030'], piatra: ['Piatră (travertin)', '#d2c9b8'], tabla: ['Tablă zincată', '#a9adb1'], fara: ['Fără glaf', ''] };
-function buildOpening3D(grp, o, a, b, t, top, outSide = 0) {
+// soclu din piatră, ancadramente albe în jurul ferestrelor și brâu sub streașină, doar pe fața de afară
+function facadeDecor(grp, w, ops, L, t, H, s, li) {
+  const e = P.env; if (!e.soclu && !e.ancadrament && !e.brau) return;
+  const z0 = s * t / 2, deco = mat(e.decoColor || '#f5f3ee', { roughness: 0.55 });
+  const fx = (len, hgt, dep, x, y, m2, uvSize) => {
+    if (len < 0.01) return;
+    const geo = new THREE.BoxGeometry(len, hgt, dep); if (uvSize) boxUV(geo, x + w.x1 + w.y1, y, uvSize);
+    const k = new THREE.Mesh(geo, m2); k.position.set(x, y, z0 + s * dep / 2); k.castShadow = k.receiveShadow = true; grp.add(k);
+  };
+  // o bandă pe toată lungimea, întreruptă de golurile care o ating
+  const band = (y0, y1, dep, m2, uvSize, cut) => {
+    let u = -L / 2 - t / 2 - dep;
+    for (const o of ops) { if (!cut(o)) continue; const a = o.pos - o.w / 2 - L / 2, b = o.pos + o.w / 2 - L / 2; fx(a - u, y1 - y0, dep, (u + a) / 2, (y0 + y1) / 2, m2, uvSize); u = b; }
+    fx(L / 2 + t / 2 + dep - u, y1 - y0, dep, (u + L / 2 + t / 2 + dep) / 2, (y0 + y1) / 2, m2, uvSize);
+  };
+  if (e.soclu && li === 0) band(0, 0.5, 0.04, wallMaterial(e.socluFin || 'piatra', '#c9c2b6'), WALL_FINISHES[e.socluFin || 'piatra'].size, (o) => o.sill < 0.5);
+  if (e.brau) band(H - 0.24, H - 0.04, 0.06, deco, 0, (o) => o.sill + o.h > H - 0.26);
+  if (e.ancadrament) for (const o of ops) {
+    if (o.type !== 'window' || SHAPED.has(o.style)) continue;
+    const a = o.pos - o.w / 2 - L / 2, b = o.pos + o.w / 2 - L / 2, top = Math.min(H, o.sill + o.h), bw = 0.12, mid = (a + b) / 2;
+    fx(b - a + 2 * bw + 0.06, 0.14, 0.035, mid, top + 0.07, deco); fx(b - a + 2 * bw, 0.04, 0.05, mid, top + 0.16, deco);
+    fx(bw, top - o.sill, 0.03, a - bw / 2, (top + o.sill) / 2, deco); fx(bw, top - o.sill, 0.03, b + bw / 2, (top + o.sill) / 2, deco);
+    if (o.sill > 0.1) fx(b - a + 2 * bw + 0.04, 0.06, 0.035, mid, o.sill - 0.09, deco);
+  }
+}
+// conturul unei ferestre sau uși cu formă, în coordonatele peretelui (x de-a lungul peretelui, y în sus), în sens trigonometric
+function openingOutline(o, a, b, top) {
+  const st = o.style, w = b - a, mid = (a + b) / 2, y0 = o.type === 'door' ? 0 : o.sill, h = top - y0, e = 0.004;
+  let pts = null;
+  if (st === 'rotunda') { const r = Math.min(w, h) / 2, cy = y0 + h / 2; pts = Array.from({ length: 56 }, (_, i) => { const q = i / 56 * Math.PI * 2 - Math.PI / 2; return [mid + Math.cos(q) * r, cy + Math.sin(q) * r]; }); }
+  else if (st === 'arcada' || st === 'usa_arcada') { const r = Math.min(w / 2, h), ys = top - r; pts = [[a, y0], [b, y0], [b, ys]]; for (let i = 1; i < 28; i++) { const q = i / 28 * Math.PI; pts.push([mid + Math.cos(q) * r * w / 2 / r, ys + Math.sin(q) * r]); } pts.push([a, ys]); }
+  else if (st === 'inclinata') pts = [[a, y0], [b, y0], [b, y0 + h * 0.52], [a, top]];
+  else if (st === 'triunghi') pts = [[a, y0], [b, y0], [mid, top]];
+  if (!pts) return null;
+  return pts.map(([x, y]) => [Math.min(b - e, Math.max(a + e, x)), Math.min(top - e, Math.max(y0 + e, y))]);
+}
+// contur micșorat spre interior cu d (pentru ramă)
+function insetOutline(pts, d) {
+  const n = pts.length, res = [];
+  for (let i = 0; i < n; i++) {
+    const p0 = pts[(i + n - 1) % n], p1 = pts[i], p2 = pts[(i + 1) % n];
+    const e1 = [p1[0] - p0[0], p1[1] - p0[1]], e2 = [p2[0] - p1[0], p2[1] - p1[1]];
+    const l1 = Math.hypot(...e1) || 1, l2 = Math.hypot(...e2) || 1, n1 = [-e1[1] / l1, e1[0] / l1], n2 = [-e2[1] / l2, e2[0] / l2];
+    let nx = n1[0] + n2[0], ny = n1[1] + n2[1]; const ln = Math.hypot(nx, ny) || 1; nx /= ln; ny /= ln;
+    const k = Math.min(3, 1 / Math.max(0.2, nx * n1[0] + ny * n1[1]));
+    res.push([p1[0] + nx * d * k, p1[1] + ny * d * k]);
+  }
+  return res;
+}
+const toShape = (pts) => { const sh = new THREE.Shape(); sh.moveTo(...pts[0]); for (const p of pts.slice(1)) sh.lineTo(...p); sh.closePath(); return sh; };
+const toPath = (pts) => { const pa = new THREE.Path(); pa.moveTo(...pts[0]); for (const p of pts.slice(1)) pa.lineTo(...p); pa.closePath(); return pa; };
+function extrude(shape, depth, material, z = 0) {
+  const g = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false, curveSegments: 24 }); g.translate(0, 0, z - depth / 2);
+  const m = new THREE.Mesh(g, material); m.castShadow = true; m.receiveShadow = true; return m;
+}
+function buildOpening3D(grp, o, a, b, t, top, outSide = 0, wallMat = null) {
   const frame = mat((FRAME_COLORS[o.frame] || FRAME_COLORS.alb)[1], { roughness: 0.5 }), wood = mat('#9a6b43', { roughness: 0.6 });
   const fw = 0.05, mid = (a + b) / 2, w = b - a;
+  const outline = SHAPED.has(o.style) ? openingOutline(o, a, b, top) : null;
+  if (outline) {
+    // zidăria din jurul formei: dreptunghiul golului minus forma
+    const y0 = o.type === 'door' ? 0 : o.sill, rect = toShape([[a, y0], [b, y0], [b, top], [a, top]]); rect.holes.push(toPath(outline));
+    const fill = extrude(rect, t, wallMat || mat('#f4f1ea')); fill.userData.ref = { kind: 'opening', id: o.id }; grp.add(fill);
+    // rama pe contur și geamul (sau foaia ușii)
+    const inner = insetOutline(outline, o.type === 'door' ? 0.07 : fw), ring = toShape(outline); ring.holes.push(toPath(inner));
+    grp.add(extrude(ring, t * 0.6, o.type === 'door' ? mat('#3a2a1e', { roughness: 0.6 }) : frame));
+    if (o.type === 'door') {
+      // ușă arcuită: foaie de lemn masiv cu scânduri verticale și ținte, închisă
+      const leaf = extrude(toShape(inner), 0.06, mat('#7a4e2c', { roughness: 0.55 })); grp.add(leaf);
+      const iw = b - a - 0.14, n = Math.max(4, Math.round(iw / 0.16));
+      for (let i = 1; i < n; i++) for (const sd of [-1, 1]) { const ln = new THREE.Mesh(new THREE.BoxGeometry(0.008, top - 0.3, 0.004), mat('#5a3820')); ln.position.set(a + 0.07 + i * iw / n, (top - 0.3) / 2 + 0.05, sd * 0.032); grp.add(ln); }
+      for (const sd of [-1, 1]) { const ring2 = new THREE.Mesh(new THREE.TorusGeometry(0.07, 0.012, 8, 20), mat('#2b2b2e', { metalness: 0.7, roughness: 0.35 })); ring2.position.set(b - 0.28, 1.05, sd * 0.05); grp.add(ring2); }
+    } else {
+      grp.add(extrude(toShape(inner), 0.012, GLASS));
+      if (o.style === 'rotunda') for (const rot of [0, Math.PI / 2]) { const bar = new THREE.Mesh(new THREE.BoxGeometry(Math.min(w, top - o.sill) - 0.08, 0.03, 0.04), frame); bar.position.set(mid, o.sill + (top - o.sill) / 2, 0); bar.rotation.z = rot; grp.add(bar); }
+      if (o.style === 'arcada') { const bar = new THREE.Mesh(new THREE.BoxGeometry(fw * 0.8, top - o.sill - 0.08, t * 0.5), frame); bar.position.set(mid, (top + o.sill) / 2, 0); grp.add(bar); const r = w / 2, hb = new THREE.Mesh(new THREE.BoxGeometry(w - 0.06, fw * 0.8, t * 0.5), frame); hb.position.set(mid, top - r, 0); grp.add(hb); }
+      if (o.sill >= 0.05) { const sill = new THREE.Mesh(new THREE.BoxGeometry(w + 0.08, 0.03, t + 0.1), mat('#e9e6df', { roughness: 0.5 })); sill.position.set(mid, o.sill - 0.015, 0); sill.castShadow = sill.receiveShadow = true; grp.add(sill); }
+    }
+    return;
+  }
   if (o.type === 'window') {
     const h = top - o.sill;
     const add = (bw, bh, bd, x, y, m) => { const k = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), m); k.position.set(x, y, 0); k.castShadow = true; grp.add(k); };
     add(w, fw, t * 0.6, mid, o.sill + fw / 2, frame); add(w, fw, t * 0.6, mid, top - fw / 2, frame);
     add(fw, h, t * 0.6, a + fw / 2, o.sill + h / 2, frame); add(fw, h, t * 0.6, b - fw / 2, o.sill + h / 2, frame);
-    if (w > 1.1) add(fw * 0.8, h, t * 0.5, mid, o.sill + h / 2, frame);
-    const glass = new THREE.Mesh(new THREE.BoxGeometry(w - fw, h - fw, 0.01), new THREE.MeshPhysicalMaterial({ color: '#cfe6f3', transparent: true, opacity: 0.18, roughness: 0.02, metalness: 0, depthWrite: false }));
+    if (w > 1.1 && o.style !== 'panoramica') add(fw * 0.8, h, t * 0.5, mid, o.sill + h / 2, frame);
+    if (o.style === 'grilaj') {
+      // grilaj (baghete) în carouri, pe ambele fețe ale geamului
+      const cols = Math.max(2, Math.round(w / 0.42)), rows = Math.max(2, Math.round(h / 0.42));
+      for (let i = 1; i < cols; i++) add(0.025, h - fw, 0.03, a + i * w / cols, o.sill + h / 2, frame);
+      for (let j = 1; j < rows; j++) add(w - fw, 0.025, 0.03, mid, o.sill + j * h / rows, frame);
+    }
+    if (o.style === 'obloane' && outSide) {
+      // obloane cu lamele, deschise lângă fereastră, pe fața de afară
+      const om = mat(o.frame === 'alb' || !o.frame ? '#56695d' : (FRAME_COLORS[o.frame] || FRAME_COLORS.alb)[1], { roughness: 0.6 }), z = outSide * (t / 2 + 0.03);
+      for (const sd of [-1, 1]) {
+        const cx = sd < 0 ? a - w / 4 - 0.02 : b + w / 4 + 0.02, pw = w / 2;
+        const k = new THREE.Mesh(new THREE.BoxGeometry(pw, h, 0.03), om); k.position.set(cx, o.sill + h / 2, z); k.castShadow = true; grp.add(k);
+        const n = Math.round(h / 0.07);
+        for (let i = 1; i < n; i++) { const l = new THREE.Mesh(new THREE.BoxGeometry(pw - 0.08, 0.012, 0.02), mat(shade(om.color.getHexString ? '#' + om.color.getHexString() : '#56695d', -0.08))); l.position.set(cx, o.sill + i * h / n, z + outSide * 0.02); l.rotation.x = outSide * 0.5; grp.add(l); }
+      }
+    }
+    const glass = new THREE.Mesh(new THREE.BoxGeometry(w - fw, h - fw, 0.01), GLASS);
     glass.position.set(mid, o.sill + h / 2, 0); grp.add(glass);
     if (!outSide || o.sill < 0.05) {
       if (o.sill >= 0.05) { const sill = new THREE.Mesh(new THREE.BoxGeometry(w + 0.1, 0.03, t + 0.08), frame); sill.position.set(mid, o.sill - 0.015, 0); sill.castShadow = true; sill.receiveShadow = true; grp.add(sill); }
@@ -1480,16 +2049,57 @@ function buildOpening3D(grp, o, a, b, t, top, outSide = 0) {
         for (const ex of [-1, 1]) { const cap = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.035, gd), gm); cap.position.set(ex * (w / 2 + 0.03), 0.015, s * gd / 2); gl.add(cap); }
       }
     }
+  } else if (o.style === 'garaj') {
+    // ușă de garaj secțională: panouri orizontale cu nervuri, în culoarea tâmplăriei
+    const col = (FRAME_COLORS[o.frame] || FRAME_COLORS.antracit)[1], wood = o.frame === 'lemn';
+    let pm = mat(col, { roughness: 0.45, metalness: 0.3 }), rib = mat(shade(col, -0.06), { roughness: 0.5, metalness: 0.3 });
+    if (wood) { const wt = finishTexture('lemn').clone(); wt.needsUpdate = true; wt.repeat.set(w / 1.6, top / 1.6); pm = new THREE.MeshStandardMaterial({ map: wt, color: '#c48a58', roughness: 0.6 }); rib = mat('#6e4526', { roughness: 0.7 }); }
+    const add = (bw, bh, bd, x, y, z, m) => { const k = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), m); k.position.set(x, y, z); k.castShadow = true; k.receiveShadow = true; grp.add(k); };
+    add(w, top, 0.04, mid, top / 2, 0, pm);
+    const n = Math.max(4, Math.round(top / 0.55));
+    for (let i = 1; i < n; i++) for (const sd of [-1, 1]) add(w - 0.04, 0.025, 0.012, mid, i * top / n, sd * 0.026, rib);
+    for (const sd of [-1, 1]) for (let i = 0; i < n; i++) add(w - 0.1, 0.008, 0.006, mid, (i + 0.5) * top / n, sd * 0.024, rib);
+    add(0.06, top, t + 0.02, a + 0.03, top / 2, 0, mat('#2b2d31')); add(0.06, top, t + 0.02, b - 0.03, top / 2, 0, mat('#2b2d31')); add(w, 0.06, t + 0.02, mid, top - 0.03, 0, mat('#2b2d31'));
   } else if (o.style === 'glisanta') {
     const alu = mat('#3a3d42', { roughness: 0.4, metalness: 0.5 });
     const add = (bw, bh, bd, x, y, z, m) => { const k = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), m); k.position.set(x, y, z); k.castShadow = true; grp.add(k); };
     add(fw, top, t * 0.7, a + fw / 2, top / 2, 0, alu); add(fw, top, t * 0.7, b - fw / 2, top / 2, 0, alu); add(w, fw, t * 0.7, mid, top - fw / 2, 0, alu); add(w, 0.03, t * 0.7, mid, 0.015, 0, alu);
-    const pw = (w - 2 * fw) * 0.55, glass = new THREE.MeshPhysicalMaterial({ color: '#cfe6f3', transparent: true, opacity: 0.2, roughness: 0.02, depthWrite: false });
+    const pw = (w - 2 * fw) * 0.55, glass = GLASS;
     for (const [x, z] of [[a + fw + pw / 2, -t * 0.15], [b - fw - pw / 2 - (w - 2 * fw) * 0.25, t * 0.15]]) {
       add(pw, 0.04, 0.04, x, top - fw - 0.02, z, alu); add(pw, 0.06, 0.04, x, 0.06, z, alu);
       add(0.04, top - fw, 0.04, x - pw / 2 + 0.02, (top - fw) / 2, z, alu); add(0.04, top - fw, 0.04, x + pw / 2 - 0.02, (top - fw) / 2, z, alu);
       const g = new THREE.Mesh(new THREE.BoxGeometry(pw - 0.06, top - fw - 0.1, 0.01), glass); g.position.set(x, (top - fw) / 2 + 0.03, z); grp.add(g);
     }
+  } else if (o.style === 'pivot') {
+    // ușă pivot: foaie lată din lemn cu șanțuri verticale, mâner bară lung, ușor rotită pe pivot
+    const fr = mat('#26282b', { roughness: 0.5, metalness: 0.4 }), slat = mat('#a06a3c', { roughness: 0.55 }), groove = mat('#5a3a20');
+    const add = (bw, bh, bd, x, y, z, m2, g2 = grp) => { const k = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), m2); k.position.set(x, y, z); k.castShadow = true; k.receiveShadow = true; g2.add(k); return k; };
+    add(0.06, top, t + 0.02, a + 0.03, top / 2, 0, fr); add(0.06, top, t + 0.02, b - 0.03, top / 2, 0, fr); add(w, 0.06, t + 0.02, mid, top - 0.03, 0, fr);
+    const lw = w - 0.12, pv = new THREE.Group(); pv.position.set(a + 0.06 + lw * 0.3, 0, 0); pv.rotation.y = -18 * DEG; grp.add(pv);
+    add(lw, top - 0.08, 0.07, lw * 0.2, (top - 0.08) / 2, 0, slat, pv);
+    const n = Math.round(lw / 0.12); for (let i = 1; i < n; i++) for (const sd of [-1, 1]) add(0.01, top - 0.12, 0.004, -lw * 0.3 + i * lw / n, (top - 0.08) / 2, sd * 0.036, groove, pv);
+    for (const sd of [-1, 1]) { add(0.03, 1.4, 0.03, lw * 0.6, 1.05, sd * 0.08, fr, pv); for (const y of [0.4, 1.7]) add(0.03, 0.03, 0.06, lw * 0.6, y, sd * 0.05, fr, pv); }
+  } else if (o.style === 'sticla') {
+    // ușă din aluminiu cu sticlă pe toată înălțimea
+    const alu = mat((FRAME_COLORS[o.frame] || FRAME_COLORS.antracit)[1], { roughness: 0.4, metalness: 0.5 });
+    const add = (bw, bh, bd, x, y, z, m2, g2 = grp) => { const k = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), m2); k.position.set(x, y, z); k.castShadow = true; g2.add(k); };
+    add(fw, top, t * 0.7, a + fw / 2, top / 2, 0, alu); add(fw, top, t * 0.7, b - fw / 2, top / 2, 0, alu); add(w, fw, t * 0.7, mid, top - fw / 2, 0, alu);
+    const lw = w - 2 * fw, pv = new THREE.Group(); pv.position.set(a + fw, 0, t / 2 - 0.03); pv.rotation.y = -35 * DEG; grp.add(pv);
+    add(0.07, top - fw, 0.05, 0.035, (top - fw) / 2, 0, alu, pv); add(0.07, top - fw, 0.05, lw - 0.035, (top - fw) / 2, 0, alu, pv);
+    add(lw, 0.07, 0.05, lw / 2, top - fw - 0.035, 0, alu, pv); add(lw, 0.18, 0.05, lw / 2, 0.09, 0, alu, pv);
+    const g = new THREE.Mesh(new THREE.BoxGeometry(lw - 0.14, top - fw - 0.25, 0.012), GLASS); g.position.set(lw / 2, (top - fw) / 2 + 0.05, 0); pv.add(g);
+    add(0.025, 0.9, 0.025, lw - 0.12, 1.05, 0.06, mat('#c9ccd0', { metalness: 0.8, roughness: 0.25 }), pv);
+  } else if (o.style === 'clasica') {
+    // ușă clasică: lemn cu 6 panouri în relief, toc lat și clanță de alamă
+    const add = (bw, bh, bd, x, y, z, m2, g2 = grp) => { const k = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), m2); k.position.set(x, y, z); k.castShadow = true; k.receiveShadow = true; g2.add(k); };
+    const wd = mat('#6b3f22', { roughness: 0.45 }), pn = mat('#7c4a29', { roughness: 0.4 }), trim = mat('#f1eee8', { roughness: 0.5 });
+    add(0.1, top + 0.1, t + 0.06, a - 0.02, (top + 0.1) / 2, 0, trim); add(0.1, top + 0.1, t + 0.06, b + 0.02, (top + 0.1) / 2, 0, trim); add(w + 0.24, 0.12, t + 0.06, mid, top + 0.04, 0, trim);
+    const lw = w - 0.06, pv = new THREE.Group(); pv.position.set(a + 0.03, 0, t / 2 - 0.03); pv.rotation.y = -25 * DEG; grp.add(pv);
+    add(lw, top - 0.03, 0.05, lw / 2, (top - 0.03) / 2, 0, wd, pv);
+    const cols = lw > 1.1 ? 3 : 2, ph = [0.55, 0.75, 0.55], gap = 0.1, pw = (lw - gap * (cols + 1)) / cols;
+    let y = 0.18; for (const hh of ph) { const hp = hh * (top - 0.5) / 1.85; for (let c = 0; c < cols; c++) for (const sd of [-1, 1]) add(pw, hp, 0.018, gap + pw / 2 + c * (pw + gap), y + hp / 2, sd * 0.03, pn, pv); y += hp + 0.12; }
+    const brass = mat('#c9a95b', { metalness: 0.85, roughness: 0.25 });
+    for (const sd of [-1, 1]) { const k = new THREE.Mesh(new THREE.SphereGeometry(0.035, 14, 10), brass); k.position.set(lw - 0.09, 1.0, sd * 0.06); pv.add(k); add(0.05, 0.22, 0.008, lw - 0.09, 1.0, sd * 0.03, brass, pv); }
   } else if (o.style === 'dubla') {
     const add = (bw, bh, x, y) => { const k = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, t + 0.02), frame); k.position.set(x, y, 0); k.castShadow = true; grp.add(k); };
     add(fw, top, a + fw / 2, top / 2); add(fw, top, b - fw / 2, top / 2); add(w, fw, mid, top - fw / 2);
@@ -1819,15 +2429,16 @@ function renderProps() {
       ${num(t('Lungime'), 'len', wallLen(w), 0.05, 0.1)}${num(t('Grosime'), 't', w.t, 0.01, 0.05, 1)}${num(t('Înălțime'), 'h', w.h, 0.05, 0.5, 8)}
       <div class="row" style="margin-top:0">${[0.1, 0.15, 0.25, 0.3, 0.4].map((v) => `<button class="btn sm" data-thick="${v}">${Math.round(v * 100)} cm</button>`).join('')}</div>
       <h3 style="margin-top:14px">${t('Finisaj')}</h3>${finishButtons(w.finish || P.env.finish, 'data-wfin')}
+      ${exteriorSide(w) ? `<h3 style="margin-top:14px">${t('Fațadă (doar afară)')}</h3><div class="row" style="margin:0 0 6px"><button class="btn${w.facade ? '' : ' on'}" data-wfac="">${t('La fel ca înăuntru')}</button></div>${finishButtons(w.facade || '', 'data-wfac')}` : ''}
       ${colorRow(t('Culoare'), 'color', w.color || P.env.wallColor, WALL_COLORS.map(([c, n]) => `<button class="sw ${((w.color || P.env.wallColor) === c) ? 'on' : ''}" style="background:${c}" title="${t(n)}" data-wc="${c}"></button>`).join(''))}
       <p class="hint">${t('Culoarea colorează vopseaua și faianța. Cărămida, piatra, lemnul și betonul au culoarea lor.')}</p>
       <h3 style="margin-top:14px">${t('Adaugă în perete')}</h3>
-      <div class="row" style="margin-top:0">${[['window', '🪟', 'Fereastră'], ['door', '🚪', 'Ușă'], ['door2', '🚪🚪', 'Ușă dublă'], ['slide', '↔', 'Ușă glisantă'], ['balcony', '🌇', 'Ușă de balcon']].map(([k, i, n]) => `<button class="btn sm" data-act="${k}">${i} ${t(n)}</button>`).join('')}</div>
+      <div class="row" style="margin-top:0">${[['window', '🪟', 'Fereastră'], ['door', '🚪', 'Ușă'], ['door2', '🚪🚪', 'Ușă dublă'], ['slide', '↔', 'Ușă glisantă'], ['balcony', '🌇', 'Ușă de balcon'], ['glasswall', '🔲', 'Perete de sticlă'], ['garage', '🚗', 'Ușă de garaj']].map(([k, i, n]) => `<button class="btn sm" data-act="${k}">${i} ${t(n)}</button>`).join('')}</div>
       <p class="hint">${t('Se pune în primul loc liber de pe perete; apoi o tragi unde vrei și îi scrii lățimea și înălțimea.')}</p>
       <div class="row"><button class="btn" data-act="wallreset">${t('Ca restul casei')}</button><button class="btn danger" data-act="del">${t('Șterge')}</button></div>
       <p class="hint">${t('Trage de cercurile de la capete ca să muți colțurile.')}</p></div>`;
   } else if (sel.kind === 'opening') {
-    const o = s, styles = o.type === 'door' ? ['simpla', 'dubla', 'glisanta'] : ['normala', 'balcon'];
+    const o = s, styles = o.type === 'door' ? DOOR_STYLES : WINDOW_STYLES;
     h += `<div class="sec"><h3>${t(STYLE_NAMES[o.style || (o.type === 'door' ? 'simpla' : 'normala')])}</h3>
       <div class="field"><label>${t('Model')}</label><select data-k="style">${styles.map((st) => `<option value="${st}" ${(o.style || styles[0]) === st ? 'selected' : ''}>${t(STYLE_NAMES[st])}</option>`).join('')}</select></div>
       ${num(t('Lățime'), 'w', o.w, 0.05, 0.3, 6)}${num(t('Înălțime'), 'h', o.h, 0.05, 0.3, 4)}${num(t('Parapet'), 'sill', o.sill, 0.05, 0, 3)}${num(t('Poziție'), 'pos', o.pos, 0.05, 0, 50)}
@@ -1891,7 +2502,7 @@ function levelsHTML() {
 }
 function envHTML(collapsed) {
   const e = P.env, hh = Math.floor(e.hour), mm = Math.round((e.hour - hh) * 60);
-  const roofOpts = [['fara', 'Fără acoperiș'], ['doua_ape', 'În două ape'], ['patru_ape', 'În patru ape'], ['plat', 'Terasă (plat)']];
+  const roofOpts = [['fara', 'Fără acoperiș'], ['doua_ape', 'În două ape'], ['patru_ape', 'În patru ape'], ['patru_ape_jos', 'În patru ape, jos, cu streașină lată'], ['plat', 'Terasă (plat)'], ['plat_streasina', 'Plat cu streașină lată și LED'], ['doua_ape_modern', 'În două ape, modern, fără streașină'], ['o_apa', 'Într-o apă (modern)']];
   const roofCols = [['#a4553a', 'Teracotă'], ['#3d4045', 'Antracit'], ['#6b4a3a', 'Maro'], ['#4d6650', 'Verde'], ['#8a8f96', 'Gri']];
   return `<div class="sec"><h3>${t('Lumină și ambient')}</h3>
     <div class="field"><label>${t('Ora zilei')} <b id="hourLbl">${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}</b></label><input type="range" data-env="hour" min="5" max="22" step="0.25" value="${e.hour}"></div>
@@ -1899,13 +2510,21 @@ function envHTML(collapsed) {
     <div class="field"><label>${t('Expunere')}</label><input type="range" data-env="exposure" min="0.4" max="2" step="0.05" value="${e.exposure}"></div>
     <div class="field"><label>${t('Lămpi')}</label><select data-env="lights"><option value="auto" ${e.lights === 'auto' ? 'selected' : ''}>${t('Automat (seara)')}</option><option value="on" ${e.lights === 'on' ? 'selected' : ''}>${t('Aprinse')}</option><option value="off" ${e.lights === 'off' ? 'selected' : ''}>${t('Stinse')}</option></select></div>
     <div class="field"><label>${t('Tavan mereu')}</label><input type="checkbox" data-env="ceiling" ${e.ceiling ? 'checked' : ''} style="justify-self:start"></div>
+    <div class="field"><label>${t('Iarbă 3D')}</label><input type="checkbox" data-env="grass3d" ${e.grass3d !== false ? 'checked' : ''} style="justify-self:start"></div>
   </div>
   <div class="sec"><h3>${t('Acoperiș')}</h3>
     <div class="field"><label>${t('Tip')}</label><select data-env="roof">${roofOpts.map(([v, n]) => `<option value="${v}" ${e.roof === v ? 'selected' : ''}>${t(n)}</option>`).join('')}</select></div>
     <div class="field"><label>${t('Țiglă')}</label><div class="swatches">${roofCols.map(([c, n]) => `<button class="sw ${e.roofColor === c ? 'on' : ''}" style="background:${c}" title="${t(n)}" data-roofc="${c}"></button>`).join('')}</div></div>
+    <div class="field"><label>${t('Învelitoare')}</label><select data-env="roofCover">${[['tigla', 'Țiglă'], ['tabla', 'Tablă fălțuită'], ['sindrila', 'Șindrilă bituminoasă']].map(([v, n]) => `<option value="${v}" ${(e.roofCover || 'tigla') === v ? 'selected' : ''}>${t(n)}</option>`).join('')}</select></div>
     <div class="field"><label>${t('Jgheaburi și burlane')}</label><input type="checkbox" data-env="gutters" ${e.gutters ? 'checked' : ''} style="justify-self:start"></div>
     ${e.gutters ? `<div class="field"><label>${t('Culoare')}</label><div class="swatches">${GUTTER_COLORS.map(([c, n]) => `<button class="sw ${e.gutterColor === c ? 'on' : ''}" style="background:${c}" title="${t(n)}" data-gutc="${c}"></button>`).join('')}</div></div>` : ''}
     <p class="hint">${t('Acoperișul este pus pe ultimul nivel. Jgheaburile duc apa la burlanele din colțuri.')}</p>
+  </div>
+  <div class="sec"><h3>${t('Decor de fațadă')}</h3>
+    <div class="field"><label>${t('Soclu din piatră')}</label><input type="checkbox" data-env="soclu" ${e.soclu ? 'checked' : ''} style="justify-self:start"></div>
+    <div class="field"><label>${t('Ancadramente la ferestre')}</label><input type="checkbox" data-env="ancadrament" ${e.ancadrament ? 'checked' : ''} style="justify-self:start"></div>
+    <div class="field"><label>${t('Brâu sub streașină')}</label><input type="checkbox" data-env="brau" ${e.brau ? 'checked' : ''} style="justify-self:start"></div>
+    <div class="field"><label>${t('Streașini între etaje (lemn și LED)')}</label><input type="checkbox" data-env="cornisa" ${e.cornisa ? 'checked' : ''} style="justify-self:start"></div>
   </div>
   ${collapsed ? '' : `<div class="sec"><h3>${t('Pereții casei')}</h3>
     ${finishButtons(e.finish, 'data-envfin')}
@@ -1939,10 +2558,10 @@ function quantities() {
   });
   // jgheaburi pe streașini și burlane la colțuri (acoperiș înclinat, pe ultimul nivel)
   res.gutter = 0; res.downpipes = 0;
-  if (P.env.gutters && (P.env.roof === 'doua_ape' || P.env.roof === 'patru_ape')) {
+  if (P.env.gutters && ['doua_ape', 'patru_ape', 'patru_ape_jos'].includes(P.env.roof)) {
     const k = P.cur; P.cur = P.levels.length - 1; const b = bounds(); P.cur = k;
     const A = Math.max(b.x2 - b.x1, b.y2 - b.y1) + 0.9, B = Math.min(b.x2 - b.x1, b.y2 - b.y1) + 0.9;
-    res.gutter = 2 * A + (P.env.roof === 'patru_ape' ? 2 * B : 0); res.downpipes = 4; res.pipeLen = levelElev(P.levels.length - 1) + levelTop(P.levels[P.levels.length - 1]);
+    res.gutter = 2 * A + (P.env.roof !== 'doua_ape' ? 2 * B : 0); res.downpipes = 4; res.pipeLen = levelElev(P.levels.length - 1) + levelTop(P.levels[P.levels.length - 1]);
   }
   res.roofArea = roofAreaOf();
   return res;
@@ -1965,7 +2584,9 @@ function roofAreaOf() {
   const e = P.env, top = P.levels.length - 1;
   if (e.roof === 'fara' || !P.levels[top].walls.length) return 0;
   const k = P.cur; P.cur = top; const b = bounds(); P.cur = k; const A = (b.x2 - b.x1 + 0.9) * (b.y2 - b.y1 + 0.9);
-  return e.roof === 'plat' ? A : A / Math.cos(32 * DEG);
+  if (e.roof === 'plat_streasina') return P.levels[top].rooms.reduce((s2, r) => s2 + polyArea(r.pts), 0) * 1.35;
+  if (e.roof === 'o_apa') return A * 1.3 / Math.cos(10 * DEG);
+  return e.roof === 'plat' ? A : A / Math.cos((e.roof === 'patru_ape_jos' ? 20 : e.roof === 'doua_ape_modern' ? 40 : 32) * DEG);
 }
 function qtyTable(cls) {
   const e = P.env, q = quantities(), S = STRUCTURES[e.structure] || STRUCTURES.caramida, Pt = PARTITIONS[e.partition] || PARTITIONS.bca10;
@@ -2050,6 +2671,7 @@ function bindProps(obj) {
   props.querySelectorAll('[data-wc]').forEach((b) => b.addEventListener('click', () => { obj.color = b.dataset.wc === P.env.wallColor ? null : b.dataset.wc; changed(); }));
   props.querySelectorAll('[data-thick]').forEach((b) => b.addEventListener('click', () => { obj.t = +b.dataset.thick; changed(); }));
   props.querySelectorAll('[data-wfin]').forEach((b) => b.addEventListener('click', () => { obj.finish = b.dataset.wfin; changed(); }));
+  props.querySelectorAll('[data-wfac]').forEach((b) => b.addEventListener('click', () => { if (b.dataset.wfac) obj.facade = b.dataset.wfac; else delete obj.facade; changed(); }));
   props.querySelectorAll('[data-rfin]').forEach((b) => b.addEventListener('click', () => { for (const w of roomWalls(obj)) w.finish = b.dataset.rfin; changed(); toast(t('Finisaj aplicat pe pereții camerei.')); }));
   props.querySelectorAll('[data-envfin]').forEach((b) => b.addEventListener('click', () => { P.env.finish = b.dataset.envfin; for (const w of P.walls) delete w.finish; changed(); }));
   props.querySelectorAll('[data-floor]').forEach((b) => b.addEventListener('click', () => { obj.floor = b.dataset.floor; changed(); }));
@@ -2070,7 +2692,7 @@ function bindProps(obj) {
     const apply = (final) => {
       P.env[k] = inp.type === 'checkbox' ? inp.checked : inp.tagName === 'SELECT' ? inp.value : parseFloat(inp.value);
       if (k === 'hour') { const hh = Math.floor(P.env.hour), mm = Math.round((P.env.hour - hh) * 60); const l = $('#hourLbl'); if (l) l.textContent = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`; }
-      if (k === 'ceiling' || k === 'roof' || k === 'gutters') rebuild3D();
+      if (['ceiling', 'roof', 'gutters', 'grass3d', 'roofCover', 'soclu', 'ancadrament', 'brau', 'cornisa'].includes(k)) rebuild3D();
       if (k === 'gutters') renderProps();
       if (k === 'structure' || k === 'partition') renderProps();
       applyEnv(); draw2D();
@@ -2302,6 +2924,87 @@ async function renderGallery() {
   $$('#galList [data-open]').forEach((b) => b.addEventListener('click', () => window.open(URL.createObjectURL(byId[b.dataset.open].blob), '_blank')));
   $$('#galList [data-rm]').forEach((b) => b.addEventListener('click', async () => { await galleryDel(b.dataset.rm); renderGallery(); }));
 }
+
+// ---------- video tur ----------
+// Un traseu automat: zbor în jurul casei, apropiere de ușa de la intrare, intrare în casă și o privire de jur împrejur (360°)
+// în cea mai mare cameră. Se înregistrează direct din vederea 3D, ca fișier video.
+function tourPlan() {
+  const h = houseBounds(), cx = (h.x1 + h.x2) / 2, cz = (h.y1 + h.y2) / 2, R = Math.max(h.x2 - h.x1, h.y2 - h.y1, 6);
+  const H = P.levels.reduce((s2, L) => s2 + levelTop(L) + SLAB, 0) || 3;
+  // ușa de intrare: cea de pe fațada din față (spre +y), altfel prima
+  const d = outerDoors().sort((a, b) => (b.ny - a.ny) || (a.px - b.px))[0] || null;
+  let best = null, ba = 0;
+  for (const r of P.levels[0].rooms) { const a = polyArea(r.pts); if (a > ba) { ba = a; best = r; } }
+  const rc = best ? [best.pts.reduce((a, p) => a + p[0], 0) / best.pts.length, best.pts.reduce((a, p) => a + p[1], 0) / best.pts.length] : [cx, cz];
+  const aEnd = d ? Math.atan2(d.ny, d.nx) : Math.PI / 2;
+  return { cx, cz, R, H, d, rc, aEnd, r: R * 0.85 + 7 };
+}
+const ss = (k) => k * k * (3 - 2 * k), lerp = (a, b, k) => a + (b - a) * k;
+// T între 0 și 1 → poziția și ținta camerei
+function tourPose(T, pl) {
+  const { cx, cz, H, d, rc, aEnd, r } = pl, V = (x, y, z) => new THREE.Vector3(x, y, z);
+  const orbitPos = (k) => { const a = aEnd - 1.5 * Math.PI * (1 - k); return V(cx + Math.cos(a) * r, lerp(H + 7, EYE + 1.2, ss(k)), cz + Math.sin(a) * r); };
+  const centre = V(cx, H * 0.45, cz);
+  if (T < 0.45 || !d) {
+    const k = d ? T / 0.45 : Math.min(1, T / 0.7);
+    if (d || T < 0.7) return { pos: orbitPos(k), tgt: centre };
+  }
+  const out = V(d ? d.px + d.nx * 1.8 : cx, EYE, d ? d.py + d.ny * 1.8 : cz), door = V(d ? d.px - d.nx * 1.2 : cx, EYE, d ? d.py - d.ny * 1.2 : cz);
+  // nu chiar în centrul camerei (acolo stă adesea mobila), ci între ușă și centru
+  const room = d ? V(lerp(d.px - d.nx * 1.2, rc[0], 0.55), EYE, lerp(d.py - d.ny * 1.2, rc[1], 0.55)) : V(rc[0], EYE, rc[1]);
+  if (d && T < 0.64) { // apropiere de ușă
+    const k = ss((T - 0.45) / 0.19), p0 = orbitPos(1);
+    return { pos: p0.clone().lerp(out, k), tgt: centre.clone().lerp(door, k) };
+  }
+  if (d && T < 0.74) { // prin ușă, până în mijlocul camerei
+    const k = ss((T - 0.64) / 0.1), pos = k < 0.5 ? out.clone().lerp(door, k * 2) : door.clone().lerp(room, (k - 0.5) * 2);
+    const ahead = room.clone().sub(door); if (ahead.lengthSq() < 0.01) ahead.set(-d.nx, 0, -d.ny); ahead.normalize();
+    return { pos, tgt: pos.clone().add(k < 0.5 ? V(-d.nx, -0.05, -d.ny) : ahead.setY(-0.05)) };
+  }
+  // privire de jur împrejur
+  const k0 = d ? 0.74 : 0.7, k = ss((T - k0) / (1 - k0));
+  const dir0 = d ? Math.atan2(rc[1] - d.py, rc[0] - d.px) : 0, a = dir0 + k * Math.PI * 2;
+  return { pos: room.clone(), tgt: room.clone().add(V(Math.cos(a), -0.08, Math.sin(a))) };
+}
+let tourRun = null;
+function tourSet(T, pl) {
+  const { pos, tgt } = tourPose(T, pl);
+  camera.position.copy(pos); controls.target.copy(tgt); camera.lookAt(tgt); updateCeiling();
+}
+async function recordTour(seconds, onProgress, W = 1280, H = 720) {
+  if (!window.MediaRecorder || !renderer.domElement.captureStream) throw new Error(t('Browserul nu poate înregistra video.'));
+  const pl = tourPlan(), saved = { pos: camera.position.clone(), tgt: controls.target.clone(), fov: camera.fov, walk };
+  if (P.levels.length > 1 && !P.env.allLevels) { P.env.allLevels = true; syncLevelUI(); rebuild3D(); }
+  if (P.cur !== 0) setLevel(0);
+  walkAnim = null; camera.fov = 62;
+  // clipul are mărime fixă (720p sau 1080p), indiferent cât de mare e panoul 3D pe ecran
+  const pr = renderer.getPixelRatio(); renderer.setPixelRatio(1); renderer.setSize(W, H, false); camera.aspect = W / H; camera.updateProjectionMatrix();
+  const mime = ['video/mp4;codecs=avc1', 'video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm', 'video/mp4'].find((m2) => MediaRecorder.isTypeSupported(m2)) || '';
+  const stream = renderer.domElement.captureStream(30), chunks = [];
+  const rec = new MediaRecorder(stream, mime ? { mimeType: mime, videoBitsPerSecond: 10e6 } : {});
+  rec.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+  const stopped = new Promise((r) => { rec.onstop = r; });
+  rendering = true; tourRun = { stop: false };
+  rec.start(250);
+  const t0 = performance.now();
+  try {
+    await new Promise((res) => {
+      const f = () => {
+        const T = (performance.now() - t0) / (seconds * 1000);
+        if (T >= 1 || tourRun.stop) { res(); return; }
+        tourSet(T, pl); renderer.render(scene, camera); onProgress && onProgress(T);
+        requestAnimationFrame(f);
+      };
+      f();
+    });
+  } finally {
+    rec.stop(); await stopped; stream.getTracks().forEach((tr) => tr.stop());
+    rendering = false; tourRun = null;
+    renderer.setPixelRatio(pr); camera.position.copy(saved.pos); controls.target.copy(saved.tgt); camera.fov = saved.fov; resize3D(); controls.update(); updateCeiling(true); invalidate();
+  }
+  const type = (mime || 'video/webm').split(';')[0];
+  return { blob: new Blob(chunks, { type }), ext: type === 'video/mp4' ? 'mp4' : 'webm' };
+}
 function fileName(prefix, ext) {
   const slug = (P.name || 'proiect').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   return `${slug}-${prefix}-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}.${ext}`;
@@ -2340,10 +3043,24 @@ $('#pGo').addEventListener('click', async () => {
   $('#pGo').disabled = false;
 });
 $('#btnGallery').addEventListener('click', () => { openModal('#mGal'); renderGallery(); });
+$('#btnVideo').addEventListener('click', () => { openModal('#mVid'); $('#vStatus').textContent = ''; });
+$('#vGo').addEventListener('click', async () => {
+  const sec = +$('#vLen').value || 30, [vw, vh] = $('#vRes').value.split('x').map(Number);
+  $('#vGo').disabled = true; $('#vRow').hidden = true; $('#mVid').classList.remove('open');
+  const bar = $('#vBar'); bar.hidden = false;
+  try {
+    const { blob, ext } = await recordTour(sec, (k) => { bar.firstElementChild.style.width = (k * 100).toFixed(1) + '%'; }, vw, vh);
+    const url = URL.createObjectURL(blob);
+    $('#vPlay').src = url; $('#vDl').href = url; $('#vDl').download = fileName('video-tur', ext);
+    $('#vRow').hidden = false; $('#vStatus').textContent = `${t('Gata.')} ${(blob.size / 1048576).toFixed(1)} MB`;
+  } catch (e) { console.error(e); $('#vStatus').textContent = t('Nu a reușit') + ': ' + e.message; }
+  bar.hidden = true; $('#vGo').disabled = false; openModal('#mVid');
+});
+$('#vBar').addEventListener('click', () => { if (tourRun) tourRun.stop = true; });
 
 $('#undo').addEventListener('click', undo); $('#redo').addEventListener('click', redo);
 $('#projName').addEventListener('change', (e) => { P.name = e.target.value || t('Proiect'); commit(); });
-const TPL_FN = { apartament: templateApartament, casa: templateCasa, casa_etaj: templateCasaEtaj, casa_mica: templateCasaMica, casa_moderna: templateCasaModerna, vila: templateVila, bloc: templateBloc, duplex: templateDuplex };
+const TPL_FN = { curte_lux: templateCurteLux, etaj_modern: templateEtajModern, casa_tabla: templateCasaTabla, casa_o_apa: templateCasaOApa, vila_clasica: templateVilaClasica, parter_modern: templateParterModern, parter_l: templateParterL, parter_4ape: templateParter4Ape, parter_garaj: templateParterGaraj, apartament: templateApartament, casa: templateCasa, casa_etaj: templateCasaEtaj, casa_mica: templateCasaMica, casa_moderna: templateCasaModerna, vila: templateVila, bloc: templateBloc, duplex: templateDuplex };
 function renderTemplates() {
   $('#tplGrid').innerHTML = TEMPLATES.map(([k, n, d]) => `<button class="tpl" data-tpl="${k}">${k === 'gol' ? '<span class="ph">＋</span>' : `<img src="modele/${k}.webp" alt="" loading="lazy">`}<b>${t(n)}</b><small>${t(d)}</small></button>`).join('');
 }
@@ -2608,6 +3325,170 @@ $('#btnSheet').addEventListener('click', async () => {
 });
 $('#shPrint').addEventListener('click', () => window.print());
 
+// ================= Planșa de prezentare =================
+// Ca planșele de arhitect: casa randată din față, apoi fiecare nivel văzut de sus, mobilat, fără tavan,
+// cu numele camerelor, suprafețele și cotele generale. Totul se compune într-o singură imagine.
+async function plan3D(li, W = 1600, S = 10) {
+  const keep = { cur: P.cur, cut: P.env.cutaway, all: P.env.allLevels, hour: P.env.hour, lights: P.env.lights, pos: camera.position.clone(), tgt: controls.target.clone(), fov: camera.fov, aspect: camera.aspect, walk };
+  try {
+    P.cur = li; P.env.cutaway = true; P.env.allLevels = false; P.env.hour = 13; P.env.lights = 'off';
+    rebuild3D(); applyEnv();
+    const L = P.levels[li]; let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+    for (const w of L.walls) { x1 = Math.min(x1, w.x1, w.x2); y1 = Math.min(y1, w.y1, w.y2); x2 = Math.max(x2, w.x1, w.x2); y2 = Math.max(y2, w.y1, w.y2); }
+    if (!isFinite(x1)) return null;
+    const m = 2.2, bw = x2 - x1 + 2 * m, bd = y2 - y1 + 2 * m, H = Math.round(Math.min(W * 1.4, Math.max(W * 0.45, W * bd / bw)));
+    const el = levelElev(li), cx = (x1 + x2) / 2, cz = (y1 + y2) / 2, fov = 28, tilt = 0.16;
+    const dist = Math.max(bd / 2, bw / 2 * H / W) / Math.tan(fov / 2 * DEG) * 1.04;
+    setWalk(false); camera.fov = fov; camera.aspect = W / H;
+    camera.position.set(cx, el + dist, cz + dist * tilt); controls.target.set(cx, el, cz); camera.lookAt(controls.target); camera.updateProjectionMatrix(); controls.update();
+    const cv = await renderPhoto(W, H, S, null, true);
+    const cam = camera.clone(); cam.aspect = W / H; cam.updateProjectionMatrix(); cam.updateMatrixWorld();
+    const pr = (x, y, z) => { const v = new THREE.Vector3(x, z, y).project(cam); return [(v.x + 1) / 2 * W, (1 - v.y) / 2 * H]; };
+    // planurile mici (două pe rând în planșă) primesc etichete mai mari, ca să rămână lizibile după micșorare
+    const g = cv.getContext('2d'), fs = Math.round(W / (W < 1700 ? 42 : 60));
+    // cote generale: lățimea sus, adâncimea în stânga
+    g.strokeStyle = 'rgba(255,255,255,0.95)'; g.fillStyle = '#fff'; g.lineWidth = Math.max(2, W / 800); g.font = `600 ${fs}px system-ui, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.shadowColor = 'rgba(0,0,0,0.65)'; g.shadowBlur = 6;
+    const dim = (a, b, off) => {
+      g.beginPath(); g.moveTo(...a); g.lineTo(...b); g.stroke();
+      for (const q of [a, b]) { g.beginPath(); g.moveTo(q[0] - off[0] * 0.5, q[1] - off[1] * 0.5); g.lineTo(q[0] + off[0] * 0.5, q[1] + off[1] * 0.5); g.stroke(); }
+    };
+    const o = 1.1, t1 = pr(x1, y1 - o, el), t2 = pr(x2, y1 - o, el); dim(t1, t2, [0, fs]);
+    g.fillText(`${fmt(x2 - x1)} m`, (t1[0] + t2[0]) / 2, (t1[1] + t2[1]) / 2 - fs * 0.9);
+    const l1 = pr(x1 - o, y1, el), l2 = pr(x1 - o, y2, el); dim(l1, l2, [fs, 0]);
+    g.save(); g.translate((l1[0] + l2[0]) / 2 - fs * 0.9, (l1[1] + l2[1]) / 2); g.rotate(-Math.PI / 2); g.fillText(`${fmt(y2 - y1)} m`, 0, 0); g.restore();
+    g.shadowBlur = 0;
+    // etichete pentru camere: nume și suprafață pe o plăcuță albă semitransparentă
+    for (const r of L.rooms) {
+      const A = polyArea(r.pts); if (A < 1.5) continue;
+      let sx = 0, sy = 0; for (const [x, y] of r.pts) { sx += x; sy += y; } const [px, py] = pr(sx / r.pts.length, sy / r.pts.length, el + 0.9);
+      const name = String(r.name || '').toUpperCase(), sub = `${fmt(A)} m²`, f1 = Math.round(fs * 0.95), f2 = Math.round(fs * 0.78);
+      g.font = `700 ${f1}px system-ui, sans-serif`; const w1 = g.measureText(name).width; g.font = `500 ${f2}px system-ui, sans-serif`; const w2 = g.measureText(sub).width;
+      const bw2 = Math.max(w1, w2) + fs, bh = f1 + f2 + fs * 0.7;
+      g.fillStyle = 'rgba(255,255,255,0.82)'; g.beginPath(); g.roundRect(px - bw2 / 2, py - bh / 2, bw2, bh, fs * 0.35); g.fill();
+      g.fillStyle = '#1d1f22'; g.font = `700 ${f1}px system-ui, sans-serif`; g.fillText(name, px, py - f2 * 0.55);
+      g.fillStyle = '#5b5f66'; g.font = `500 ${f2}px system-ui, sans-serif`; g.fillText(sub, px, py + f1 * 0.6);
+    }
+    return cv;
+  } finally {
+    P.cur = keep.cur; P.env.cutaway = keep.cut; P.env.allLevels = keep.all; P.env.hour = keep.hour; P.env.lights = keep.lights;
+    camera.position.copy(keep.pos); controls.target.copy(keep.tgt); camera.fov = keep.fov; camera.aspect = keep.aspect; camera.updateProjectionMatrix();
+    setWalk(keep.walk); controls.update(); rebuild3D(); applyEnv(); invalidate();
+  }
+}
+// partea casei cu intrarea: ușa pivot, apoi garajul, apoi ușile duble, pe un perete exterior al parterului
+function entranceSide() {
+  const k = P.cur; P.cur = 0;
+  try {
+    const L = P.levels[0], rank = { pivot: 5, garaj: 4, dubla: 3, sticla: 3, clasica: 3, usa_arcada: 3, simpla: 1 };
+    let best = null;
+    for (const o of L.openings) {
+      const w = L.walls.find((x) => x.id === o.wall), sc = o.type === 'door' ? rank[o.style] || 0 : 0;
+      if (!w || !sc || !isExterior(w) || (best && best.sc >= sc)) continue;
+      const len = wallLen(w), ux = (w.x2 - w.x1) / len, uy = (w.y2 - w.y1) / len, px = w.x1 + ux * o.pos, py = w.y1 + uy * o.pos;
+      let nx = -uy, ny = ux; if (inAnyRoom(px + nx * 0.5, py + ny * 0.5)) { nx = -nx; ny = -ny; }
+      best = { sc, nx, ny };
+    }
+    return best;
+  } finally { P.cur = k; }
+}
+// casa văzută din față, la înălțimea ochilor (ca prima imagine de pe o planșă), dinspre intrare
+async function frontView(W = 2000, S = 12) {
+  const keep = { pos: camera.position.clone(), tgt: controls.target.clone(), fov: camera.fov, aspect: camera.aspect, walk, all: P.env.allLevels, hour: P.env.hour, chip: $('#camBtns .chip.on') };
+  try {
+    camera.aspect = 16 / 9; setCam('exterior');
+    // noaptea casa se vede prea puțin: planșa se face la apus, cu luminile aprinse
+    if (P.env.hour >= 18.5 || P.env.hour < 6.5) { P.env.hour = 16.8; rebuild3D(); applyEnv(); }
+    const e = entranceSide();
+    if (e) {
+      const h = houseBounds(), hx = (h.x1 + h.x2) / 2, hz = (h.y1 + h.y2) / 2, R = Math.max(h.x2 - h.x1, h.y2 - h.y1);
+      const D = R * 0.8 + 3, FENCES = /^(gard|perete_led|perete_nise|poarta)/, BULKY = /^(masina|copac|brad|pom|mesteacan|palmier|fantana|pergola|tuia)/;
+      // camera stă în fața intrării, puțin într-o parte; alege partea din care nu acoperă nimic casa (mașini, copaci)
+      const place = (side) => {
+        let cx = hx + e.nx * D - e.ny * D * side, cz = hz + e.ny * D + e.nx * D * side;
+        // dacă între cameră și casă e un gard sau un zid, camera intră în curte, chiar în spatele lui
+        let best = 1;
+        for (const it of P.levels[0].items) {
+          if (!FENCES.test(it.type)) continue;
+          const dx = Math.cos(it.rot * DEG) * it.w / 2, dy = Math.sin(it.rot * DEG) * it.w / 2, ax = it.x - dx, ay = it.y - dy, bx = it.x + dx, by = it.y + dy;
+          const rx = hx - cx, ry = hz - cz, sx = bx - ax, sy = by - ay, den = rx * sy - ry * sx; if (Math.abs(den) < 1e-6) continue;
+          const tt = ((ax - cx) * sy - (ay - cz) * sx) / den, u = ((ax - cx) * ry - (ay - cz) * rx) / den;
+          if (tt > 0 && tt < best && u >= 0 && u <= 1) best = tt;
+        }
+        if (best < 1) { const L = Math.hypot(hx - cx, hz - cz), k = Math.min(0.9, best + 1.2 / L); cx += (hx - cx) * k; cz += (hz - cz) * k; }
+        // cât de mult acoperă obiectele mari vederea: cele aproape de cameră contează mai mult
+        let block = 0;
+        for (const it of P.levels[0].items) {
+          if (!BULKY.test(it.type)) continue;
+          const rx = hx - cx, ry = hz - cz, L2 = rx * rx + ry * ry, t0 = Math.max(0, Math.min(1, ((it.x - cx) * rx + (it.y - cz) * ry) / L2));
+          const d = Math.hypot(cx + rx * t0 - it.x, cz + ry * t0 - it.y), r = Math.max(it.w, it.d) / 2 + 1 + (1 - t0) * 2.5;
+          if (d < r && t0 < 0.75) block += (1 - t0) * 2;
+        }
+        return { cx, cz, block };
+      };
+      const cand = [0.42, -0.42, 0.15, -0.15].map(place).sort((a, b) => a.block - b.block)[0], cx = cand.cx, cz = cand.cz;
+      camera.position.set(cx, 1.7, cz);
+      const top = Math.max(...P.levels.map((L, i) => levelElev(i) + levelTop(L)));
+      // casa trebuie să încapă toată în cadru, și când camera a trebuit să intre în spatele gardului
+      const dc = Math.hypot(hx - cx, hz - cz), fit = 2 * Math.atan((R * 0.55 + 2) / (dc * 0.7) / (16 / 9)) / DEG;
+      controls.target.set(hx, Math.min(3.2, top * 0.42), hz); camera.fov = Math.max(52, Math.min(80, fit)); camera.lookAt(controls.target); camera.updateProjectionMatrix(); controls.update();
+    }
+    return await renderPhoto(W, Math.round(W * 9 / 16), S, null, true);
+  } finally {
+    P.env.allLevels = keep.all; P.env.hour = keep.hour; camera.position.copy(keep.pos); controls.target.copy(keep.tgt); camera.fov = keep.fov; camera.aspect = keep.aspect; camera.updateProjectionMatrix();
+    setWalk(keep.walk); controls.update(); syncLevelUI(); rebuild3D(); applyEnv(); $$('#camBtns .chip').forEach((x) => x.classList.toggle('on', x === keep.chip)); invalidate();
+  }
+}
+// compune planșa: titlu, casa, planurile 3D ale nivelurilor și lista camerelor
+async function presentationBoard(onStep, opts = {}) {
+  const W = opts.width || 2000, S = opts.samples || 12, pad = Math.round(W * 0.03);
+  onStep && onStep(t('Randez casa din față…'));
+  const ext = opts.ext || await frontView(W, S);
+  const plans = [];
+  for (let i = 0; i < P.levels.length; i++) { if (!P.levels[i].walls.length) continue; onStep && onStep(`${t('Randez planul 3D')}: ${P.levels[i].name}…`); const c = await plan3D(i, P.levels.length > 1 ? 1500 : 1900, Math.max(6, S - 2)); if (c) plans.push([P.levels[i], c]); }
+  const multi = plans.length > 1, colW = multi ? (W - pad * 3) / 2 : W - pad * 2;
+  const rows = []; for (let i = 0; i < plans.length; i += multi ? 2 : 1) rows.push(plans.slice(i, i + (multi ? 2 : 1)));
+  const rowH = rows.map((r) => Math.max(...r.map(([, c]) => c.height * colW / c.width)));
+  const rooms = P.levels.flatMap((L) => L.rooms.map((r) => [L, r])).filter(([, r]) => polyArea(r.pts) >= 1.5);
+  const cols = multi ? 2 : 3, lineH = Math.round(W / 48), listH = Math.ceil(rooms.length / cols) * lineH + lineH * 2.2;
+  const headH = Math.round(W * 0.085), extH = Math.round(ext.height * W / ext.width), titleH = Math.round(W / 26);
+  const Htot = headH + extH + rowH.reduce((a, h) => a + h + titleH, 0) + pad * (rows.length + 1) + listH + pad;
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = Math.round(Htot); const g = cv.getContext('2d');
+  g.fillStyle = '#16181b'; g.fillRect(0, 0, W, cv.height);
+  const area = allRooms().reduce((a, r) => a + polyArea(r.pts), 0), F = (k) => Math.round(W * k);
+  g.fillStyle = '#c9a46a'; g.font = `600 ${F(0.013)}px system-ui, sans-serif`; g.textBaseline = 'alphabetic'; g.fillText('PLANORA 3D', pad, F(0.032));
+  g.fillStyle = '#fff'; g.font = `700 ${F(0.03)}px system-ui, sans-serif`; g.fillText(P.name, pad, F(0.066));
+  const facts = [`${fmt(area)} m²`, `${allRooms().length} ${t('camere')}`, `${P.levels.length} ${P.levels.length === 1 ? t('nivel') : t('niveluri')}`];
+  g.textAlign = 'right'; g.fillStyle = '#d8d4cc'; g.font = `500 ${F(0.016)}px system-ui, sans-serif`; g.fillText(facts.join('   ·   '), W - pad, F(0.066)); g.textAlign = 'left';
+  g.drawImage(ext, 0, headH, W, extH);
+  let y = headH + extH + pad;
+  rows.forEach((r, k) => {
+    r.forEach(([L, c], j) => {
+      const x = pad + j * (colW + pad);
+      g.fillStyle = '#c9a46a'; g.font = `700 ${F(0.015)}px system-ui, sans-serif`; g.fillText(`${t('Plan')} · ${L.name}`.toUpperCase(), x, y + titleH * 0.62);
+      const h = c.height * colW / c.width; g.drawImage(c, x, y + titleH, colW, h);
+    });
+    y += titleH + rowH[k] + pad;
+  });
+  g.fillStyle = '#c9a46a'; g.font = `700 ${F(0.015)}px system-ui, sans-serif`; g.fillText(t('Camere').toUpperCase(), pad, y + lineH * 0.8);
+  const cw = (W - pad * 2) / cols; g.font = `500 ${F(0.0135)}px system-ui, sans-serif`;
+  rooms.forEach(([L, r], i) => {
+    const x = pad + (i % cols) * cw, yy = y + lineH * 2 + Math.floor(i / cols) * lineH;
+    g.fillStyle = '#e9e6e0'; g.fillText(`${i + 1}. ${r.name}${multi ? ` (${L.name})` : ''}`, x, yy);
+    g.fillStyle = '#9da2a8'; g.textAlign = 'right'; g.fillText(`${fmt(polyArea(r.pts))} m²`, x + cw - pad, yy); g.textAlign = 'left';
+  });
+  return cv;
+}
+$('#shBoard').addEventListener('click', async () => {
+  const b = $('#shBoard'); b.disabled = true;
+  try {
+    const cv = await presentationBoard((m) => { $('#shStatus').textContent = m; });
+    const url = cv.toDataURL('image/jpeg', 0.92), a = document.createElement('a'); a.href = url; a.download = fileName('plansa', 'jpg'); a.click();
+    galleryAdd(cv, 'foto'); $('#shStatus').textContent = t('Planșa e gata și s-a descărcat.');
+  } catch (e) { console.error(e); $('#shStatus').textContent = t('Nu a reușit') + ': ' + e.message; }
+  b.disabled = false;
+});
+
 // ================= Pornire =================
 window.I18N.apply(document); window.I18N.mountSelector($('#langSel'));
 renderCatalog(); setTool('select');
@@ -2624,7 +3505,7 @@ loop();
 
 // Interfață pentru automatizare și teste (capturi pentru galerie)
 window.planora = {
-  get project() { return P; }, costData, scene, loadTemplate, setCam, renderPhoto, renderPanorama, setLevel, addLevel, setWalk, get walk() { return walk; },
+  get project() { return P; }, costData, scene, loadTemplate, setCam, renderPhoto, renderPanorama, recordTour, tourPlan, tourSet, setLevel, addLevel, setWalk, get walk() { return walk; },
   setEnv(o) { Object.assign(P.env, o); rebuild3D(); applyEnv(); renderProps(); },
-  camera, controls, select(kind, id) { sel = { kind, id }; renderProps(); draw2D(); highlight3D(); },
+  camera, controls, presentationBoard, plan3D, frontView, select(kind, id) { sel = { kind, id }; renderProps(); draw2D(); highlight3D(); },
 };
