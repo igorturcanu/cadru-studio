@@ -63,9 +63,9 @@ export function skyTexture({ top, mid, bottom, sunDir, sunColor, day, cloudiness
 export function treeLine(center, radius = 95, count = 340) {
   const grp = new THREE.Group(); grp.userData.treeLine = true;
   const r = rng(77);
-  const leafGeo = new THREE.IcosahedronGeometry(1, 1), coneGeo = new THREE.ConeGeometry(1, 1, 8), trunkGeo = new THREE.CylinderGeometry(0.15, 0.2, 1, 6);
+  const leafGeo = clumpGeo(3).clone(), coneGeo = new THREE.ConeGeometry(1, 1, 8), trunkGeo = new THREE.CylinderGeometry(0.15, 0.2, 1, 6);
   leafGeo.translate(0, 0, 0); coneGeo.translate(0, 0.5, 0); trunkGeo.translate(0, 0.5, 0);
-  const lm = new THREE.MeshStandardMaterial({ roughness: 1, color: '#ffffff' }), tm = m('#4a3b2b');
+  const lm = new THREE.MeshStandardMaterial({ roughness: 1, color: '#ffffff', map: leafMap(), bumpMap: leafMap(), bumpScale: 2 }), tm = m('#4a3b2b');
   const leaves = new THREE.InstancedMesh(leafGeo, lm, count * 3), cones = new THREE.InstancedMesh(coneGeo, lm, count), trunks = new THREE.InstancedMesh(trunkGeo, tm, count);
   const M = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3(), p = new THREE.Vector3(), col = new THREE.Color();
   let nl = 0, nc = 0;
@@ -76,7 +76,7 @@ export function treeLine(center, radius = 95, count = 340) {
       M.compose(p.set(x, h * 0.18, z), q.identity(), s.set(h * 0.22, h * 0.9, h * 0.22)); cones.setMatrixAt(nc, M);
       cones.setColorAt(nc++, col.setHSL(0.36 + r() * 0.05, 0.3 + r() * 0.15, 0.08 + r() * 0.05));
     } else {
-      for (let k = 0; k < 3; k++) {
+      for (let k = 0; k < 3; k++) { if (nl >= count * 3) break;
         const rr = h * (0.22 + r() * 0.1);
         M.compose(p.set(x + (r() - 0.5) * rr, h * (0.55 + r() * 0.3), z + (r() - 0.5) * rr), q.setFromEuler(new THREE.Euler(r(), r() * 3, r())), s.set(rr, rr * (0.8 + r() * 0.3), rr));
         leaves.setMatrixAt(nl, M); leaves.setColorAt(nl++, col.setHSL(0.25 + r() * 0.08, 0.3 + r() * 0.15, 0.1 + r() * 0.07));
@@ -148,6 +148,80 @@ function clump(seed, color, r, x, y, z) {
   const o = new THREE.Mesh(clumpGeo(seed % 6), m(color, { roughness: 0.95, map: leafMap(), bumpMap: leafMap(), bumpScale: 2 }));
   o.scale.setScalar(r); o.position.set(x, y, z); o.rotation.y = seed; o.castShadow = o.receiveShadow = true; return o;
 }
+// ---------- frunziș din „cărți” de frunze ----------
+// în loc de bile netede: sute de pătrate mici cu frunze desenate (transparente pe margini), întoarse în toate direcțiile.
+// Normalele arată în afara coroanei, ca lumina să cadă ca pe un volum de frunze și nu ca pe foi plate.
+const cardTex = {};
+function leafCardMap(kind) {
+  if (cardTex[kind]) return cardTex[kind];
+  const n = 512, cv = document.createElement('canvas'); cv.width = cv.height = n; const g = cv.getContext('2d'), r = rng(kind === 'ac' ? 911 : 517);
+  g.clearRect(0, 0, n, n);
+  if (kind === 'ac') {
+    // crenguță de brad: o tulpină și ace dese pe ambele părți
+    for (let b = 0; b < 3; b++) {
+      const x0 = n * (0.2 + b * 0.3), y0 = n * 0.95, x1 = x0 + (r() - 0.5) * n * 0.2, y1 = n * 0.06;
+      g.strokeStyle = 'rgb(90,80,70)'; g.lineWidth = 4; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+      for (let i = 0; i < 70; i++) {
+        const t = i / 70, x = x0 + (x1 - x0) * t, y = y0 + (y1 - y0) * t, len = n * 0.11 * (1 - t * 0.5);
+        for (const sd of [-1, 1]) { const l = 170 + r() * 85 | 0; g.strokeStyle = `rgb(${l},${l},${l})`; g.lineWidth = 5; g.beginPath(); g.moveTo(x, y); g.lineTo(x + sd * len * (0.8 + r() * 0.3), y - len * 0.45); g.stroke(); }
+      }
+    }
+  } else {
+    // ramură cu frunze ovale, fiecare cu altă nuanță și cu nervura din mijloc
+    g.strokeStyle = 'rgb(95,80,65)'; g.lineWidth = 3;
+    for (let b = 0; b < 5; b++) { g.beginPath(); g.moveTo(n / 2, n); g.quadraticCurveTo(n * (0.2 + r() * 0.6), n * 0.5, n * (0.1 + r() * 0.8), n * (0.05 + r() * 0.3)); g.stroke(); }
+    for (let i = 0; i < 150; i++) {
+      const x = n * (0.08 + r() * 0.84), y = n * (0.05 + r() * 0.85), rot = r() * 6.28, L = n * (0.035 + r() * 0.03), W = L * (0.45 + r() * 0.2), l = 150 + r() * 105 | 0;
+      g.save(); g.translate(x, y); g.rotate(rot);
+      g.fillStyle = `rgb(${l},${l},${l})`; g.beginPath(); g.moveTo(-L, 0); g.quadraticCurveTo(0, -W * 1.4, L, 0); g.quadraticCurveTo(0, W * 1.4, -L, 0); g.fill();
+      g.strokeStyle = `rgba(0,0,0,0.25)`; g.lineWidth = 1.2; g.beginPath(); g.moveTo(-L, 0); g.lineTo(L, 0); g.stroke(); g.restore();
+    }
+  }
+  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; t.generateMipmaps = true;
+  return (cardTex[kind] = t);
+}
+const cardMats = {};
+function cardMaterial(kind) {
+  if (cardMats[kind]) return cardMats[kind];
+  const mt = new THREE.MeshStandardMaterial({ map: leafCardMap(kind), alphaTest: 0.45, side: THREE.DoubleSide, vertexColors: true, roughness: 0.82, metalness: 0 });
+  // normalele nu se întorc pe spatele foii: coroana se luminează ca un volum
+  mt.onBeforeCompile = (sh) => { sh.fragmentShader = sh.fragmentShader.replace('#include <normal_fragment_begin>', THREE.ShaderChunk.normal_fragment_begin.replaceAll('normal *= faceDirection;', '').replaceAll('normal = normal * faceDirection;', '')); };
+  mt.customProgramCacheKey = () => 'leafcard';
+  return (cardMats[kind] = mt);
+}
+// clumps: [[x, y, z, rx, ry, rz], ...]; size = latura unei cărți (m); dens = cărți pe m² de suprafață
+function foliage(g, clumps, color, seed, { kind = 'frunze', size = 0.7, dens = 9, droop = 0 } = {}) {
+  const r = rng(seed * 13 + 1), pos = [], nrm = [], uv = [], col = [], idx = [];
+  const base = new THREE.Color(color), c = new THREE.Color(), q = new THREE.Quaternion(), e = new THREE.Euler(), v = new THREE.Vector3(), o = new THREE.Vector3(), nn = new THREE.Vector3();
+  const corners = [[-0.5, -0.5, 0, 0], [0.5, -0.5, 1, 0], [0.5, 0.5, 1, 1], [-0.5, 0.5, 0, 1]];
+  for (const [cx, cy, cz, rx, ry, rz] of clumps) {
+    const area = 4 * Math.PI * Math.pow((rx * ry + rx * rz + ry * rz) / 3, 1), count = Math.max(12, Math.min(700, Math.round(area * dens)));
+    for (let i = 0; i < count; i++) {
+      // punct aproape de suprafața elipsoidului (frunzele sunt mai ales pe exterior)
+      o.set(r() * 2 - 1, r() * 2 - 1, r() * 2 - 1); if (o.lengthSq() < 1e-4) o.set(0, 1, 0); o.normalize();
+      const k = 0.55 + 0.45 * Math.pow(r(), 0.35); const px = cx + o.x * rx * k, py = cy + o.y * ry * k, pz = cz + o.z * rz * k;
+      const sz = size * (0.7 + r() * 0.6);
+      q.setFromEuler(e.set((r() - 0.5) * 2.4 - droop, r() * 6.28, (r() - 0.5) * 2.4));
+      // culoare: mai închis spre interior și jos, mai deschis sus
+      const lift = 0.16 * o.y + 0.12 * (k - 0.8) + (r() - 0.5) * 0.09;
+      c.copy(base).offsetHSL((r() - 0.5) * 0.03, (r() - 0.5) * 0.08, lift);
+      const b0 = pos.length / 3;
+      for (const [ux, uy, tu, tv] of corners) {
+        v.set(ux * sz, uy * sz, 0).applyQuaternion(q); pos.push(px + v.x, py + v.y, pz + v.z);
+        nn.set((px + v.x - cx) / rx, (py + v.y - cy) / ry + 0.15, (pz + v.z - cz) / rz).normalize(); nrm.push(nn.x, nn.y, nn.z);
+        uv.push(tu, tv); col.push(c.r, c.g, c.b);
+      }
+      idx.push(b0, b0 + 1, b0 + 2, b0, b0 + 2, b0 + 3);
+    }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('normal', new THREE.Float32BufferAttribute(nrm, 3));
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); geo.setIndex(idx);
+  const mesh = new THREE.Mesh(geo, cardMaterial(kind)); mesh.castShadow = mesh.receiveShadow = true; g.add(mesh);
+  // miez închis, ca prin coroană să nu se vadă cerul ca printr-o sită
+  const core = m(shade(color, kind === 'ac' ? -0.02 : -0.08), { roughness: 1 });
+  for (const [cx, cy, cz, rx, ry, rz] of clumps) { const s2 = new THREE.Mesh(clumpGeo(seed % 6), core); s2.scale.set(rx * 0.62, ry * 0.62, rz * 0.62); s2.position.set(cx, cy, cz); s2.castShadow = true; s2.receiveShadow = true; g.add(s2); }
+}
 function limb(r0, r1, a, b, material) {
   const len = a.distanceTo(b), o = new THREE.Mesh(new THREE.CylinderGeometry(r1, r0, len, 7), material);
   o.position.copy(a).add(b).multiplyScalar(0.5); o.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.clone().sub(a).normalize()); o.castShadow = true; return o;
@@ -162,17 +236,22 @@ export function deciduous(g, w, h, color, seed = 1, bark = '#5b4630') {
     const a = (i / 5) * Math.PI * 2 + r(), end = new THREE.Vector3(Math.cos(a) * R * 0.55, th + h * (0.15 + r() * 0.2), Math.sin(a) * R * 0.55);
     g.add(limb(w * 0.03, w * 0.015, top.clone().setY(th - 0.2), end, bm));
   }
+  const cl = [];
   for (let i = 0; i < n; i++) {
     const a = r() * Math.PI * 2, d = Math.sqrt(r()) * R * 0.7, y = cy + (r() - 0.35) * h * 0.38;
     const rr = R * (0.32 + r() * 0.2) * (1 - Math.abs(y - cy) / h * 0.8);
-    g.add(clump(Math.floor(r() * 1000), shade(color, (r() - 0.5) * 0.1), rr, Math.cos(a) * d, y, Math.sin(a) * d));
+    cl.push([Math.cos(a) * d, y, Math.sin(a) * d, rr, rr * 0.85, rr]);
+    // ramuri până în fiecare smoc
+    if (i % 2 === 0) g.add(limb(w * 0.018, w * 0.008, new THREE.Vector3(Math.cos(a) * d * 0.3, th + h * 0.08, Math.sin(a) * d * 0.3), new THREE.Vector3(Math.cos(a) * d * 0.9, y - rr * 0.2, Math.sin(a) * d * 0.9), bm));
   }
+  foliage(g, cl, color, seed, { size: Math.max(0.45, Math.min(0.9, w * 0.13)) });
 }
 // conifer: trunchi și 7–9 etaje de „crengi” care se îngustează
 export function conifer(g, w, h, color, seed = 1) {
   const r = rng(seed * 53 + 3);
   g.add(limb(0.14, 0.05, new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, h * 0.95, 0), m('#4e3b2a', { roughness: 1 })));
   // etaje de ramuri cu margini zimțate care atârnă, nu conuri netede
+  const tiers = [];
   const n = 13, needles = m(color, { roughness: 0.95, side: THREE.DoubleSide, map: leafMap(), bumpMap: leafMap(), bumpScale: 3 });
   for (let i = 0; i < n; i++) {
     const k = 1 - i / n, ch = h * 0.17, y = h * 0.1 + i * (h * 0.84 / n), rad = w / 2 * (0.12 + k * 0.92);
@@ -186,8 +265,10 @@ export function conifer(g, w, h, color, seed = 1) {
     geo.computeVertexNormals();
     const mt = i % 3 === 0 ? needles : m(shade(color, -0.03 + i * 0.004), { roughness: 0.95, side: THREE.DoubleSide, map: leafMap(), bumpMap: leafMap(), bumpScale: 3 });
     const c = new THREE.Mesh(geo, mt);
-    c.position.y = y + ch / 2; c.rotation.y = r() * 6; c.castShadow = c.receiveShadow = true; g.add(c);
+    c.scale.setScalar(0.86); c.position.y = y + ch / 2; c.rotation.y = r() * 6; c.castShadow = c.receiveShadow = true; g.add(c);
+    tiers.push([0, y + ch * 0.45, 0, rad * 0.95, ch * 0.42, rad * 0.95]);
   }
+  foliage(g, tiers, shade(color, 0.03), seed, { kind: 'ac', size: Math.max(0.4, w * 0.16), dens: 7, droop: 0.5 });
 }
 // mesteacăn: trunchi alb cu dungi, coroană aerisită
 export function birch(g, w, h, color, seed = 1) {
@@ -199,21 +280,21 @@ export function birch(g, w, h, color, seed = 1) {
   const bm = new THREE.MeshStandardMaterial({ map: t, roughness: 0.9 });
   g.add(limb(0.09, 0.05, new THREE.Vector3(0, 0, 0), new THREE.Vector3(0.1, h * 0.85, 0), bm));
   // coroană ovală, aerisită: ramuri subțiri și multe smocuri mici de frunze pe ele
-  const tw = m('#3d3a36', { roughness: 1 });
+  const tw = m('#3d3a36', { roughness: 1 }), cls = [];
   for (let i = 0; i < 16; i++) {
     const t = r(), y = h * (0.4 + t * 0.52), env = Math.sin(Math.PI * Math.min(1, (y / h - 0.35) / 0.62)), a = r() * Math.PI * 2, d = w * 0.42 * env * (0.4 + r() * 0.6);
     const x = Math.cos(a) * d, z = Math.sin(a) * d;
     if (i % 3 === 0) g.add(limb(0.03, 0.012, new THREE.Vector3(0.05, y - h * 0.12, 0), new THREE.Vector3(x * 0.8, y, z * 0.8), tw));
-    g.add(clump(Math.floor(r() * 999), shade(color, (r() - 0.5) * 0.12), w * (0.11 + r() * 0.07), x, y, z));
+    const rr = w * (0.13 + r() * 0.08); cls.push([x, y, z, rr, rr * 1.2, rr]);
   }
+  foliage(g, cls, color, seed, { size: 0.45, dens: 11, droop: 0.4 });
 }
 // tuia: coloană verde închis
 export function thuja(g, w, h, color, seed = 1) {
   const r = rng(seed + 9);
-  for (let i = 0; i < 5; i++) {
-    const k = 1 - i / 6, o = clump(Math.floor(r() * 99), shade(color, (r() - 0.5) * 0.06), 1, 0, h * (0.18 + i * 0.16), 0);
-    o.scale.set(w / 2 * (0.55 + k * 0.45), h * 0.17, w / 2 * (0.55 + k * 0.45)); g.add(o);
-  }
+  const cl = [];
+  for (let i = 0; i < 5; i++) { const k = 1 - i / 6, rw = w / 2 * (0.55 + k * 0.45); cl.push([(r() - 0.5) * 0.05, h * (0.18 + i * 0.16), (r() - 0.5) * 0.05, rw, h * 0.17, rw]); }
+  foliage(g, cl, color, seed, { kind: 'ac', size: 0.35, dens: 22 });
 }
 // iarbă decorativă: smoc de frunze lungi, arcuite
 export function ornamentalGrass(g, w, h, color, plume, seed = 1) {
@@ -248,9 +329,10 @@ export function lavender(g, w, d, h, color, seed = 1) {
 }
 // tufiș: 3–5 nori de frunze lipiți, ușor turtiți
 export function shrub(g, w, h, color, seed = 1) {
-  const r = rng(seed + 41), n = 3 + Math.floor(r() * 3);
+  const r = rng(seed + 41), n = 3 + Math.floor(r() * 3), cls = [];
   for (let i = 0; i < n; i++) {
     const a = r() * 6.28, d = r() * w * 0.2, rr = w * (0.28 + r() * 0.12);
-    const o = clump(Math.floor(r() * 99), shade(color, (r() - 0.5) * 0.08), rr, Math.cos(a) * d, h * 0.42, Math.sin(a) * d); o.scale.y = h * 0.55; g.add(o);
+    cls.push([Math.cos(a) * d, h * 0.45, Math.sin(a) * d, rr, h * 0.5, rr]);
   }
+  foliage(g, cls, color, seed, { size: 0.28, dens: 26 });
 }
