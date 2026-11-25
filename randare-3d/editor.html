@@ -202,6 +202,9 @@ table.cost small { display: block; color: var(--muted); font-size: 11px; }
   #v3d .overlay.tl { display: none; }
   .walkhint .txt { display: none; }
 }
+  #vBar { position: fixed; left: 50%; top: 64px; transform: translateX(-50%); z-index: 60; background: rgba(20,22,26,.86); color: #fff; padding: 10px 16px 14px; border-radius: 12px; font-size: 13px; cursor: pointer; min-width: 260px; max-width: calc(100vw - 32px); text-align: center; }
+  #vBar i { position: absolute; left: 0; bottom: 0; height: 4px; width: 0; background: #e0a050; border-radius: 0 0 0 12px; }
+  #vBar[hidden] { display: none; }
 </style>
 <script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js" } }</script>
 </head>
@@ -229,6 +232,7 @@ table.cost small { display: block; color: var(--muted); font-size: 11px; }
       <select id="langSel" aria-label="Limba"></select>
       <button class="tbtn hide-s" id="btnGallery">🖼<span class="hide-m" data-i18n> Randările mele</span></button>
       <button class="tbtn" id="btn360">🌐<span class="hide-m"> 360°</span></button>
+      <button class="tbtn" id="btnVideo">🎬<span class="hide-m"> <span data-i18n>Video tur</span></span></button>
       <button class="tbtn primary" id="btnRender">📷<span class="hide-s"> <span data-i18n>Randare</span></span></button>
     </div>
     <input type="file" id="fileIn" accept=".json,application/json" hidden>
@@ -357,6 +361,21 @@ table.cost small { display: block; color: var(--muted); font-size: 11px; }
     </div>
   </div>
 </div>
+
+<div class="modal" id="mVid" role="dialog" aria-modal="true" aria-labelledby="mVidT">
+  <div class="dialog">
+    <header><h2 id="mVidT" data-i18n>Video tur</h2><button class="x" data-close>×</button></header>
+    <div class="body">
+      <p class="hint" style="margin-top:0" data-i18n>Camera zboară în jurul casei, se apropie de ușa de la intrare, intră și se uită de jur împrejur în cea mai mare cameră. Clipul se înregistrează din vederea 3D, la calitatea aleasă.</p>
+      <div class="row" style="margin:0 0 12px"><label><span data-i18n>Durata</span> <select id="vLen"><option value="20">20 s</option><option value="30" selected>30 s</option><option value="45">45 s</option><option value="60">60 s</option></select></label>
+        <label><span data-i18n>Calitate</span> <select id="vRes"><option value="1280x720" selected>720p</option><option value="1920x1080">1080p</option><option value="1080x1920">9:16 (Reels)</option></select></label>
+        <button class="btn primary" id="vGo" data-i18n>Înregistrează video tur</button><span class="hint" id="vStatus"></span></div>
+      <div id="vRow" hidden><video id="vPlay" controls playsinline style="width:100%;max-height:52vh;border-radius:10px;background:#000"></video>
+        <div class="row" style="margin-top:10px"><a class="btn primary" id="vDl" download>⬇ <span data-i18n>Descarcă video</span></a><span class="hint" data-i18n>Pe unele telefoane clipul se salvează ca .webm; îl deschide orice browser sau VLC.</span></div></div>
+    </div>
+  </div>
+</div>
+<div id="vBar" hidden title="Stop"><i></i><span data-i18n>Se înregistrează video turul… apasă aici ca să oprești</span></div>
 
 <!-- Galerie -->
 <div class="modal" id="mGal" role="dialog" aria-modal="true" aria-labelledby="mGalT">

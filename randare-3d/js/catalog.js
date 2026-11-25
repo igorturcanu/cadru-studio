@@ -1,6 +1,7 @@
 // Catalogul de obiecte 3D: toate modelele sunt construite din forme simple (cutii, cilindri, sfere),
 // fără fișiere externe. Fiecare model are originea în centrul bazei și dimensiunile date în metri.
 import * as THREE from 'three';
+import { deciduous, conifer, birch, thuja, ornamentalGrass, boulder, lavender, shrub } from './nature.js';
 
 const matCache = new Map();
 export function mat(color, opts = {}) {
@@ -80,6 +81,11 @@ export const CATALOG = [
   { type: 'wc', name: 'Toaletă', cat: 'Baie', icon: '🚽', w: 0.4, d: 0.65, h: 0.8, color: WHITE },
   { type: 'lavoar', name: 'Lavoar cu mobilier', cat: 'Baie', icon: '🚰', w: 0.8, d: 0.48, h: 0.85, color: WOOD_LIGHT, c2: WHITE, c1n: 'Mobilier', c2n: 'Blat' },
   { type: 'planta', name: 'Plantă', cat: 'Decor', icon: '🪴', w: 0.5, d: 0.5, h: 1.3, color: '#4f7d46' },
+  { type: 'perdea', name: 'Draperie (perdea)', cat: 'Decor', icon: '🪟', w: 2.4, d: 0.12, h: 2.6, color: '#e9e2d4' },
+  { type: 'planta_mare', name: 'Plantă mare (ficus)', cat: 'Decor', icon: '🌱', w: 0.8, d: 0.8, h: 1.9, color: '#3f6b35', c2: '#d8d2c6', c1n: 'Frunze', c2n: 'Ghiveci' },
+  { type: 'vaza', name: 'Vază cu flori', cat: 'Decor', icon: '💐', w: 0.25, d: 0.25, h: 0.55, color: '#f0ece4', c2: '#e86a8a', c1n: 'Vază', c2n: 'Flori', elev: 0.75 },
+  { type: 'carti', name: 'Cărți și obiecte decorative', cat: 'Decor', icon: '📚', w: 0.45, d: 0.25, h: 0.3, color: '#3c6e91', elev: 0.45 },
+  { type: 'oglinda', name: 'Oglindă rotundă', cat: 'Decor', icon: '🪞', w: 0.9, d: 0.04, h: 0.9, color: '#c9a86a', elev: 1.1 },
   { type: 'tablou', name: 'Tablou', cat: 'Decor', icon: '🖼️', w: 1.0, d: 0.04, h: 0.7, color: '#3c6e91', elev: 1.3 },
   { type: 'scara', name: 'Scară interioară', cat: 'Construcție', icon: '🪜', w: 1.0, d: 3.2, h: 2.8, color: WOOD_LIGHT, c2: '#3a3a3a', c1n: 'Trepte', c2n: 'Balustradă' },
   { type: 'semineu', name: 'Șemineu', cat: 'Construcție', icon: '🔥', w: 1.4, d: 0.5, h: 1.1, color: '#e8e4dc' },
@@ -92,6 +98,11 @@ export const CATALOG = [
   { type: 'copac', name: 'Copac', cat: 'Grădină', icon: '🌳', w: 3, d: 3, h: 5.5, color: '#3f6b35' },
   { type: 'brad', name: 'Brad (conifer)', cat: 'Grădină', icon: '🌲', w: 2.2, d: 2.2, h: 6, color: '#2f5734' },
   { type: 'pom', name: 'Pom fructifer', cat: 'Grădină', icon: '🍎', w: 2.6, d: 2.6, h: 3.4, color: '#4f7f3a', c2: '#c8352a', c1n: 'Frunze', c2n: 'Fructe' },
+  { type: 'mesteacan', name: 'Mesteacăn', cat: 'Grădină', icon: '🌳', w: 2.4, d: 2.4, h: 7, color: '#6f9a45' },
+  { type: 'tuia', name: 'Tuia (coloană)', cat: 'Grădină', icon: '🌲', w: 0.9, d: 0.9, h: 2.6, color: '#2f5a33' },
+  { type: 'iarba_decorativa', name: 'Iarbă decorativă', cat: 'Grădină', icon: '🌾', w: 0.9, d: 0.9, h: 0.9, color: '#9aa86a', c2: '#e3d3a8', c1n: 'Frunze', c2n: 'Spice' },
+  { type: 'lavanda', name: 'Lavandă (strat)', cat: 'Grădină', icon: '💜', w: 1.6, d: 0.6, h: 0.5, color: '#8a6fc4', garden: true },
+  { type: 'bolovan', name: 'Bolovan decorativ', cat: 'Grădină', icon: '🪨', w: 1.4, d: 1.0, h: 0.7, color: '#77736c' },
   { type: 'tufis', name: 'Tufiș', cat: 'Grădină', icon: '🌿', w: 1.0, d: 1.0, h: 0.8, color: '#4d7c3a' },
   { type: 'flori', name: 'Strat de flori', cat: 'Grădină', icon: '🌷', w: 1.6, d: 0.8, h: 0.35, color: '#e0457b', c2: '#f4c430', c1n: 'Flori', c2n: 'Flori 2' },
   { type: 'ghiveci', name: 'Ghiveci cu flori', cat: 'Grădină', icon: '🪴', w: 0.5, d: 0.5, h: 0.75, color: '#b5643c', c2: '#d9457a', c1n: 'Ghiveci', c2n: 'Flori' },
@@ -125,6 +136,8 @@ export const BY_TYPE = Object.fromEntries(CATALOG.map(c => [c.type, c]));
 // Construiește modelul pentru un obiect din plan. it = {type, w, d, h, color}
 export function buildItem(it, lightsOn) {
   const g = new THREE.Group();
+  // sămânță din id: fiecare copac are altă formă, dar aceeași la fiecare redesenare
+  let seed = 7; for (const ch of String(it.id || it.type)) seed = (seed * 31 + ch.charCodeAt(0)) % 100003;
   const { w, d, h } = it;
   const c = mat(it.color);
   const def = BY_TYPE[it.type] || {};
@@ -335,6 +348,46 @@ export function buildItem(it, lightsOn) {
       }
       break;
     }
+    case 'perdea': {
+      // draperie în falduri: o suprafață ondulată de la șină până aproape de podea
+      const geo = new THREE.PlaneGeometry(w, h - 0.05, Math.max(12, Math.round(w * 14)), 1), p = geo.attributes.position;
+      for (let i = 0; i < p.count; i++) p.setZ(i, Math.sin(p.getX(i) * 22) * 0.035);
+      geo.computeVertexNormals();
+      const cm = new THREE.MeshStandardMaterial({ color: it.color, roughness: 0.95, side: THREE.DoubleSide, transparent: true, opacity: 0.88 });
+      const cur = new THREE.Mesh(geo, cm); cur.position.set(0, (h - 0.05) / 2, 0); cur.castShadow = true; g.add(cur);
+      g.add(box(w + 0.1, 0.025, 0.025, mat('#2b2b2e', { metalness: 0.6 }), 0, h - 0.03, -0.02));
+      break;
+    }
+    case 'planta_mare': {
+      g.add(cyl(w * 0.28, w * 0.22, 0.42, mat(it.color2 || '#d8d2c6', { roughness: 0.6 }), 0, 0, 0, 20));
+      g.add(cyl(0.02, 0.03, h * 0.75, mat('#6b5236'), 0, 0.4, 0, 6));
+      const leaf = new THREE.MeshStandardMaterial({ color: it.color, roughness: 0.6, side: THREE.DoubleSide });
+      let s2 = seed; const r = () => (s2 = (s2 * 16807) % 2147483647) / 2147483647;
+      for (let i = 0; i < 34; i++) {
+        const y = 0.75 + r() * (h - 0.9), a = r() * 6.28, d2 = 0.05 + r() * w * 0.35;
+        const lf = new THREE.Mesh(new THREE.CircleGeometry(0.11, 8), leaf); lf.scale.set(0.75, 1.25, 1);
+        lf.position.set(Math.cos(a) * d2, y, Math.sin(a) * d2); lf.rotation.set(-0.6 + r() * 0.5, a, r() - 0.5); lf.castShadow = true; g.add(lf);
+      }
+      break;
+    }
+    case 'vaza': {
+      g.add(cyl(w * 0.3, w * 0.4, h * 0.5, mat(it.color, { roughness: 0.2 }), 0, 0, 0, 20));
+      const fm = mat(it.color2 || '#e86a8a', { roughness: 0.7 }), stem = mat('#4f7d46');
+      for (let i = 0; i < 7; i++) { const a = i * 0.9, x = Math.cos(a) * 0.06, z = Math.sin(a) * 0.06; g.add(cyl(0.004, 0.004, h * 0.45, stem, x * 0.5, h * 0.45, z * 0.5, 4)); g.add(sphere(0.035, fm, x, h * 0.9 + (i % 3) * 0.03, z)); }
+      break;
+    }
+    case 'carti': {
+      const cols = ['#3c6e91', '#a33b32', '#e0c48a', '#2f4f3a', '#d8d2c6', '#5b4030'];
+      let x = -w / 2;
+      for (let i = 0; i < 7 && x < w / 2 - 0.03; i++) { const bw = 0.025 + (i % 3) * 0.01, bh = h * (0.7 + (i % 4) * 0.08); g.add(box(bw, bh, d * 0.85, mat(cols[i % cols.length], { roughness: 0.8 }), x + bw / 2, 0, 0)); x += bw + 0.003; }
+      g.add(sphere(0.05, mat('#c9a86a', { metalness: 0.8, roughness: 0.3 }), w / 2 - 0.08, 0.05, 0));
+      break;
+    }
+    case 'oglinda': {
+      const fr = new THREE.Mesh(new THREE.TorusGeometry(w / 2 - 0.02, 0.02, 10, 48), mat(it.color, { metalness: 0.85, roughness: 0.25 })); fr.position.y = h / 2; g.add(fr);
+      const mirror = new THREE.Mesh(new THREE.CircleGeometry(w / 2 - 0.03, 48), new THREE.MeshStandardMaterial({ color: '#dfe6ea', metalness: 1, roughness: 0.03 })); mirror.position.set(0, h / 2, 0.005); g.add(mirror);
+      break;
+    }
     case 'tablou': {
       g.add(box(w, h, d, mat('#1f1f1f')));
       // compoziție abstractă (originală)
@@ -343,24 +396,13 @@ export function buildItem(it, lightsOn) {
       g.add(box((w - 0.08) * 0.3, (h - 0.08) * 0.35, 0.007, mat('#d9a441'), w * 0.2, h * 0.45, d / 2 + 0.002));
       break;
     }
-    case 'copac': {
-      g.add(cyl(0.12, 0.18, h * 0.45, mat('#5b4630'), 0, 0, 0, 10));
-      const leaf = mat(it.color, { roughness: 0.9 });
-      let seed = 11;
-      const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
-      for (let i = 0; i < 7; i++) {
-        const a = rnd() * Math.PI * 2, r = rnd() * w * 0.22;
-        g.add(sphere(w * (0.22 + rnd() * 0.12), leaf, Math.cos(a) * r, h * (0.55 + rnd() * 0.3), Math.sin(a) * r));
-      }
-      break;
-    }
-    case 'tufis': {
-      const leaf = mat(it.color, { roughness: 0.9 });
-      g.add(sphere(w * 0.4, leaf, 0, h * 0.45, 0));
-      g.add(sphere(w * 0.3, leaf, w * 0.22, h * 0.35, 0.05));
-      g.add(sphere(w * 0.3, leaf, -w * 0.2, h * 0.33, -0.05));
-      break;
-    }
+    case 'copac': deciduous(g, w, h, it.color, seed); break;
+    case 'mesteacan': birch(g, w, h, it.color, seed); break;
+    case 'tuia': thuja(g, w, h, it.color, seed); break;
+    case 'iarba_decorativa': ornamentalGrass(g, w, h, it.color, it.color2 || '#e3d3a8', seed); break;
+    case 'bolovan': boulder(g, w, h, d, it.color, seed); break;
+    case 'lavanda': lavender(g, w, d, h, it.color, seed); break;
+    case 'tufis': shrub(g, w, h, it.color, seed); break;
     case 'masina': {
       const paint = mat(it.color, { roughness: 0.25, metalness: 0.5 });
       const glass = mat('#1d2630', { roughness: 0.1, metalness: 0.5 });
@@ -373,9 +415,14 @@ export function buildItem(it, lightsOn) {
       break;
     }
     case 'piscina': {
-      g.add(box(w + 0.4, 0.06, d + 0.4, mat('#d9d4c7'), 0, 0, 0));
-      const water = new THREE.Mesh(new THREE.BoxGeometry(w, 0.02, d), mat(it.color, { roughness: 0.05, metalness: 0.2 }));
-      water.position.y = 0.065; water.receiveShadow = true; g.add(water);
+      // margine din piatră, pereți interiori cu mozaic și apă care reflectă cerul
+      const edge = mat('#e4e0d6', { roughness: 0.7 }), b = 0.3;
+      g.add(box(w + 2 * b, 0.06, b, edge, 0, 0, -d / 2 - b / 2)); g.add(box(w + 2 * b, 0.06, b, edge, 0, 0, d / 2 + b / 2));
+      g.add(box(b, 0.06, d, edge, -w / 2 - b / 2, 0, 0)); g.add(box(b, 0.06, d, edge, w / 2 + b / 2, 0, 0));
+      g.add(box(w, 0.02, d, mat('#7ccbe0', { roughness: 0.4 }), 0, -0.02, 0));
+      const water = new THREE.Mesh(new THREE.BoxGeometry(w, 0.02, d), new THREE.MeshPhysicalMaterial({ color: it.color, roughness: 0.02, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.02, transparent: true, opacity: 0.82, normalMap: waterNormals(), normalScale: new THREE.Vector2(0.35, 0.35) }));
+      water.material.normalMap.repeat.set(w / 2, d / 2);
+      water.position.y = 0.03; water.receiveShadow = true; g.add(water);
       break;
     }
     case 'insula': {
@@ -436,16 +483,7 @@ export function buildItem(it, lightsOn) {
       for (let i = 0; i <= n; i += 2) g.add(box(0.025, 0.9, 0.025, c2, w / 2 + 0.025, i * rise, d / 2 - i * run));
       break;
     }
-    case 'brad': {
-      g.add(cyl(0.1, 0.16, h * 0.2, mat('#5b4630'), 0, 0, 0, 10));
-      const leaf = mat(it.color, { roughness: 0.9 });
-      for (let i = 0; i < 4; i++) {
-        const k = 1 - i * 0.22, ch = h * 0.42;
-        const cone = new THREE.Mesh(new THREE.ConeGeometry(w / 2 * k, ch, 14), leaf);
-        cone.position.y = h * 0.15 + i * h * 0.2 + ch / 2; cone.castShadow = cone.receiveShadow = true; g.add(cone);
-      }
-      break;
-    }
+    case 'brad': conifer(g, w, h, it.color, seed); break;
     case 'pom': {
       g.add(cyl(0.08, 0.12, h * 0.42, mat('#6a4e33'), 0, 0, 0, 10));
       const leaf = mat(it.color, { roughness: 0.9 }), fruit = mat(it.color2 || def.c2, { roughness: 0.5 });
@@ -830,11 +868,29 @@ function concrete(seed) {
   });
 }
 function grass(seed) {
-  return canvasTex(512, (g, s) => {
+  return canvasTex(1024, (g, s) => {
     const r = rng(seed);
-    g.fillStyle = '#6f8f4e'; g.fillRect(0, 0, s, s);
-    for (let k = 0; k < 9000; k++) { g.fillStyle = `hsla(${85 + r() * 25},${35 + r() * 20}%,${30 + r() * 20}%,0.6)`; g.fillRect(r() * s, r() * s, 1.5, 3 + r() * 4); }
+    g.fillStyle = '#5f8343'; g.fillRect(0, 0, s, s);
+    // pete mari mai deschise și mai închise, ca iarba reală care nu e uniformă
+    for (let k = 0; k < 60; k++) { const x = r() * s, y = r() * s, rr = 40 + r() * 140, l = 26 + r() * 16;
+      for (const [dx, dy] of [[0, 0], [s, 0], [-s, 0], [0, s], [0, -s]]) { const gr = g.createRadialGradient(x + dx, y + dy, 0, x + dx, y + dy, rr); gr.addColorStop(0, `hsla(${82 + r() * 18},40%,${l}%,0.35)`); gr.addColorStop(1, 'hsla(90,40%,30%,0)'); g.fillStyle = gr; g.fillRect(x + dx - rr, y + dy - rr, rr * 2, rr * 2); } }
+    for (let k = 0; k < 42000; k++) { g.fillStyle = `hsla(${78 + r() * 30},${35 + r() * 25}%,${24 + r() * 24}%,0.55)`; g.save(); g.translate(r() * s, r() * s); g.rotate((r() - 0.5) * 0.8); g.fillRect(0, 0, 1.2, 3 + r() * 6); g.restore(); }
   });
+}
+// valuri fine pentru apa din piscină (hartă de normale)
+let waterTex = null;
+function waterNormals() {
+  if (waterTex) return waterTex;
+  const n = 256, cv = document.createElement('canvas'); cv.width = cv.height = n; const g = cv.getContext('2d'), img = g.createImageData(n, n);
+  const r = rng(5), waves = Array.from({ length: 9 }, () => [Math.floor(1 + r() * 5), Math.floor(1 + r() * 5) * (r() < 0.5 ? -1 : 1), r() * 6.28, 0.3 + r() * 0.7]);
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    let dx = 0, dy = 0;
+    for (const [kx, ky, ph, a] of waves) { const c = Math.cos((kx * x + ky * y) / n * 6.283 + ph) * a; dx += kx * c; dy += ky * c; }
+    const i = (y * n + x) * 4; img.data[i] = 128 + dx * 9; img.data[i + 1] = 128 + dy * 9; img.data[i + 2] = 255; img.data[i + 3] = 255;
+  }
+  g.putImageData(img, 0, 0);
+  waterTex = new THREE.CanvasTexture(cv); waterTex.wrapS = waterTex.wrapT = THREE.RepeatWrapping;
+  return waterTex;
 }
 
 // Materialele de podea: id → {nume, textură, dimensiunea texturii în metri}

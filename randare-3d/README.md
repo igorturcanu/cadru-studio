@@ -9,7 +9,7 @@ Sait de prezentare + editor web pentru randări 3D de case, construit după mode
 ## Ce merge de-adevăratelea
 
 - **Plan 2D:** camere trase ca dreptunghi, pereți colț cu colț, uși și ferestre, cote, suprafețe, mutarea colțurilor, unealtă de măsurat, export PNG.
-- **3D în timp real** (three.js): pereți cu goluri, pardoseli cu texturi, peste 35 de obiecte (mobilier, lumini, baie, bucătărie, exterior), selectare în 3D, pereți tăiați, tavan automat în interior, camere: perspectivă, de sus, interior, exterior.
+- **3D în timp real** (three.js): pereți cu goluri, pardoseli cu texturi, peste 60 de obiecte (mobilier, lumini, baie, bucătărie, exterior), selectare în 3D, pereți tăiați, tavan automat în interior, camere: perspectivă, de sus, interior, exterior.
 - **Lumină:** ora zilei și orientarea nord mută soarele și umbrele; seara se aprind lămpile, noaptea e lumina lunii.
 - **Randare foto:** HD / Full HD / 4K, formate 16:9, 4:3, 1:1, 4:5; 8–64 de treceri cu umbre moi și antialiasing (media mai multor cadre).
 - **Vedere 360°:** panoramă echirectangulară 4096×2048 din poziția camerei, cu vizualizator în pagină.
@@ -31,6 +31,11 @@ Sait de prezentare + editor web pentru randări 3D de case, construit după mode
 - **Porți, garduri și lumini:** poartă pietonală, poartă auto culisantă, gard metalic, gard din zidărie, stâlp cu lampă, aplice, spoturi încastrate, candelabru, balcon în consolă, balustradă din sticlă, coloane.
 - **Pereți dintr-un clic:** clic pe perete și scrii lungimea, grosimea și înălțimea; butoane pentru fereastră, ușă, ușă dublă, glisantă și de balcon, puse automat în primul loc liber; dublu-clic pe un perete deschide direct mărimile.
 - **Ieși afară / Intră în casă:** în modul persoană un buton te scoate prin cea mai apropiată ușă exterioară sau te bagă înapoi în casă.
+- **Case parter moderne:** 4 modele noi, originale: casă parter cu streașină lată, casă în L cu curte interioară și piscină, casă cu acoperiș jos în patru ape, casă cu garaj închis (`?sablon=parter_modern`, `parter_l`, `parter_4ape`, `parter_garaj`).
+- **Natură mai reală:** iarbă 3D cu fire (sute de mii de smocuri, desenate dintr-o singură dată), cer cu nori și soare, pădure la orizont cu ceață, copaci cu frunziș texturat (foios, brad cu ramuri zimțate, mesteacăn, tuia), iarbă decorativă cu spice, lavandă, bolovani, piscină cu mozaic și apă care reflectă cerul.
+- **Fațade:** acoperiș plat cu streașină lată, lambriu de lemn dedesubt și bandă LED care se aprinde seara; acoperiș jos în patru ape cu streașină de 95 cm; perete de sticlă (3,6 m), ușă de garaj secțională; sticla reflectă cerul.
+- **Decor interior:** draperii, plantă mare (ficus), vază cu flori, cărți, oglindă rotundă; în modelele noi camerele sunt mobilate complet.
+- **Video tur:** butonul 🎬 înregistrează un clip (20–60 s, 720p, 1080p sau 9:16): camera zboară în jurul casei, se apropie de ușă, intră și se uită de jur împrejur. Se descarcă ca .mp4 sau .webm.
 - **Proiectele mele:** mai multe proiecte salvate în browser, cu miniatură, deschidere, dublare și ștergere; un șablon deschis devine proiect nou și nu-l înlocuiește pe cel curent.
 - **Fișă client:** o pagină cu randarea 3D, planul, camerele și cantitățile de materiale, cu câmpuri pentru client și observații; se tipărește sau se salvează ca PDF.
 - **Proiecte:** salvare automată în browser, anulare/refacere, export/import `.json`, galerie „Randările mele” (IndexedDB).
